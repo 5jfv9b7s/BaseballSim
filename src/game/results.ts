@@ -1,10 +1,12 @@
+import { usesMatchConfig, type GameModelVersion } from './model-registry.ts';
 import { ensure } from '../engine/validation.ts';
 import type { BattingLine, GameFixture, GameRecord, GameResult, PitchingLine } from './types.ts';
 
-function battingLine(playerId: string, extended: boolean): BattingLine {
+function battingLine(playerId: string, version?: GameModelVersion): BattingLine {
   return {
     playerId,
-    ...(extended ? { sacrificeFlies: 0, groundedIntoDoublePlays: 0 } : {}),
+    ...(usesMatchConfig(version) ? { sacrificeFlies: 0, groundedIntoDoublePlays: 0 } : {}),
+    ...(version === 'game-prototype-v8' ? { fieldersChoices: 0 } : {}),
     plateAppearances: 0,
     atBats: 0,
     hits: 0,
@@ -39,7 +41,7 @@ export function aggregateResult(record: GameRecord): GameResult {
   const fixture = record.fixture;
   const batting = ['away', 'home'].flatMap((side) =>
     fixture.teams[side as 'away' | 'home'].lineup.map((p) =>
-      battingLine(p.playerId, record.state.simulationVersion === 'game-prototype-v7'),
+      battingLine(p.playerId, record.state.simulationVersion),
     ),
   );
   const pitching = ['away', 'home'].flatMap((side) =>

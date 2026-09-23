@@ -18,6 +18,7 @@ const labels: Record<AppearanceOutcome, string> = {
   strikeout: '三振',
   battedOut: '打球アウト',
   sacrificeFly: '犠牲フライ',
+  fieldersChoice: '野手選択（併殺崩れ）',
 };
 const pitchLabels = {
   ball: 'ボール',
@@ -191,6 +192,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v8">野手選択対応試作 v8</option>
             <option value="game-prototype-v7">併殺・犠飛対応試作 v7</option>
             <option value="game-prototype-v6">3ボール配球試作 v6</option>
             <option value="game-prototype-v5">打球品質試作 v5</option>
@@ -331,6 +333,7 @@ function MatchGame() {
                       <th>三振</th>
                       <th>犠飛</th>
                       <th>併殺打</th>
+                      <th>野選</th>
                       <th>打率</th>
                     </tr>
                   </thead>
@@ -353,6 +356,7 @@ function MatchGame() {
                           <td>{p.strikeouts}</td>
                           <td>{p.sacrificeFlies ?? '–'}</td>
                           <td>{p.groundedIntoDoublePlays ?? '–'}</td>
+                          <td>{p.fieldersChoices ?? '–'}</td>
                           <td>{battingAverage(p.hits, p.atBats)}</td>
                         </tr>
                       );
@@ -471,9 +475,10 @@ function MatchGame() {
           9回、最大12回、同点引き分け、サヨナラ、DH、打席間の自動継投。四死球・三振・単打・二塁打・三塁打・本塁打・打球アウトを生成します。
         </p>
         <p>
-          v7は一塁走者のいる内野ゴロの併殺と、外野フライで三塁走者が生還する犠飛に対応します。
+          v7以降は一塁走者のいる内野ゴロの併殺と、外野フライで三塁走者が生還する犠飛に対応します。
           到達時間を比較し、成立する場合だけ選択します。他の走者は元の塁に留める試作です。
-          旧モデルでは犠飛・併殺打の成績は「–」で表示します。
+          v8では二塁フォース後の一塁送球が間に合わない場合、打者が野手選択で一塁に残ります。
+          三塁・本塁への送球選択や走塁死は未対応です。 各モデルで未対応の成績は「–」で表示します。
         </p>
         <p>
           数式・係数は未校正です。失策、盗塁、犠打、振り逃げ、暴投・捕逸、投手の勝敗・セーブは未対応です。試合中保存・シーズン進行・全世界セーブではありません。

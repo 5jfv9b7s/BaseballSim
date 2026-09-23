@@ -421,10 +421,58 @@ test('変更前の実v6保存を読み込み、v7保存後に同じv6へ戻せ�
     assert.equal(old.state.simulationVersion, 'game-prototype-v6');
     assert.equal(old.state.totalPitches, 326);
     assert.deepEqual(old.state.score, { away: 2, home: 3 });
-    const next = createGame(20260923);
+    const next = createGame(20260923, undefined, 'game-prototype-v7');
     runToCompletion(next);
     finalizeGame(next);
     assert.equal(next.state.simulationVersion, 'game-prototype-v7');
+    await storage.commitSnapshot(next, 1);
+    assert.deepEqual((await storage.loadSnapshot()).record, next);
+    assert.deepEqual((await storage.loadSnapshot(true)).record, old);
+  } finally {
+    await db.delete();
+  }
+});
+
+test('変更前に固定した4条件のv7全記録ハッシュを維持する', async () => {
+  const digests = JSON.parse(
+    readFileSync(new URL('./fixtures/v7-digests.json', import.meta.url), 'utf8'),
+  );
+  for (const [seed, digest] of Object.entries(digests)) {
+    const record = createGame(Number(seed), undefined, 'game-prototype-v7');
+    runToCompletion(record);
+    finalizeGame(record);
+    assert.equal(await sha256(canonicalJson(record)), digest);
+    validateCompletedRecord(record);
+  }
+});
+
+test('変更前の実v7保存を読み込み、v8保存後に同じv7へ戻せる', async () => {
+  const frozen = JSON.parse(
+    gunzipSync(
+      readFileSync(new URL('./fixtures/completed-v7.json.gz', import.meta.url)),
+    ).toString(),
+  );
+  const db = new GameDatabase('legacy-v7-' + crypto.randomUUID());
+  try {
+    for (const [name, rows] of Object.entries(frozen)) {
+      await db.table(name).bulkPut(
+        (rows as Record<string, unknown>[]).map((row) => ({
+          ...row,
+          ...(row.payloadBytes
+            ? { payloadBytes: new Uint8Array(row.payloadBytes as number[]) }
+            : {}),
+        })),
+      );
+    }
+    const storage = new DexieStorageAdapter(db);
+    const old = (await storage.loadSnapshot()).record;
+    assert.equal(old.state.simulationVersion, 'game-prototype-v7');
+    assert.equal(old.state.totalPitches, 403);
+    assert.deepEqual(old.state.score, { away: 7, home: 9 });
+    const next = createGame(20260923);
+    runToCompletion(next);
+    finalizeGame(next);
+    assert.equal(next.state.simulationVersion, 'game-prototype-v8');
     await storage.commitSnapshot(next, 1);
     assert.deepEqual((await storage.loadSnapshot()).record, next);
     assert.deepEqual((await storage.loadSnapshot(true)).record, old);

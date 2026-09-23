@@ -72,7 +72,7 @@ test('無効seedは試合を変更せず、画面切替は進行状態を保持�
   await expect(page.locator('.game-progress')).toHaveText('1球を処理');
 });
 
-for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] as const) {
+for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'] as const) {
   test(`旧版${legacy}の実セーブを読み込み、新旧モデルを選択して再現する`, async ({ page }) => {
     const frozen = JSON.parse(
       gunzipSync(
@@ -123,17 +123,19 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] as const) {
               ? '終了：334球 / 83打席'
               : legacy === 'v5'
                 ? '終了：362球 / 90打席'
-                : '終了：326球 / 87打席',
+                : legacy === 'v6'
+                  ? '終了：326球 / 87打席'
+                  : '終了：403球 / 103打席',
     );
     await expect(page.locator('.game-page footer')).toContainText(`game-prototype-${legacy}`);
     const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
 
-    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v7');
+    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v8');
     await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
     await expect(run).toBeEnabled();
     await run.click();
     await expect(save).toBeEnabled();
-    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v7');
+    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v8');
     await save.click();
     await expect(page.getByRole('status')).toContainText('保存しました');
     await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();
@@ -152,12 +154,13 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] as const) {
   });
 }
 
-test('犠飛を打席・打数と区別して表示し、保存後も同じ成績を復元する', async ({ page }) => {
+test('v7の犠飛を打席・打数と区別して表示し、保存後も同じ成績を復元する', async ({ page }) => {
   await page.goto('/');
   const reset = page.getByRole('button', { name: '新しい試合を準備', exact: true });
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();
+  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v7');
   await page.getByLabel('試合seed', { exact: true }).fill('387276917');
   await reset.click();
   await expect(run).toBeEnabled();
@@ -187,5 +190,46 @@ test('犠飛を打席・打数と区別して表示し、保存後も同じ成�
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 960 });
     await page.screenshot({ path: `test-results/sacrifice-fly-${width}.png`, fullPage: true });
+  }
+});
+
+test('v8の野手選択を安打と区別して表示し、保存・再読込後も維持する', async ({ page }) => {
+  await page.goto('/');
+  const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
+  const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
+  await expect(run).toBeEnabled();
+  await expect(page.getByLabel('試合モデル', { exact: true })).toHaveValue('game-prototype-v8');
+  await run.click();
+  await expect(save).toBeEnabled();
+  const table = page
+    .locator('.game-statistics > section')
+    .filter({ has: page.getByRole('heading', { name: '青凪ハーバーズ', exact: true }) })
+    .locator('table')
+    .first();
+  const headers = await table.locator('thead th').allTextContents();
+  const rows = await table
+    .locator('tbody tr')
+    .evaluateAll((rows) => rows.map((row) => [...row.children].map((cell) => cell.textContent)));
+  const choices = rows.filter((row) => row[headers.indexOf('野選')] === '1');
+  expect(choices).toHaveLength(1);
+  const row = choices[0]!;
+  expect(row[headers.indexOf('打席')]).toBe('5');
+  expect(row[headers.indexOf('打数')]).toBe('5');
+  expect(row[headers.indexOf('安打')]).toBe('2');
+  expect(row[headers.indexOf('併殺打')]).toBe('0');
+  const statistics = await page.getByRole('region', { name: '試合成績' }).innerText();
+  await save.click();
+  await expect(page.getByRole('status')).toContainText('保存しました');
+  await page.reload();
+  await page.getByRole('button', { name: '保存した試合を読み込む', exact: true }).click();
+  await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(statistics, {
+    useInnerText: true,
+  });
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await page.locator('.game-statistics .table-scroll').evaluateAll((elements) => {
+      for (const element of elements) element.scrollLeft = element.scrollWidth;
+    });
+    await page.screenshot({ path: `test-results/fielders-choice-${width}.png`, fullPage: true });
   }
 });

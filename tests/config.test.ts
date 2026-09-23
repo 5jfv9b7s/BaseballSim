@@ -159,43 +159,45 @@ test('既定設定は旧v6の投球・打球・乱数を維持し、指定係数
   assert.equal(canonicalJson(game.state), input);
 });
 
-test('開始時の設定を保存し、既定ファイル変更後も同じ試合を復元・再実行する', async () => {
-  const db = new GameDatabase('config-' + crypto.randomUUID());
-  const previousDefault = defaults.pitch.contactBase;
-  try {
-    const config = createMatchConfig();
-    config.pitch.contactBase = 0.65;
-    config.running.runnerLeadMeters = 2;
-    config.plays.pivotSeconds = 0.4;
-    const game = createGame(20260923, undefined, 'game-prototype-v7', config);
-    runToCompletion(game);
-    finalizeGame(game);
-    const storage = new DexieStorageAdapter(db);
-    await storage.commitSnapshot(game, 0);
-    const definitions = definitionsFor('game-prototype-v7', config);
-    assert.deepEqual('config' in definitions ? definitions.config : null, config);
+for (const version of ['game-prototype-v7', 'game-prototype-v8'] as const) {
+  test(`${version}は開始時の設定を保存し、既定ファイル変更後も同じ試合を復元・再実行する`, async () => {
+    const db = new GameDatabase('config-' + crypto.randomUUID());
+    const previousDefault = defaults.pitch.contactBase;
+    try {
+      const config = createMatchConfig();
+      config.pitch.contactBase = 0.65;
+      config.running.runnerLeadMeters = 2;
+      config.plays.pivotSeconds = 0.4;
+      const game = createGame(20260923, undefined, version, config);
+      runToCompletion(game);
+      finalizeGame(game);
+      const storage = new DexieStorageAdapter(db);
+      await storage.commitSnapshot(game, 0);
+      const definitions = definitionsFor(version, config);
+      assert.deepEqual('config' in definitions ? definitions.config : null, config);
 
-    // 設定オブジェクトを一時変更し、ファイルを再ビルドした後の既定値変更と同じ条件を作る。
-    defaults.pitch.contactBase = 0.75;
-    assert.equal(createGame(20260923).state.config!.pitch.contactBase, 0.75);
-    const loaded = (await storage.loadSnapshot()).record;
-    assert.deepEqual(loaded, game);
-    validateCompletedRecord(loaded);
-    const replay = createGame(loaded.seed, undefined, 'game-prototype-v7', loaded.state.config);
-    runToCompletion(replay);
-    finalizeGame(replay);
-    assert.deepEqual(replay, game);
+      // 設定オブジェクトを一時変更し、ファイルを再ビルドした後の既定値変更と同じ条件を作る。
+      defaults.pitch.contactBase = 0.75;
+      assert.equal(createGame(20260923).state.config!.pitch.contactBase, 0.75);
+      const loaded = (await storage.loadSnapshot()).record;
+      assert.deepEqual(loaded, game);
+      validateCompletedRecord(loaded);
+      const replay = createGame(loaded.seed, undefined, version, loaded.state.config);
+      runToCompletion(replay);
+      finalizeGame(replay);
+      assert.deepEqual(replay, game);
 
-    const wrong = structuredClone(game);
-    wrong.state.config!.pitch.contactBase = 0.1;
-    assert.throws(() => validateCompletedRecord(wrong), /一致しません/);
-    delete wrong.state.config;
-    assert.throws(() => validateCompletedRecord(wrong), /設定/);
-  } finally {
-    defaults.pitch.contactBase = previousDefault;
-    await db.delete();
-  }
-});
+      const wrong = structuredClone(game);
+      wrong.state.config!.pitch.contactBase = 0.1;
+      assert.throws(() => validateCompletedRecord(wrong), /一致しません/);
+      delete wrong.state.config;
+      assert.throws(() => validateCompletedRecord(wrong), /設定/);
+    } finally {
+      defaults.pitch.contactBase = previousDefault;
+      await db.delete();
+    }
+  });
+}
 
 test('新プレーの判定記録と成績の改変を再実行照合で拒否する', () => {
   const game = createGame(1, undefined, 'game-prototype-v7', baseline);

@@ -13,7 +13,8 @@ export type AppearanceOutcome =
   | 'hitByPitch'
   | 'strikeout'
   | 'battedOut'
-  | 'sacrificeFly';
+  | 'sacrificeFly'
+  | 'fieldersChoice';
 
 export interface GamePlayer extends Player {
   powerVsRight: Ability;
@@ -57,7 +58,7 @@ export interface Situation {
 export interface GameState extends Situation {
   /** v1保存では省略。存在する場合は対応する版を厳密に使用する。 */
   simulationVersion?: GameModelVersion;
-  /** v7のみ。開始時の設定全体を固定し、保存・再実行にも使用する。 */
+  /** v7以降。開始時の設定全体を固定し、保存・再実行にも使用する。 */
   config?: MatchConfig;
   gameId: string;
   phase: 'readyForPitch' | 'halfComplete' | 'gameComplete' | 'aborted';
@@ -134,7 +135,8 @@ export interface ScoringCredit {
     | 'game-rules-prototype-v4'
     | 'game-rules-prototype-v5'
     | 'game-rules-prototype-v6'
-    | 'game-rules-prototype-v7';
+    | 'game-rules-prototype-v7'
+    | 'game-rules-prototype-v8';
 }
 
 export interface PitchDecision {
@@ -188,11 +190,14 @@ export interface GameEvent {
     | 'game-rules-prototype-v4'
     | 'game-rules-prototype-v5'
     | 'game-rules-prototype-v6'
-    | 'game-rules-prototype-v7';
+    | 'game-rules-prototype-v7'
+    | 'game-rules-prototype-v8';
 }
 
 export interface BattingLine {
-  /** v7のみ。旧モデルでは未対応のため項目自体を省略する。 */
+  /** v8以降。安打に含めない野手選択の打席数。 */
+  fieldersChoices?: number;
+  /** v7以降。旧モデルでは未対応のため項目自体を省略する。 */
   sacrificeFlies?: number;
   groundedIntoDoublePlays?: number;
   playerId: string;
@@ -249,7 +254,9 @@ export interface GameRecord {
     | 'completed-game-prototype-v6'
     | 'running-game-prototype-v6'
     | 'completed-game-prototype-v7'
-    | 'running-game-prototype-v7';
+    | 'running-game-prototype-v7'
+    | 'completed-game-prototype-v8'
+    | 'running-game-prototype-v8';
   seed: number;
   fixture: GameFixture;
   state: GameState;
@@ -259,9 +266,12 @@ export interface GameRecord {
 
 /** 対象プレーだけの判断記録。未対応の守備成績を完成済みとして生成しない。 */
 export interface FieldingEvaluation {
-  modelVersion: 'in-play-prototype-v1';
+  modelVersion: 'in-play-prototype-v1' | 'in-play-prototype-v2';
+  /** v8以降。併殺候補がどの結果になったかを明示する。 */
+  resolution?: 'doublePlay' | 'fieldersChoice' | 'battedOut' | 'sacrificeFly';
   play: 'doublePlay' | 'tagUp';
   preparationTimeMs: number;
+  /** 元の候補プレー（併殺またはタッチアップ）が成立したか。野選はfalse。 */
   completed: boolean;
   participants: { playerId: string; position: Position; role: 'field' | 'pivot' | 'receive' }[];
   /** すべて打球接触を0とした時刻（ms）。同時到達は走者優先の試作規則。 */

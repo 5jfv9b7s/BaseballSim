@@ -1,6 +1,11 @@
 import type { PitchRecord, RngState } from '../engine/types.ts';
 import type { GameFixture, TeamSide } from './types.ts';
-import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-registry.ts';
+import {
+  CURRENT_GAME_MODEL,
+  gameModel,
+  usesMatchConfig,
+  type GameModelVersion,
+} from './model-registry.ts';
 import { generateBattedBall as generateV1 } from './batted-ball-v1.ts';
 import { generateBattedBallV3 } from './batted-ball-v3.ts';
 import { generateBattedBallV2 } from './batted-ball-v2.ts';
@@ -16,7 +21,7 @@ export function generateBattedBall(
   config?: MatchConfig,
 ) {
   gameModel(version);
-  if (version === 'game-prototype-v7') {
+  if (usesMatchConfig(version)) {
     config ??= createMatchConfig();
     validateMatchConfig(config);
     return generateConfiguredBattedBall(pitch, fixture, defense, rng, config);

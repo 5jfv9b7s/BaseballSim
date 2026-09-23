@@ -1,3 +1,4 @@
+import { usesMatchConfig } from './model-registry.ts';
 import { getPlayer } from './fixture.ts';
 import { GAME_MODEL_V2 as m } from './model-v2.ts';
 import type { BattedBall, GameFixture, GameState } from './types.ts';
@@ -9,7 +10,7 @@ export function hitDestinations(
   bases: number,
   ball: BattedBall | null,
 ): number[] {
-  const settings = state.simulationVersion === 'game-prototype-v7' ? state.config!.running : m;
+  const settings = usesMatchConfig(state.simulationVersion) ? state.config!.running : m;
   const destinations = [0, 0, 0];
   let leadingDestination = 4;
   for (let i = 2; i >= 0; i--) {

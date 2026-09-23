@@ -12,8 +12,19 @@ export function evaluateInPlay(
   ball: BattedBall | null,
   pitch: GameEvent['pitch'],
 ): FieldingEvaluation | undefined {
+  if (state.simulationVersion !== GAME_MODEL_V7.version) return undefined;
+
+  return evaluateInPlayTiming(state, fixture, ball, pitch);
+}
+
+/** v7の到達時間式。版ごとの結果選択から独立させ、旧保存も同じ式で再実行する。 */
+export function evaluateInPlayTiming(
+  state: GameState,
+  fixture: GameFixture,
+  ball: BattedBall | null,
+  pitch: GameEvent['pitch'],
+): FieldingEvaluation | undefined {
   if (
-    state.simulationVersion !== GAME_MODEL_V7.version ||
     state.outs >= 2 ||
     !ball ||
     ball.projectedBases !== 0 ||

@@ -1,3 +1,4 @@
+import { CURRENT_GAME_MODEL, type GameModelVersion } from '../game/model-v2.ts';
 import { useEffect, useRef, useState } from 'react';
 import { App as PitchLab } from './App.tsx';
 import type { GameCommand, GameView } from '../game/controller.ts';
@@ -35,7 +36,7 @@ function eventText(event: GameEvent): string {
 }
 
 type Action =
-  | { kind: 'new'; seed: number }
+  | { kind: 'new'; seed: number; modelVersion: GameModelVersion }
   | { kind: 'advance'; count: number }
   | { kind: 'save' }
   | { kind: 'load'; previous: boolean };
@@ -50,6 +51,7 @@ function MatchGame() {
   const [busy, setBusy] = useState(true);
   const [running, setRunning] = useState(false);
   const [seed, setSeed] = useState('20260923');
+  const [modelVersion, setModelVersion] = useState<GameModelVersion>(CURRENT_GAME_MODEL);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const lastAction = useRef<Action['kind'] | null>(null);
@@ -134,7 +136,7 @@ function MatchGame() {
       setError('seedは1～4294967295の整数を入力してください。');
       return;
     }
-    send({ kind: 'new', seed: Number(seed) });
+    send({ kind: 'new', seed: Number(seed), modelVersion });
   }
 
   return (
@@ -174,6 +176,18 @@ function MatchGame() {
       </section>
 
       <section className="panel game-actions">
+        <label className="model-choice">
+          新しい試合のモデル
+          <select
+            aria-label="試合モデル"
+            value={modelVersion}
+            disabled={busy || running}
+            onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
+          >
+            <option value="game-prototype-v2">改善試作 v2</option>
+            <option value="game-prototype-v1">従来試作 v1</option>
+          </select>
+        </label>
         <div className="game-seed">
           <label>
             試合seed
@@ -220,6 +234,7 @@ function MatchGame() {
         </div>
         <p className="hint">
           現在の試合seed：{view?.seed ?? '準備中'}
+          。適用中：{view?.state.simulationVersion ?? 'game-prototype-v1'}
           。新しい試合を準備すると未保存の結果は置き換わります。
         </p>
         <p className="game-progress" aria-live="polite">
@@ -444,7 +459,9 @@ function MatchGame() {
         </p>
       </details>
       <footer>
-        <p>game-prototype-v1 / 架空データ / 保存形式 v01-completed-game-1</p>
+        <p>
+          {state?.simulationVersion ?? 'game-prototype-v1'} / 架空データ / 旧モデルの保存にも対応
+        </p>
         <p>投球回の小数部分はアウト数です（例：5.2＝5回2/3）。表示や一時停止は乱数を進めません。</p>
       </footer>
     </main>

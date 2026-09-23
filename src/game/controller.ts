@@ -1,3 +1,4 @@
+import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-v2.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { createGame, stepRecord } from './engine.ts';
 import { finalizeGame } from './results.ts';
@@ -8,7 +9,7 @@ export type GameCommand = {
   commandId: string;
   expectedStateRevision: number;
 } & (
-  | { kind: 'new'; seed: number }
+  | { kind: 'new'; seed: number; modelVersion?: GameModelVersion }
   | { kind: 'advance'; count: number }
   | { kind: 'save' }
   | { kind: 'load'; previous: boolean }
@@ -77,7 +78,10 @@ export class GameController {
     ensure(command.expectedStateRevision === this.revision, '古い試合状態への指示です');
     ensure(this.processed.size < 10000, '指示上限です。保存後に再読み込みしてください');
 
-    if (command.kind === 'new') this.record = createGame(command.seed);
+    if (command.kind === 'new') {
+      const model = gameModel(command.modelVersion ?? CURRENT_GAME_MODEL);
+      this.record = createGame(command.seed, undefined, model.version);
+    }
     if (command.kind === 'advance') {
       ensure(
         this.record.state.phase !== 'gameComplete' && this.record.state.phase !== 'aborted',

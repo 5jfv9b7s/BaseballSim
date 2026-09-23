@@ -4,12 +4,13 @@ import type { GameRecord } from '../game/types.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import {
   canonicalJson,
-  DEFINITIONS,
+  definitionsFor,
   MAX_SAVE_BYTES,
   sha256,
   validateCompletedRecord,
-  VERSIONS,
+  versionsFor,
 } from './codec.ts';
+import { gameModel } from '../game/model-v2.ts';
 import type { LoadedGame, SaveSlotInfo, StorageAdapter } from './adapter.ts';
 
 const LOCAL_WORLD = 'v01-local';
@@ -48,7 +49,7 @@ interface Snapshot {
   gameDate: string;
   stateRevision: number;
   saveKind: 'manual';
-  versions: typeof VERSIONS;
+  versions: ReturnType<typeof versionsFor>;
   blockRefs: BlockRef[];
   manifestHash: string;
 }
@@ -104,17 +105,19 @@ export class DexieStorageAdapter implements StorageAdapter {
   async commitSnapshot(record: GameRecord, expectedStorageRevision: number): Promise<SaveSlotInfo> {
     integer(expectedStorageRevision, 0, Number.MAX_SAFE_INTEGER - 1, '保存世代');
     validateCompletedRecord(record);
+    const version = gameModel(record.state.simulationVersion).version;
+    const versions = versionsFor(version);
     const db = this.database;
     // ハッシュ・直列化はIndexedDBトランザクションの外で完了させる。
     const blocks: Block[] = [];
     const refs: BlockRef[] = [];
     for (const [kind, value] of [
-      ['definitions', DEFINITIONS],
+      ['definitions', definitionsFor(version)],
       ['game', record],
     ] as const) {
       const text = canonicalJson(value);
       const payloadBytes = new TextEncoder().encode(text);
-      const schemaVersion = VERSIONS.dataSchemaVersion;
+      const schemaVersion = versions.dataSchemaVersion;
       const contentHash = await sha256(kind + ':' + schemaVersion + ':' + text);
       const blockId = 'block-' + contentHash;
       blocks.push({
@@ -147,7 +150,7 @@ export class DexieStorageAdapter implements StorageAdapter {
       gameDate: '2026-09-23',
       stateRevision: record.state.nextEventSeq - 1,
       saveKind: 'manual' as const,
-      versions: VERSIONS,
+      versions,
       blockRefs: refs,
     };
     const snapshot: Snapshot = { ...manifest, manifestHash: await sha256(canonicalJson(manifest)) };
@@ -239,8 +242,10 @@ export class DexieStorageAdapter implements StorageAdapter {
     );
     const { snapshot, blocks } = data;
     const { manifestHash, ...manifest } = snapshot;
+    const version = gameModel(snapshot.versions.simulationVersion).version;
+    const versions = versionsFor(version);
     ensure(
-      snapshot.worldId === WORLD && canonicalJson(snapshot.versions) === canonicalJson(VERSIONS),
+      snapshot.worldId === WORLD && canonicalJson(snapshot.versions) === canonicalJson(versions),
       '未対応の保存形式・モデル版です',
     );
     ensure(
@@ -258,7 +263,8 @@ export class DexieStorageAdapter implements StorageAdapter {
         block &&
           block.codec === 'none' &&
           block.kind === ref.kind &&
-          block.schemaVersion === ref.schemaVersion,
+          block.schemaVersion === ref.schemaVersion &&
+          ref.schemaVersion === versions.dataSchemaVersion,
         '保存ブロックが不正です',
       );
       ensure(
@@ -278,10 +284,14 @@ export class DexieStorageAdapter implements StorageAdapter {
       payloads[ref.logicalKey] = JSON.parse(text);
     }
     ensure(
-      canonicalJson(payloads.definitions) === canonicalJson(DEFINITIONS),
+      canonicalJson(payloads.definitions) === canonicalJson(definitionsFor(version)),
       'モデル定義が一致しません',
     );
     validateCompletedRecord(payloads.game);
+    ensure(
+      gameModel(payloads.game.state.simulationVersion).version === version,
+      '保存の版と試合の版が一致しません',
+    );
     ensure(
       snapshot.stateRevision === payloads.game.state.nextEventSeq - 1,
       '保存時点が一致しません',

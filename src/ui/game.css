@@ -133,3 +133,18 @@
 .game-statistics > .panel {
   min-width: 0;
 }
+
+.model-choice {
+  display: block;
+  margin-bottom: 18px;
+}
+.model-choice select {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  color: #e4ede6;
+  background: #102a24;
+  border: 1px solid #688471;
+  border-radius: 6px;
+}

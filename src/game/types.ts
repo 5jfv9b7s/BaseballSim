@@ -1,3 +1,4 @@
+import type { GameModelVersion } from './model-v2.ts';
 import type { Ability, Count, Fixture, PitchRecord, Player, RngState } from '../engine/types.ts';
 
 export type TeamSide = 'home' | 'away';
@@ -45,6 +46,8 @@ export interface Situation {
 }
 
 export interface GameState extends Situation {
+  /** v1保存では省略。存在する場合は対応する版を厳密に使用する。 */
+  simulationVersion?: GameModelVersion;
   gameId: string;
   phase: 'readyForPitch' | 'halfComplete' | 'gameComplete' | 'aborted';
   nextEventSeq: number;
@@ -82,7 +85,9 @@ export interface BattedBall {
   fieldingTimeMs: number | null;
   batterFirstBaseTimeMs: number;
   projectedBases: 0 | 1 | 2 | 3 | 4;
-  modelVersion: 'batted-ball-prototype-v1';
+  modelVersion: 'batted-ball-prototype-v1' | 'batted-ball-prototype-v2';
+  /** v2のみ。捕球域外の打球を回収し各塁へ返球できる最短時間。 */
+  returnTimeMs?: { second: number; third: number; home: number } | null;
 }
 
 export interface RunnerAction {
@@ -103,7 +108,7 @@ export interface ScoringCredit {
   metricCode: string;
   amount: number;
   sourceEventSeq: number;
-  ruleRef: 'game-rules-prototype-v1';
+  ruleRef: 'game-rules-prototype-v1' | 'game-rules-prototype-v2';
 }
 
 export interface GameEvent {
@@ -133,8 +138,8 @@ export interface GameEvent {
   substitution: { side: TeamSide; outPlayerId: string; inPlayerId: string } | null;
   credits: ScoringCredit[];
   rngAfter: RngState;
-  simulationVersion: 'game-prototype-v1';
-  rulesetVersion: 'game-rules-prototype-v1';
+  simulationVersion: GameModelVersion;
+  rulesetVersion: 'game-rules-prototype-v1' | 'game-rules-prototype-v2';
 }
 
 export interface BattingLine {
@@ -178,7 +183,11 @@ export interface GameResult {
 }
 
 export interface GameRecord {
-  kind: 'completed-game-prototype-v1' | 'running-game-prototype-v1';
+  kind:
+    | 'completed-game-prototype-v1'
+    | 'running-game-prototype-v1'
+    | 'completed-game-prototype-v2'
+    | 'running-game-prototype-v2';
   seed: number;
   fixture: GameFixture;
   state: GameState;

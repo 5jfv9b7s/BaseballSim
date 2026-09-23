@@ -17,7 +17,8 @@
     "check": "npm run typecheck && npm test && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "game": "node scripts/game.ts"
+    "game": "node scripts/game.ts",
+    "analyze:models": "node scripts/analyze-models.ts"
   },
   "dependencies": {
     "dexie": "4.4.6",

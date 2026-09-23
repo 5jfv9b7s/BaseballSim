@@ -5,6 +5,8 @@ import { ensure, integer, validateFixture, validateRng } from '../engine/validat
 import { generateBattedBall } from './batted-ball.ts';
 import { createGameFixture } from './fixture.ts';
 import { GAME_MODEL as m } from './model.ts';
+import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-v2.ts';
+import { hitDestinations } from './running.ts';
 import type {
   AppearanceOutcome,
   GameEvent,
@@ -79,12 +81,18 @@ export function validateGameFixture(fixture: GameFixture): void {
   }
 }
 
-export function createGame(seed = 20260923, fixture = createGameFixture()): GameRecord {
+export function createGame(
+  seed = 20260923,
+  fixture = createGameFixture(),
+  version: GameModelVersion = CURRENT_GAME_MODEL,
+): GameRecord {
+  gameModel(version);
   integer(seed, 1, 0xffffffff, 'seed');
   validateGameFixture(fixture);
   const gameId = `game-${seed}`;
   const state: GameState = {
     gameId,
+    ...(version === 'game-prototype-v1' ? {} : { simulationVersion: version }),
     phase: 'readyForPitch',
     inning: 1,
     half: 'top',
@@ -112,7 +120,8 @@ export function createGame(seed = 20260923, fixture = createGameFixture()): Game
     endReason: null,
   };
   return {
-    kind: 'running-game-prototype-v1',
+    kind:
+      version === 'game-prototype-v1' ? 'running-game-prototype-v1' : 'running-game-prototype-v2',
     seed,
     fixture: structuredClone(fixture),
     state,
@@ -122,6 +131,7 @@ export function createGame(seed = 20260923, fixture = createGameFixture()): Game
 }
 
 function emptyEvent(state: GameState, kind: GameEvent['kind']): GameEvent {
+  const m = gameModel(state.simulationVersion);
   return {
     gameId: state.gameId,
     attemptNo: 1,
@@ -163,7 +173,7 @@ function addCredit(
     metricCode,
     amount,
     sourceEventSeq: event.eventSeq,
-    ruleRef: m.rulesetVersion,
+    ruleRef: event.rulesetVersion,
   });
 }
 
@@ -181,13 +191,25 @@ export function resolveAppearance(
   let hitBases =
     ({ single: 1, double: 2, triple: 3, homeRun: 4 } as Record<string, number>)[outcome] ?? 0;
 
+  let destinations =
+    hitBases > 0 ? hitDestinations(state, fixture, hitBases, event.battedBall) : [0, 0, 0];
+
   // 本塁打以外のサヨナラは決勝走者が必要とした塁数を上限にする。
   if (hitBases > 0 && hitBases < 4 && offense === 'home' && state.inning >= m.regulationInnings) {
     let score = state.score.home;
     for (let i = 2; i >= 0; i--) {
-      if (state.baseOccupants[i] && i + 1 + hitBases >= 4 && ++score > state.score.away) {
+      if (state.baseOccupants[i] && destinations[i]! >= 4 && ++score > state.score.away) {
         hitBases = Math.min(hitBases, 3 - i);
         outcome = (['single', 'double', 'triple'] as const)[hitBases - 1]!;
+        if (state.simulationVersion === 'game-prototype-v2') {
+          // 決勝走者より後ろの走者を重複しない塁で止め、余分な得点を付けない。
+          let vacant = 3;
+          for (let j = i - 1; j >= 0; j--) {
+            if (!state.baseOccupants[j]) continue;
+            destinations[j] = Math.min(destinations[j]!, vacant);
+            vacant = destinations[j]! - 1;
+          }
+        } else destinations = hitDestinations(state, fixture, hitBases, event.battedBall);
         break;
       }
     }
@@ -247,7 +269,7 @@ export function resolveAppearance(
         move(
           runner,
           (i + 1) as 1 | 2 | 3,
-          i + 1 + hitBases >= 4 ? 'home' : ((i + 1 + hitBases) as 1 | 2 | 3),
+          destinations[i]! >= 4 ? 'home' : (destinations[i] as 1 | 2 | 3),
         );
     }
     move(newRunner, 'batter', hitBases === 4 ? 'home' : (hitBases as 1 | 2 | 3));
@@ -430,7 +452,13 @@ export function advanceGameEvent(
           pitcherId,
         );
       } else if (step.event.stopReason === 'inPlayPending') {
-        const generated = generateBattedBall(step.event.pitch, fixture, defense, state.rng);
+        const generated = generateBattedBall(
+          step.event.pitch,
+          fixture,
+          defense,
+          state.rng,
+          gameModel(state.simulationVersion).version,
+        );
         state.rng = generated.rng;
         event.battedBall = generated.ball;
         const outcome = (['battedOut', 'single', 'double', 'triple', 'homeRun'] as const)[

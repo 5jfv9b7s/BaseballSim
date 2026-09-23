@@ -5,6 +5,7 @@ import { finalizeGame } from '../game/results.ts';
 import { createGameFixture } from '../game/fixture.ts';
 import { FIELD_POSITIONS, GAME_MODEL } from '../game/model.ts';
 import type { GameRecord } from '../game/types.ts';
+import { GAME_MODEL_V2, gameModel, type GameModelVersion } from '../game/model-v2.ts';
 
 export const SAVE_FORMAT = 'v01-completed-game-1';
 export const VERSIONS = Object.freeze({
@@ -22,6 +23,28 @@ export const DEFINITIONS = Object.freeze({
   gameModel: GAME_MODEL,
   fieldPositions: FIELD_POSITIONS,
 });
+const VERSIONS_V2 = Object.freeze({
+  ...VERSIONS,
+  saveFormatVersion: 'v01-completed-game-2',
+  dataSchemaVersion: 'game-prototype-schema-v2',
+  simulationVersion: GAME_MODEL_V2.version,
+  rulesetVersion: GAME_MODEL_V2.rulesetVersion,
+});
+export function versionsFor(version: GameModelVersion) {
+  gameModel(version);
+  return version === 'game-prototype-v1' ? VERSIONS : VERSIONS_V2;
+}
+export function definitionsFor(version: GameModelVersion) {
+  return version === 'game-prototype-v1'
+    ? DEFINITIONS
+    : {
+        versions: versionsFor(version),
+        pitchModel: PITCH_MODEL,
+        gameModel: GAME_MODEL_V2,
+        fieldPositions: FIELD_POSITIONS,
+      };
+}
+
 export const MAX_SAVE_BYTES = 12 * 1024 * 1024;
 
 /** 順序が意味を持つ配列を保ち、オブジェクトのキーだけ正規化する。 */
@@ -71,7 +94,8 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
   ensure(value !== null && typeof value === 'object', '試合データが不正です');
   const candidate = value as GameRecord;
   ensure(
-    candidate.kind === 'completed-game-prototype-v1',
+    candidate.kind === 'completed-game-prototype-v1' ||
+      candidate.kind === 'completed-game-prototype-v2',
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
@@ -79,7 +103,9 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
     canonicalJson(candidate.fixture) === canonicalJson(createGameFixture()),
     '未対応の初期データです',
   );
-  const replay = createGame(candidate.seed);
+  const version =
+    candidate.kind === 'completed-game-prototype-v1' ? 'game-prototype-v1' : 'game-prototype-v2';
+  const replay = createGame(candidate.seed, undefined, version);
   runToCompletion(replay);
   finalizeGame(replay);
   ensure(

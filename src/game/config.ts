@@ -1,29 +1,27 @@
 import defaults from '../../config/match.ts';
-import schema from './config-schema.json' with { type: 'json' };
+import schema, { type Rule, type NumberRule, type ArrayRule } from './config-schema.ts';
 import { ensure } from '../engine/validation.ts';
 
 export type MatchConfig = typeof defaults;
 
-type Rule =
-  readonly number[] | { items: readonly number[]; length: number } | { [key: string]: Rule };
-
 /** 保存済み設定も同じ固定スキーマで検査する。現在の既定値とは比較しない。 */
 export function validateMatchConfig(value: unknown): asserts value is MatchConfig {
   const visit = (value: unknown, rule: Rule, path: string): void => {
-    if (Array.isArray(rule)) {
+    if ('min' in rule && 'max' in rule) {
+      const numberRule = rule as NumberRule;
       ensure(
         typeof value === 'number' &&
           Number.isFinite(value) &&
           !Object.is(value, -0) &&
-          value >= rule[0]! &&
-          value <= rule[1]!,
+          value >= numberRule.min &&
+          value <= numberRule.max,
         `設定 ${path} の数値が範囲外です`,
       );
       return;
     }
 
     if ('items' in rule && 'length' in rule) {
-      const arrayRule = rule as { items: readonly number[]; length: number };
+      const arrayRule = rule as ArrayRule;
       ensure(
         Array.isArray(value) && value.length === arrayRule.length,
         `設定 ${path} の配列長が不正です`,

@@ -12,3 +12,5 @@ v2のcompleted-v2.json.gz・v2-digests.jsonは、変更前のb982a47で同じ手
 v3のcompleted-v3.json.gz・v3-digests.jsonは、変更前の9688dcfで同じ手順により生成しました。seed20260923は星原2対青凪0、284球・76打席です。v1/v2と同様に、現在の実装から期待値を作り直しません。
 
 v4のcompleted-v4.json.gz・v4-digests.jsonは、変更前の41be15dで同じ手順により生成しました。seed20260923は星原0対青凪7、334球・83打席です。v1～v3と同様に、現在の実装から期待値を作り直しません。
+
+v5のcompleted-v5.json.gz・v5-digests.jsonは、変更前のe892d5bで同じ手順により生成しました。seed20260923は星原6対青凪2、362球・90打席です。旧版の互換性を検査するため、現在の実装から期待値を作り直しません。

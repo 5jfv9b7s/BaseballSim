@@ -1,3 +1,4 @@
+import { simulatePitchV4 } from '../engine/pitch-v4.ts';
 import { simulatePitchV3 } from '../engine/pitch-v3.ts';
 import { simulatePitchV2 } from '../engine/pitch-v2.ts';
 import type { Fixture, PrototypeState } from '../engine/types.ts';
@@ -430,12 +431,14 @@ export function advanceGameEvent(
       } = pitchState;
       const commandId = `${state.gameId}:pitch:${state.nextEventSeq}`;
       const step =
-        state.simulationVersion === 'game-prototype-v4' ||
-        state.simulationVersion === 'game-prototype-v5'
-          ? simulatePitchV3(context, pitchFixture, commandId)
-          : state.simulationVersion === 'game-prototype-v3'
-            ? simulatePitchV2(context, pitchFixture, commandId)
-            : simulatePitch(pitchState, pitchFixture, commandId);
+        state.simulationVersion === 'game-prototype-v6'
+          ? simulatePitchV4(context, pitchFixture, commandId)
+          : state.simulationVersion === 'game-prototype-v4' ||
+              state.simulationVersion === 'game-prototype-v5'
+            ? simulatePitchV3(context, pitchFixture, commandId)
+            : state.simulationVersion === 'game-prototype-v3'
+              ? simulatePitchV2(context, pitchFixture, commandId)
+              : simulatePitch(pitchState, pitchFixture, commandId);
       if ('decision' in step) event.pitchDecision = step.decision;
       event.pitch = step.event.pitch;
       state.rng = step.state.rng;

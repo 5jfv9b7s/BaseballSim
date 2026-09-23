@@ -13,7 +13,7 @@ export function generateBattedBall(
   version: GameModelVersion = CURRENT_GAME_MODEL,
 ) {
   gameModel(version);
-  return version === 'game-prototype-v5'
+  return version === 'game-prototype-v5' || version === 'game-prototype-v6'
     ? generateBattedBallV3(pitch, fixture, defense, rng)
     : version === 'game-prototype-v1'
       ? generateV1(pitch, fixture, defense, rng)

@@ -8,7 +8,7 @@ import { canonicalJson, validateCompletedRecord } from '../src/storage/codec.ts'
 import type { PitchRecord, RngState } from '../src/engine/types.ts';
 
 function setup() {
-  const game = createGame(20260923);
+  const game = createGame(20260923, undefined, 'game-prototype-v5');
   const pitch = structuredClone(
     advanceGameEvent(game.state, game.fixture).event.pitch!,
   ) as PitchRecord;
@@ -99,7 +99,7 @@ test('ミート・パワー・球速の境界で有限な打球を生成し、�
 });
 
 test('v5は投球判断v3を継承し、接触優先の記録も保存再実行で検査する', () => {
-  const game = createGame(20260923);
+  const game = createGame(20260923, undefined, 'game-prototype-v5');
   runToCompletion(game);
   finalizeGame(game);
   validateCompletedRecord(game);

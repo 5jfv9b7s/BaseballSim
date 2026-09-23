@@ -35,7 +35,7 @@ function analyze(version: GameModelVersion) {
   const battedTypes: Record<string, { count: number; outs: number }> = {};
   const pitchCounts: Record<
     string,
-    { pitches: number; swings: number; contacts: number; fouls: number }
+    { pitches: number; swings: number; contacts: number; fouls: number; inside: number }
   > = {};
   const battedCounts: Record<
     string,
@@ -43,6 +43,8 @@ function analyze(version: GameModelVersion) {
   > = {};
   const scoredByReach: Record<string, number> = {};
   const runsByPlay: Record<string, number> = {};
+  const walkCounts: Record<string, number> = {};
+  const basesLoaded = { appearances: 0, walks: 0, hitByPitch: 0, walkRuns: 0, hitByPitchRuns: 0 };
   const strikeouts = { looking: 0, swingingInside: 0, swingingOutside: 0 };
   const twoStrikeZones = {
     inside: { pitches: 0, swings: 0, contacts: 0, fouls: 0 },
@@ -78,6 +80,21 @@ function analyze(version: GameModelVersion) {
         scoredByReach[reason] = (scoredByReach[reason] ?? 0) + 1;
         runsByPlay[event.outcome] = (runsByPlay[event.outcome] ?? 0) + 1;
       }
+      if (event.outcome === 'walk') {
+        const key = String(event.before.count.strikes);
+        walkCounts[key] = (walkCounts[key] ?? 0) + 1;
+      }
+      if (event.outcome && event.before.baseOccupants.every(Boolean)) {
+        basesLoaded.appearances++;
+        if (event.outcome === 'walk') {
+          basesLoaded.walks++;
+          basesLoaded.walkRuns += event.runDecisions.length;
+        }
+        if (event.outcome === 'hitByPitch') {
+          basesLoaded.hitByPitch++;
+          basesLoaded.hitByPitchRuns += event.runDecisions.length;
+        }
+      }
       if (event.outcome && event.before.count.balls === 0 && event.before.count.strikes === 0)
         firstPitchFinishes++;
       if (event.pitch) {
@@ -87,12 +104,19 @@ function analyze(version: GameModelVersion) {
         contacts += p.contact !== 'none' ? 1 : 0;
         fouls += p.contact === 'foul' ? 1 : 0;
         const key = p.countBefore.balls + '-' + p.countBefore.strikes;
-        const c = (pitchCounts[key] ??= { pitches: 0, swings: 0, contacts: 0, fouls: 0 });
+        const c = (pitchCounts[key] ??= {
+          pitches: 0,
+          swings: 0,
+          contacts: 0,
+          fouls: 0,
+          inside: 0,
+        });
         c.pitches++;
         c.swings += p.action === 'swing' ? 1 : 0;
         c.contacts += p.contact !== 'none' ? 1 : 0;
         c.fouls += p.contact === 'foul' ? 1 : 0;
         const inside = p.zoneCode.startsWith('S_');
+        c.inside += inside ? 1 : 0;
         if (p.countBefore.strikes === 2) {
           const zone = twoStrikeZones[inside ? 'inside' : 'outside'];
           zone.pitches++;
@@ -158,6 +182,8 @@ function analyze(version: GameModelVersion) {
     foulPerContact: fouls / contacts,
     pitchCounts,
     strikeouts,
+    walkCounts,
+    basesLoaded,
     twoStrikeZones,
     outcomes,
     scoredByReach,

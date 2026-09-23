@@ -37,6 +37,12 @@ function analyze(version: GameModelVersion) {
     string,
     { pitches: number; swings: number; contacts: number; fouls: number }
   > = {};
+  const battedCounts: Record<
+    string,
+    { count: number; hits: number; totalBases: number; exitSpeedSum: number }
+  > = {};
+  const scoredByReach: Record<string, number> = {};
+  const runsByPlay: Record<string, number> = {};
   const strikeouts = { looking: 0, swingingInside: 0, swingingOutside: 0 };
   const twoStrikeZones = {
     inside: { pitches: 0, swings: 0, contacts: 0, fouls: 0 },
@@ -60,7 +66,18 @@ function analyze(version: GameModelVersion) {
     draws += result.winner === 'draw' ? 1 : 0;
     pitches += result.totalPitches;
     appearances += result.completedAppearances;
+    const reachedBy = new Map<string, AppearanceOutcome>();
     for (const event of game.events) {
+      for (const action of event.runnerActions) {
+        if (action.from === 'batter' && event.outcome)
+          reachedBy.set(action.runInstanceId, event.outcome);
+      }
+      for (const run of event.runDecisions) {
+        const reason = reachedBy.get(run.runInstanceId);
+        if (!reason || !event.outcome) throw new Error('得点した走者の出塁理由が不明です');
+        scoredByReach[reason] = (scoredByReach[reason] ?? 0) + 1;
+        runsByPlay[event.outcome] = (runsByPlay[event.outcome] ?? 0) + 1;
+      }
       if (event.outcome && event.before.count.balls === 0 && event.before.count.strikes === 0)
         firstPitchFinishes++;
       if (event.pitch) {
@@ -96,6 +113,12 @@ function analyze(version: GameModelVersion) {
         type.count++;
         type.outs += event.battedBall.projectedBases === 0 ? 1 : 0;
         const bases = event.outcome ? (hitBases[event.outcome] ?? 0) : 0;
+        const key = String(event.before.count.strikes);
+        const group = (battedCounts[key] ??= { count: 0, hits: 0, totalBases: 0, exitSpeedSum: 0 });
+        group.count++;
+        group.hits += bases > 0 ? 1 : 0;
+        group.totalBases += bases;
+        group.exitSpeedSum += event.battedBall.exitVelocityCentiKph;
         for (const action of event.runnerActions) {
           if (
             action.from !== 'batter' &&
@@ -110,6 +133,12 @@ function analyze(version: GameModelVersion) {
     (n, key) => n + (outcomes[key] ?? 0),
     0,
   );
+  if (
+    Object.values(scoredByReach).reduce((sum, n) => sum + n, 0) !== runs ||
+    Object.values(runsByPlay).reduce((sum, n) => sum + n, 0) !== runs
+  ) {
+    throw new Error('得点内訳がスコアと一致しません');
+  }
   return {
     version,
     games: count,
@@ -131,6 +160,18 @@ function analyze(version: GameModelVersion) {
     strikeouts,
     twoStrikeZones,
     outcomes,
+    scoredByReach,
+    runsByPlay,
+    battedCounts: Object.fromEntries(
+      Object.entries(battedCounts).map(([strikes, row]) => [
+        strikes,
+        {
+          ...row,
+          meanExitSpeedKph: row.exitSpeedSum / row.count / 100,
+          hitRate: row.hits / row.count,
+        },
+      ]),
+    ),
     extraAdvances,
     battedTypes: Object.fromEntries(
       Object.entries(battedTypes).map(([type, row]) => [

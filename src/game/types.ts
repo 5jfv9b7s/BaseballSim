@@ -85,8 +85,11 @@ export interface BattedBall {
   fieldingTimeMs: number | null;
   batterFirstBaseTimeMs: number;
   projectedBases: 0 | 1 | 2 | 3 | 4;
-  modelVersion: 'batted-ball-prototype-v1' | 'batted-ball-prototype-v2';
-  /** v2のみ。捕球域外の打球を回収し各塁へ返球できる最短時間。 */
+  modelVersion:
+    'batted-ball-prototype-v1' | 'batted-ball-prototype-v2' | 'batted-ball-prototype-v3';
+  /** v5以降。打球速度の計算前に適用した接触優先の仮定。旧記録には追加しない。 */
+  contactQuality?: { approach: 'normal' | 'protect'; exitSpeedPenaltyCentiKph: number };
+  /** v2以降。捕球域外の打球を回収し各塁へ返球できる最短時間。 */
   returnTimeMs?: { second: number; third: number; home: number } | null;
 }
 
@@ -112,7 +115,8 @@ export interface ScoringCredit {
     | 'game-rules-prototype-v1'
     | 'game-rules-prototype-v2'
     | 'game-rules-prototype-v3'
-    | 'game-rules-prototype-v4';
+    | 'game-rules-prototype-v4'
+    | 'game-rules-prototype-v5';
 }
 
 export interface PitchDecision {
@@ -158,7 +162,8 @@ export interface GameEvent {
     | 'game-rules-prototype-v1'
     | 'game-rules-prototype-v2'
     | 'game-rules-prototype-v3'
-    | 'game-rules-prototype-v4';
+    | 'game-rules-prototype-v4'
+    | 'game-rules-prototype-v5';
 }
 
 export interface BattingLine {
@@ -210,7 +215,9 @@ export interface GameRecord {
     | 'completed-game-prototype-v3'
     | 'running-game-prototype-v3'
     | 'completed-game-prototype-v4'
-    | 'running-game-prototype-v4';
+    | 'running-game-prototype-v4'
+    | 'completed-game-prototype-v5'
+    | 'running-game-prototype-v5';
   seed: number;
   fixture: GameFixture;
   state: GameState;

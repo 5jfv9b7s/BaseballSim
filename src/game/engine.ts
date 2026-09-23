@@ -430,7 +430,8 @@ export function advanceGameEvent(
       } = pitchState;
       const commandId = `${state.gameId}:pitch:${state.nextEventSeq}`;
       const step =
-        state.simulationVersion === 'game-prototype-v4'
+        state.simulationVersion === 'game-prototype-v4' ||
+        state.simulationVersion === 'game-prototype-v5'
           ? simulatePitchV3(context, pitchFixture, commandId)
           : state.simulationVersion === 'game-prototype-v3'
             ? simulatePitchV2(context, pitchFixture, commandId)

@@ -6,6 +6,7 @@ import { createGameFixture } from '../game/fixture.ts';
 import { FIELD_POSITIONS, GAME_MODEL } from '../game/model.ts';
 import type { GameRecord } from '../game/types.ts';
 import { GAME_MODEL_V2 } from '../game/model-v2.ts';
+import { GAME_MODEL_V5 } from '../game/model-v5.ts';
 import { GAME_MODEL_V4 } from '../game/model-v4.ts';
 import { PITCH_MODEL_V3 } from '../engine/model-v3.ts';
 import { GAME_MODEL_V3 } from '../game/model-v3.ts';
@@ -50,6 +51,14 @@ const VERSIONS_V4 = Object.freeze({
   rulesetVersion: GAME_MODEL_V4.rulesetVersion,
 });
 
+const VERSIONS_V5 = Object.freeze({
+  ...VERSIONS_V4,
+  saveFormatVersion: 'v01-completed-game-5',
+  dataSchemaVersion: 'game-prototype-schema-v5',
+  simulationVersion: GAME_MODEL_V5.version,
+  rulesetVersion: GAME_MODEL_V5.rulesetVersion,
+});
+
 export function versionsFor(version: GameModelVersion) {
   gameModel(version);
   return version === 'game-prototype-v1'
@@ -58,7 +67,9 @@ export function versionsFor(version: GameModelVersion) {
       ? VERSIONS_V2
       : version === 'game-prototype-v3'
         ? VERSIONS_V3
-        : VERSIONS_V4;
+        : version === 'game-prototype-v4'
+          ? VERSIONS_V4
+          : VERSIONS_V5;
 }
 export function definitionsFor(version: GameModelVersion) {
   return version === 'game-prototype-v1'
@@ -66,7 +77,7 @@ export function definitionsFor(version: GameModelVersion) {
     : {
         versions: versionsFor(version),
         pitchModel:
-          version === 'game-prototype-v4'
+          version === 'game-prototype-v4' || version === 'game-prototype-v5'
             ? PITCH_MODEL_V3
             : version === 'game-prototype-v3'
               ? PITCH_MODEL_V2
@@ -128,7 +139,8 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
     candidate.kind === 'completed-game-prototype-v1' ||
       candidate.kind === 'completed-game-prototype-v2' ||
       candidate.kind === 'completed-game-prototype-v3' ||
-      candidate.kind === 'completed-game-prototype-v4',
+      candidate.kind === 'completed-game-prototype-v4' ||
+      candidate.kind === 'completed-game-prototype-v5',
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
@@ -143,7 +155,9 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
         ? 'game-prototype-v2'
         : candidate.kind === 'completed-game-prototype-v3'
           ? 'game-prototype-v3'
-          : 'game-prototype-v4';
+          : candidate.kind === 'completed-game-prototype-v4'
+            ? 'game-prototype-v4'
+            : 'game-prototype-v5';
   const replay = createGame(candidate.seed, undefined, version);
   runToCompletion(replay);
   finalizeGame(replay);

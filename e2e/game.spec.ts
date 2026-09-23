@@ -70,7 +70,7 @@ test('無効seedは試合を変更せず、画面切替は進行状態を保持�
   await expect(page.locator('.game-progress')).toHaveText('1球を処理');
 });
 
-for (const legacy of ['v1', 'v2', 'v3'] as const) {
+for (const legacy of ['v1', 'v2', 'v3', 'v4'] as const) {
   test(`旧版${legacy}の実セーブを読み込み、新旧モデルを選択して再現する`, async ({ page }) => {
     const frozen = JSON.parse(
       gunzipSync(
@@ -115,17 +115,19 @@ for (const legacy of ['v1', 'v2', 'v3'] as const) {
         ? '終了：234球 / 84打席'
         : legacy === 'v2'
           ? '終了：235球 / 88打席'
-          : '終了：284球 / 76打席',
+          : legacy === 'v3'
+            ? '終了：284球 / 76打席'
+            : '終了：334球 / 83打席',
     );
     await expect(page.locator('.game-page footer')).toContainText(`game-prototype-${legacy}`);
     const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
 
-    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v4');
+    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v5');
     await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
     await expect(run).toBeEnabled();
     await run.click();
     await expect(save).toBeEnabled();
-    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v4');
+    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v5');
     await save.click();
     await expect(page.getByRole('status')).toContainText('保存しました');
     await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();

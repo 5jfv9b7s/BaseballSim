@@ -184,6 +184,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v5">打球品質試作 v5</option>
             <option value="game-prototype-v4">2ストライク対応試作 v4</option>
             <option value="game-prototype-v3">投球判断試作 v3</option>
             <option value="game-prototype-v2">改善試作 v2</option>

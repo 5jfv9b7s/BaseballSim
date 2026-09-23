@@ -43,7 +43,7 @@ npm.cmd run test:ui
 
 ## 構成と設計
 
-GitHubの接続先は [5jfv9b7s/BaseballSim](https://github.com/5jfv9b7s/BaseballSim) です。mainとdevelopを使用します。現在の.gitignoreではAGENTS.mdとDocs/はローカル保管で、GitHubへの同期対象に含めていません。別PCでは原資料を別途引き継いでください。
+GitHubの接続先は [5jfv9b7s/BaseballSim](https://github.com/5jfv9b7s/BaseballSim) です。mainとdevelopを使用します。現在の.gitignoreではAGENTS.mdとDocs/全体（Docs/knowledge/を含む）はローカル保管で、GitHubへの同期対象に含めていません。別PCでは原資料・知識庫・指示書を別途引き継いでください。以前のknowledgeは過去のコミット履歴には残ります。
 
 | 場所                  | 責任                                                      |
 | --------------------- | --------------------------------------------------------- |
@@ -52,8 +52,8 @@ GitHubの接続先は [5jfv9b7s/BaseballSim](https://github.com/5jfv9b7s/Basebal
 | `src/worker.ts`       | 正本の状態を保持し、指示をエンジンへ渡す                  |
 | `src/ui/`             | Reactの表示用コピーと入力。試合用乱数は消費しない         |
 | `tests/`, `e2e/`      | 計算と実ブラウザの検証                                    |
-| `knowledge/`          | quiz_appと同方式の現状・判断・知見・履歴                  |
-| `Docs/`               | 最初からあった引き継ぎ一式。原文を保持                    |
+| `Docs/knowledge/`     | quiz_appと同方式の現状・判断・知見・履歴                  |
+| `Docs/`               | 原文を保持した引き継ぎ一式と、移動後のknowledge           |
 
 TypeScriptの`Player`はSQLの「選手の行」に近く、`playerId`・`pitchId`で参照します。ただし今回は1球に必要な項目だけの**試作用の射影**で、正式な全選手・全世界セーブ形式ではありません。プロフィールや能力の未実装項目を0で埋めていません。
 
@@ -63,7 +63,9 @@ IndexedDB＋Dexieは資料どおり保存段階で導入します。今回、保
 
 ## 仮定と採用版
 
-計算式・係数・値域・乱数消費順・未対応分岐は[試作モデル](knowledge/prototype-model.md)、仕様の承認状態は[判断記録](knowledge/decisions.md)、検証と次作業は[現状](knowledge/current-state.md)を参照してください。
+以下の資料リンクはローカル環境向けです。
+
+計算式・係数・値域・乱数消費順・未対応分岐は[試作モデル](Docs/knowledge/prototype-model.md)、仕様の承認状態は[判断記録](Docs/knowledge/decisions.md)、検証と次作業は[現状](Docs/knowledge/current-state.md)を参照してください。
 
 採用版はpackage.jsonとpackage-lock.jsonで固定しています：React / React DOM 19.3.0、Vite 8.3.0、Reactプラグイン6.1.1、TypeScript 7.0.2、Playwright 1.63.0。Node標準テストを使い、型定義もNode 24系に合わせています。
 
@@ -71,11 +73,11 @@ IndexedDB＋Dexieは資料どおり保存段階で導入します。今回、保
 
 ## コードの整形
 
-コード・設定・開発メモは2スペースでインデントし、1行100文字を目安に改行します。複数の処理を1行に詰めず、読みやすい書式を保ちます。
+コード・設定は2スペースでインデントし、1行100文字を目安に改行します。複数の処理を1行に詰めず、読みやすい書式を保ちます。
 
 ```powershell
 npm.cmd run format
 npm.cmd run format:check
 ```
 
-formatは書式を揃え、format:checkは変更せず確認します。元資料Docs/、ローカルのAGENTS.md、生成物、package-lock.jsonは整形しません。設定は.prettierrc.json・.prettierignore・.editorconfigで管理します。ツールは[Prettier公式の導入手順](https://prettier.io/docs/install)を確認し、3.9.8で固定しました。
+formatは書式を揃え、format:checkは変更せず確認します。Docs/全体（元資料とローカルのknowledge）、AGENTS.md、生成物、package-lock.jsonは整形しません。設定は.prettierrc.json・.prettierignore・.editorconfigで管理します。ツールは[Prettier公式の導入手順](https://prettier.io/docs/install)を確認し、3.9.8で固定しました。

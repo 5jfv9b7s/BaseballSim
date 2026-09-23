@@ -1,4 +1,10 @@
-import { usesMatchConfig, usesFieldersChoice, type GameModelVersion } from './model-registry.ts';
+import { settleEarnedRuns } from './earned-runs.ts';
+import {
+  usesMatchConfig,
+  usesFieldersChoice,
+  usesFielding,
+  type GameModelVersion,
+} from './model-registry.ts';
 import { ensure } from '../engine/validation.ts';
 import type {
   BattingLine,
@@ -54,8 +60,9 @@ export function aggregateResult(record: GameRecord): GameResult {
   const pitching = ['away', 'home'].flatMap((side) =>
     fixture.teams[side as 'away' | 'home'].pitcherIds.map((p) => pitchingLine(p)),
   );
-  const fielding: FieldingLine[] | undefined =
-    record.state.simulationVersion === 'game-prototype-v9' ? [] : undefined;
+  const fielding: FieldingLine[] | undefined = usesFielding(record.state.simulationVersion)
+    ? []
+    : undefined;
   const credits = new Set<string>();
   let pitchCount = 0;
   let appearanceCount = 0;
@@ -78,6 +85,7 @@ export function aggregateResult(record: GameRecord): GameResult {
           fielding.push({
             ...defender,
             gamesAtPosition: 1,
+            ...(record.state.simulationVersion === 'game-prototype-v10' ? { errors: 0 } : {}),
             fieldingOuts: 0,
             putouts: 0,
             assists: 0,
@@ -170,6 +178,25 @@ export function aggregateResult(record: GameRecord): GameResult {
   );
   const actualOuts = record.events.reduce((s, e) => s + e.outDecisions.length, 0);
   ensure(pitching.reduce((s, p) => s + p.outsRecorded, 0) === actualOuts, '投球アウト数が不正です');
+  const teamStats =
+    record.state.simulationVersion === 'game-prototype-v10'
+      ? { away: { errors: 0, earnedRuns: 0 }, home: { errors: 0, earnedRuns: 0 } }
+      : undefined;
+  if (teamStats) {
+    for (const event of record.events) {
+      const defense = event.before.half === 'top' ? 'home' : 'away';
+      teamStats[defense].errors += event.credits
+        .filter((c) => c.category === 'fielding' && c.metricCode === 'errors')
+        .reduce((sum, c) => sum + c.amount, 0);
+      for (const run of event.runDecisions) {
+        ensure(
+          typeof run.earnedForPitcher === 'boolean' && typeof run.earnedForTeam === 'boolean',
+          '自責点判定が未確定です',
+        );
+        if (run.earnedForTeam) teamStats[defense].earnedRuns++;
+      }
+    }
+  }
   return {
     gameId: record.state.gameId,
     resultRevision: 1,
@@ -184,6 +211,7 @@ export function aggregateResult(record: GameRecord): GameResult {
     batting,
     pitching,
     ...(fielding ? { fielding } : {}),
+    ...(teamStats ? { teamStats } : {}),
     totalPitches: pitchCount,
     completedAppearances: appearanceCount,
     contributionKey: `${record.state.gameId}:attempt:1:result:1`,
@@ -193,6 +221,16 @@ export function aggregateResult(record: GameRecord): GameResult {
 /** 確定結果は一度だけ作る。再呼出しでカウンタへ再加算しない。 */
 export function finalizeGame(record: GameRecord): GameResult {
   if (record.result) return record.result;
+  if (record.state.simulationVersion === 'game-prototype-v10') {
+    const completed = structuredClone(record);
+    settleEarnedRuns(completed);
+    const result = aggregateResult(completed);
+    record.events = completed.events;
+    record.earnedRunEvaluation = completed.earnedRunEvaluation!;
+    record.result = result;
+    record.kind = 'completed-game-prototype-v10';
+    return result;
+  }
   const result = aggregateResult(record);
   record.result = result;
   record.kind = `completed-${record.state.simulationVersion ?? 'game-prototype-v1'}`;

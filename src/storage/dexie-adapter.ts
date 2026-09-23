@@ -112,7 +112,7 @@ export class DexieStorageAdapter implements StorageAdapter {
     const blocks: Block[] = [];
     const refs: BlockRef[] = [];
     for (const [kind, value] of [
-      ['definitions', definitionsFor(version, record.state.config)],
+      ['definitions', definitionsFor(version, record.state.config, record.state.errorConfig)],
       ['game', record],
     ] as const) {
       const text = canonicalJson(value);
@@ -287,7 +287,7 @@ export class DexieStorageAdapter implements StorageAdapter {
     const record = payloads.game;
     ensure(
       canonicalJson(payloads.definitions) ===
-        canonicalJson(definitionsFor(version, record.state.config)),
+        canonicalJson(definitionsFor(version, record.state.config, record.state.errorConfig)),
       'モデル定義が一致しません',
     );
     ensure(

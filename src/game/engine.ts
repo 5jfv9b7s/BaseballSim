@@ -1,3 +1,6 @@
+import { createErrorConfig, validateErrorConfig, type ErrorConfig } from './error-config.ts';
+import { createErrorFixture } from './fixture-v2.ts';
+import { evaluateFieldingError } from './fielding-error.ts';
 import { recordFielding } from './fielding.ts';
 import { createMatchConfig, validateMatchConfig, type MatchConfig } from './config.ts';
 import { simulateConfiguredPitch } from '../engine/pitch-configured.ts';
@@ -19,6 +22,7 @@ import {
   gameModel,
   usesMatchConfig,
   usesFieldersChoice,
+  usesFielding,
   type GameModelVersion,
 } from './model-registry.ts';
 import { hitDestinations } from './running.ts';
@@ -47,7 +51,10 @@ export function situation(state: GameState): Situation {
 }
 
 export function validateGameFixture(fixture: GameFixture): void {
-  ensure(fixture.initialDatasetVersion === m.datasetVersion, '未対応の試合データ版です');
+  ensure(
+    [m.datasetVersion, 'game-fixture-v2'].includes(fixture.initialDatasetVersion),
+    '未対応の試合データ版です',
+  );
   for (const side of ['away', 'home'] as const) {
     const team = fixture.teams[side];
     ensure(
@@ -89,7 +96,9 @@ export function validateGameFixture(fixture: GameFixture): void {
       player.runningSpeed,
       player.fieldingRange,
       player.armStrength,
+      ...(fixture.initialDatasetVersion === 'game-fixture-v2' ? [player.fielding?.catching] : []),
     ]) {
+      ensure(a, '捕球能力が不足しています');
       integer(a.valueMilli, 0, 120000, '試合能力');
       integer(a.ceilingMilli, a.valueMilli, 120000, '試合能力上限');
     }
@@ -98,11 +107,21 @@ export function validateGameFixture(fixture: GameFixture): void {
 
 export function createGame(
   seed = 20260923,
-  fixture = createGameFixture(),
+  fixture: GameFixture | undefined = undefined,
   version: GameModelVersion = CURRENT_GAME_MODEL,
   config?: MatchConfig,
+  errorConfig?: ErrorConfig,
 ): GameRecord {
-  gameModel(version);
+  const model = gameModel(version);
+  fixture ??= version === 'game-prototype-v10' ? createErrorFixture() : createGameFixture();
+  ensure(
+    fixture.initialDatasetVersion === model.datasetVersion,
+    'モデルと初期データ版が一致しません',
+  );
+  if (version === 'game-prototype-v10') {
+    errorConfig ??= createErrorConfig();
+    validateErrorConfig(errorConfig);
+  } else ensure(errorConfig === undefined, '旧モデルに失策設定は指定できません');
   if (usesMatchConfig(version)) {
     config ??= createMatchConfig();
     validateMatchConfig(config);
@@ -112,6 +131,7 @@ export function createGame(
   const gameId = `game-${seed}`;
   const state: GameState = {
     gameId,
+    ...(version === 'game-prototype-v10' ? { errorConfig: structuredClone(errorConfig!) } : {}),
     ...(usesMatchConfig(version) ? { config: structuredClone(config!) } : {}),
     ...(version === 'game-prototype-v1' ? {} : { simulationVersion: version }),
     phase: 'readyForPitch',
@@ -220,7 +240,9 @@ export function resolveAppearance(
   if (fieldersChoice) outcome = 'fieldersChoice';
   if (evaluation?.play === 'tagUp' && evaluation.completed) outcome = 'sacrificeFly';
   ensure(
-    inputOutcome !== 'sacrificeFly' && inputOutcome !== 'fieldersChoice',
+    inputOutcome !== 'sacrificeFly' &&
+      inputOutcome !== 'fieldersChoice' &&
+      (inputOutcome !== 'reachedOnError' || event.errorEvaluation?.occurred === true),
     '犠飛・野手選択は捕球と走者到達の判定から生成します',
   );
   let hitBases =
@@ -284,12 +306,16 @@ export function resolveAppearance(
         runInstanceId: runner.runInstanceId,
         playerId: runner.currentRunnerId,
         responsiblePitcherId: runner.responsiblePitcherId,
-        earned: true,
+        earned: state.simulationVersion === 'game-prototype-v10' ? null : true,
+        ...(state.simulationVersion === 'game-prototype-v10'
+          ? { earnedForPitcher: null, earnedForTeam: null }
+          : {}),
       });
       addCredit(event, fixture, runner.currentRunnerId, 'batting', 'runs');
       addCredit(event, fixture, runner.responsiblePitcherId, 'pitching', 'runsAllowed');
-      // 失策・捕逸を生成しない採用規則に限った自責点判定。
-      addCredit(event, fixture, runner.responsiblePitcherId, 'pitching', 'earnedRuns');
+      // v1〜v9は失策・捕逸を生成しない規則。v10は終了時に再構成して確定する。
+      if (state.simulationVersion !== 'game-prototype-v10')
+        addCredit(event, fixture, runner.responsiblePitcherId, 'pitching', 'earnedRuns');
     } else state.baseOccupants[to - 1] = runner;
   };
 
@@ -314,7 +340,7 @@ export function resolveAppearance(
     retireFirstRunner();
     move(newRunner, 'batter', 1);
     addCredit(event, fixture, batterId, 'batting', 'fieldersChoices');
-  } else if (outcome === 'walk' || outcome === 'hitByPitch') {
+  } else if (outcome === 'walk' || outcome === 'hitByPitch' || outcome === 'reachedOnError') {
     let forced = 0;
     while (forced < 3 && state.baseOccupants[forced]) forced++;
     for (let i = forced - 1; i >= 0; i--) {
@@ -392,7 +418,8 @@ export function resolveAppearance(
     addCredit(event, fixture, batterId, 'batting', 'hitByPitch');
     addCredit(event, fixture, pitcherId, 'pitching', 'hitBatters');
   }
-  addCredit(event, fixture, batterId, 'batting', 'runsBattedIn', event.runDecisions.length);
+  if (outcome !== 'reachedOnError')
+    addCredit(event, fixture, batterId, 'batting', 'runsBattedIn', event.runDecisions.length);
   state.lineupIndex[offense] = (state.lineupIndex[offense] + 1) % 9;
   state.nextAppearanceNo++;
   state.appearanceStartSeq = state.nextEventSeq + 1;
@@ -561,16 +588,23 @@ export function advanceGameEvent(
             );
         state.rng = generated.rng;
         event.battedBall = generated.ball;
-        const outcome = (['battedOut', 'single', 'double', 'triple', 'homeRun'] as const)[
-          generated.ball.projectedBases
-        ]!;
+        let outcome: AppearanceOutcome = (
+          ['battedOut', 'single', 'double', 'triple', 'homeRun'] as const
+        )[generated.ball.projectedBases]!;
+        if (state.simulationVersion === 'game-prototype-v10' && outcome === 'battedOut') {
+          const error = evaluateFieldingError(state, fixture, generated.ball, event.pitch);
+          if (error) {
+            event.errorEvaluation = error.evaluation;
+            state.rng = error.rng;
+            if (error.evaluation.occurred) outcome = 'reachedOnError';
+          }
+        }
         resolveAppearance(state, event, fixture, outcome, batterId, pitcherId);
       } else state.count = step.state.count;
     }
   }
 
-  if (state.simulationVersion === 'game-prototype-v9' && event.pitch)
-    recordFielding(event, fixture);
+  if (usesFielding(state.simulationVersion) && event.pitch) recordFielding(event, fixture);
 
   state.nextEventSeq++;
   event.after = situation(state);

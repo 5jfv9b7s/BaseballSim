@@ -19,6 +19,7 @@ const labels: Record<AppearanceOutcome, string> = {
   battedOut: '打球アウト',
   sacrificeFly: '犠牲フライ',
   fieldersChoice: '野手選択（併殺崩れ）',
+  reachedOnError: '捕球失策で出塁',
 };
 const pitchLabels = {
   ball: 'ボール',
@@ -192,6 +193,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v10">捕球失策対応試作 v10</option>
             <option value="game-prototype-v9">守備成績対応試作 v9</option>
             <option value="game-prototype-v8">野手選択対応試作 v8</option>
             <option value="game-prototype-v7">併殺・犠飛対応試作 v7</option>
@@ -317,6 +319,12 @@ function MatchGame() {
           {(['away', 'home'] as const).map((side: TeamSide) => (
             <section className="panel" key={side}>
               <h2>{fixture.teams[side].name}</h2>
+              {result.teamStats && (
+                <p>
+                  チーム失策：{result.teamStats[side].errors} ／ チーム自責点：
+                  {result.teamStats[side].earnedRuns}
+                </p>
+              )}
               <h3>打者成績</h3>
               <div className="table-scroll">
                 <table>
@@ -409,7 +417,9 @@ function MatchGame() {
               <h3>守備成績</h3>
               {result.fielding ? (
                 <>
-                  <p>守備回はその位置で取ったチームのアウト数です。失策・守備率は未対応です。</p>
+                  <p>
+                    守備回はその位置で取ったチームのアウト数です。v10は内野ゴロの捕球失策を記録します。守備率は未対応です。
+                  </p>
                   <div className="table-scroll">
                     <table aria-label={`${fixture.teams[side].name}の守備成績`}>
                       <thead>
@@ -420,6 +430,7 @@ function MatchGame() {
                           <th>刺殺</th>
                           <th>補殺</th>
                           <th>併殺関与</th>
+                          <th>失策</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -437,6 +448,7 @@ function MatchGame() {
                               <td>{line.putouts}</td>
                               <td>{line.assists}</td>
                               <td>{line.doublePlayParticipations}</td>
+                              <td>{line.errors ?? '–'}</td>
                             </tr>
                           ))}
                       </tbody>
@@ -524,7 +536,9 @@ function MatchGame() {
         </p>
         <p>
           v9は位置別の守備回・刺殺・補殺・併殺関与を記録します。一塁手のゴロ処理は自ら一塁を踏む仮定です。
-          数式・係数は未校正です。失策、盗塁、犠打、振り逃げ、暴投・捕逸、投手の勝敗・セーブは未対応です。試合中保存・シーズン進行・全世界セーブではありません。
+          v10は単独一塁アウト候補の内野ゴロで捕球失策を生成し、強制進塁だけを処理します。
+          自責点は終了時に失策を除く走者・アウトを再構成し、チームと投手を別に判定する限定試作です。
+          数式・係数は未校正です。送球失策・落球、盗塁、犠打、振り逃げ、暴投・捕逸、投手の勝敗・セーブは未対応です。試合中保存・シーズン進行・全世界セーブではありません。
         </p>
       </details>
       <footer>

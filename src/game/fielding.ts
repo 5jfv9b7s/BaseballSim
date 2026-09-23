@@ -1,3 +1,4 @@
+import { usesFielding } from './model-registry.ts';
 import { ensure } from '../engine/validation.ts';
 import type {
   Defender,
@@ -7,12 +8,9 @@ import type {
   GameFixture,
 } from './types.ts';
 
-/** v9の守備記録。試合結果・能力・乱数を変更せず、成立したアウトへ動作を対応付ける。 */
+/** v9以降の守備記録。試合結果・能力・乱数を変更せず、アウトと捕球失策を記録する。 */
 export function recordFielding(event: GameEvent, fixture: GameFixture): void {
-  ensure(
-    event.pitch && event.simulationVersion === 'game-prototype-v9',
-    '守備記録の対象が不正です',
-  );
+  ensure(event.pitch && usesFielding(event.simulationVersion), '守備記録の対象が不正です');
   ensure(!event.fieldingActions && !event.defensiveAlignment, '守備記録は二重適用できません');
 
   const team = fixture.teams[event.before.half === 'top' ? 'home' : 'away'];
@@ -70,6 +68,18 @@ export function recordFielding(event: GameEvent, fixture: GameFixture): void {
     });
     act(to, 'receive', { targetBase });
   };
+
+  if (event.errorEvaluation?.occurred) {
+    const error = event.errorEvaluation;
+    const defender = alignment.find(
+      (p) => p.playerId === error.playerId && p.position === error.position,
+    );
+    ensure(
+      defender && event.outcome === 'reachedOnError' && !event.outDecisions.length,
+      '失策とアウトの記録が一致しません',
+    );
+    act(defender, 'error');
+  }
 
   if (event.outDecisions.length) {
     if (event.outcome === 'strikeout') {
@@ -130,6 +140,9 @@ export function recordFielding(event: GameEvent, fixture: GameFixture): void {
       ruleRef: event.rulesetVersion,
     });
   };
+  for (const action of actions.filter((action) => action.kind === 'error'))
+    credit(action, 'errors');
+
   const outs = event.outDecisions.filter((out) => out.countsTowardInning).length;
   for (const defender of alignment) credit(defender, 'fieldingOuts', outs);
 

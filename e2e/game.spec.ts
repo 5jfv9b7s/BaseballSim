@@ -72,7 +72,7 @@ test('無効seedは試合を変更せず、画面切替は進行状態を保持�
   await expect(page.locator('.game-progress')).toHaveText('1球を処理');
 });
 
-for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'] as const) {
+for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'] as const) {
   test(`旧版${legacy}の実セーブを読み込み、新旧モデルを選択して再現する`, async ({ page }) => {
     const frozen = JSON.parse(
       gunzipSync(
@@ -130,12 +130,12 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'] as const) 
     await expect(page.locator('.game-page footer')).toContainText(`game-prototype-${legacy}`);
     const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
 
-    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v9');
+    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v10');
     await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
     await expect(run).toBeEnabled();
     await run.click();
     await expect(save).toBeEnabled();
-    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v9');
+    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v10');
     await save.click();
     await expect(page.getByRole('status')).toContainText('保存しました');
     await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();
@@ -241,7 +241,9 @@ test('v9の守備成績を保存・復元し、旧版では未対応を明示す
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();
-  await expect(page.getByLabel('試合モデル', { exact: true })).toHaveValue('game-prototype-v9');
+  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v9');
+  await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
+  await expect(run).toBeEnabled();
   await run.click();
   await expect(save).toBeEnabled();
   for (const [team, expectedOuts] of [
@@ -290,4 +292,51 @@ test('v9の守備成績を保存・復元し、旧版では未対応を明示す
   await expect(
     page.getByRole('table', { name: '青凪ハーバーズの守備成績', exact: true }),
   ).toHaveCount(0);
+});
+
+test('v10の捕球失策と失点・自責点を区別して表示し、保存後も維持する', async ({ page }) => {
+  await page.goto('/');
+  const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
+  const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
+  await expect(run).toBeEnabled();
+  await expect(page.getByLabel('試合モデル', { exact: true })).toHaveValue('game-prototype-v10');
+  await page.getByLabel('試合seed', { exact: true }).fill('3668339987');
+  await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
+  await expect(run).toBeEnabled();
+  await run.click();
+  await expect(save).toBeEnabled();
+  await expect(page.locator('.game-progress')).toHaveText('終了：275球 / 75打席');
+  const away = page.locator('.game-statistics > section').filter({
+    has: page.getByRole('heading', { name: '星原フォックス', exact: true }),
+  });
+  await expect(away).toContainText('チーム失策：3 ／ チーム自責点：3');
+  const fielding = page.getByRole('table', { name: '星原フォックスの守備成績', exact: true });
+  const headers = await fielding.locator('thead th').allTextContents();
+  const rows = await fielding
+    .locator('tbody tr')
+    .evaluateAll((rows) => rows.map((row) => [...row.children].map((cell) => cell.textContent!)));
+  expect(rows.reduce((sum, row) => sum + Number(row[headers.indexOf('失策')]), 0)).toBe(3);
+  const pitching = away.locator('table').nth(1);
+  const pitchingHeaders = await pitching.locator('thead th').allTextContents();
+  const starter = await pitching.locator('tbody tr').first().locator('th, td').allTextContents();
+  expect(starter[pitchingHeaders.indexOf('失点')]).toBe('4');
+  expect(starter[pitchingHeaders.indexOf('自責点')]).toBe('3');
+  const statistics = await page.getByRole('region', { name: '試合成績' }).innerText();
+  await save.click();
+  await expect(page.getByRole('status')).toContainText('保存しました');
+  await page.reload();
+  await page.getByRole('button', { name: '保存した試合を読み込む', exact: true }).click();
+  await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(statistics, {
+    useInnerText: true,
+  });
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await away.locator('.table-scroll').evaluateAll((elements) => {
+      for (const element of elements) element.scrollLeft = element.scrollWidth;
+    });
+    await away.screenshot({ path: `test-results/errors-${width}.png` });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
 });

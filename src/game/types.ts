@@ -1,3 +1,4 @@
+import type { ErrorConfig } from './error-config.ts';
 import type { MatchConfig } from './config.ts';
 import type { GameModelVersion } from './model-registry.ts';
 import type { Ability, Count, Fixture, PitchRecord, Player, RngState } from '../engine/types.ts';
@@ -14,7 +15,8 @@ export type AppearanceOutcome =
   | 'strikeout'
   | 'battedOut'
   | 'sacrificeFly'
-  | 'fieldersChoice';
+  | 'fieldersChoice'
+  | 'reachedOnError';
 
 export interface GamePlayer extends Player {
   powerVsRight: Ability;
@@ -22,6 +24,8 @@ export interface GamePlayer extends Player {
   runningSpeed: Ability;
   fieldingRange: Ability;
   armStrength: Ability;
+  /** v10専用。資料のfielding.catching。旧名簿には補完しない。 */
+  fielding?: { catching: Ability };
 }
 
 export interface Team {
@@ -60,6 +64,7 @@ export interface GameState extends Situation {
   simulationVersion?: GameModelVersion;
   /** v7以降。開始時の設定全体を固定し、保存・再実行にも使用する。 */
   config?: MatchConfig;
+  errorConfig?: ErrorConfig;
   gameId: string;
   phase: 'readyForPitch' | 'halfComplete' | 'gameComplete' | 'aborted';
   nextEventSeq: number;
@@ -139,7 +144,8 @@ export interface ScoringCredit {
     | 'game-rules-prototype-v6'
     | 'game-rules-prototype-v7'
     | 'game-rules-prototype-v8'
-    | 'game-rules-prototype-v9';
+    | 'game-rules-prototype-v9'
+    | 'game-rules-prototype-v10';
 }
 
 export interface PitchDecision {
@@ -156,7 +162,8 @@ export interface GameEvent {
   /** v3以降の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
   pitchDecision?: PitchDecision;
   fieldingEvaluation?: FieldingEvaluation;
-  /** v9の投球時のみ。守備参加者とアウトに関わる動作を保存する。 */
+  errorEvaluation?: ErrorEvaluation;
+  /** v9以降の投球時のみ。守備参加者とアウト・失策に関わる動作を保存する。 */
   defensiveAlignment?: Defender[];
   fieldingActions?: FieldingAction[];
   gameId: string;
@@ -183,7 +190,10 @@ export interface GameEvent {
     runInstanceId: string;
     playerId: string;
     responsiblePitcherId: string;
-    earned: true;
+    /** v10では結果確定までnull。earnedは個人判定の互換名。 */
+    earned: boolean | null;
+    earnedForPitcher?: boolean | null;
+    earnedForTeam?: boolean | null;
   }[];
   substitution: { side: TeamSide; outPlayerId: string; inPlayerId: string } | null;
   credits: ScoringCredit[];
@@ -198,7 +208,8 @@ export interface GameEvent {
     | 'game-rules-prototype-v6'
     | 'game-rules-prototype-v7'
     | 'game-rules-prototype-v8'
-    | 'game-rules-prototype-v9';
+    | 'game-rules-prototype-v9'
+    | 'game-rules-prototype-v10';
 }
 
 export interface BattingLine {
@@ -243,6 +254,7 @@ export interface GameResult {
   pitching: PitchingLine[];
   /** v9以降。旧版の未対応成績は作らない。 */
   fielding?: FieldingLine[];
+  teamStats?: Record<TeamSide, { errors: number; earnedRuns: number }>;
   totalPitches: number;
   completedAppearances: number;
   contributionKey: string;
@@ -267,12 +279,15 @@ export interface GameRecord {
     | 'completed-game-prototype-v8'
     | 'running-game-prototype-v8'
     | 'completed-game-prototype-v9'
-    | 'running-game-prototype-v9';
+    | 'running-game-prototype-v9'
+    | 'completed-game-prototype-v10'
+    | 'running-game-prototype-v10';
   seed: number;
   fixture: GameFixture;
   state: GameState;
   events: GameEvent[];
   result: GameResult | null;
+  earnedRunEvaluation?: EarnedRunEvaluation;
 }
 
 /** 対象プレーだけの判断記録。未対応の守備成績を完成済みとして生成しない。 */
@@ -297,10 +312,10 @@ export interface Defender {
   position: DefensivePosition;
 }
 
-/** v9で扱うアウトプレーの動作。時刻や未計算の失策情報は補完しない。 */
+/** v9以降のアウト動作とv10の捕球失策。未計算の時刻・他の失策は補完しない。 */
 export interface FieldingAction extends Defender {
   actionSeq: number;
-  kind: 'field' | 'catch' | 'throw' | 'receive' | 'putout';
+  kind: 'field' | 'catch' | 'throw' | 'receive' | 'putout' | 'error';
   targetPlayerId?: string;
   targetBase?: 1 | 2;
   /** 同じイベントのoutDecisionsへの0始まり参照。刺殺の動作だけに付ける。 */
@@ -316,4 +331,38 @@ export interface FieldingLine extends Defender {
   putouts: number;
   assists: number;
   doublePlayParticipations: number;
+  /** v10以降のみ。 */
+  errors?: number;
+}
+
+export interface ErrorEvaluation extends Defender {
+  modelVersion: 'fielding-error-prototype-v1';
+  kind: 'groundFielding';
+  probability: number;
+  draw: number | null;
+  occurred: boolean;
+  expectedOuts: 1;
+}
+
+/** 再構成の途中経過。仮想アウト数だけでなく走者と生還IDを保持する。 */
+export interface EarnedRunTrace {
+  eventSeq: number;
+  outs: number;
+  bases: [Runner | null, Runner | null, Runner | null];
+  scoredRunInstanceIds: string[];
+}
+
+export interface EarnedRunContext {
+  inning: number;
+  half: 'top' | 'bottom';
+  pitcherId: string | null;
+  startEventSeq: number;
+  initialOuts: number;
+  initialBases: [Runner | null, Runner | null, Runner | null];
+  trace: EarnedRunTrace[];
+}
+
+export interface EarnedRunEvaluation {
+  modelVersion: 'earned-runs-prototype-v1';
+  contexts: EarnedRunContext[];
 }

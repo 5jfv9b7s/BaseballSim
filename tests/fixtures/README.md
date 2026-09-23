@@ -22,3 +22,5 @@ match-v7-baseline.jsonはv7追加時の試験用設定です。実行時のconfi
 v7のcompleted-v7.json.gz・v7-digests.jsonは、v8の変更前の7ae4f1213931046255cc88e590a7977d76dd0688で固定しました。seed20260923は星原7対青凪9、403球・103打席、併殺2件です。旧版の実保存と4条件の全記録ハッシュを維持し、現在の実装で期待値を再生成しません。
 
 v8のcompleted-v8.json.gz・v8-digests.jsonは、v9実装前の3a34a384957de2e7d8c73da5604f7b3ef5cdbb5aで固定しました。seed20260923は星原7対青凪9、403球・103打席、野選1件です。4seedの全記録ハッシュと実保存は現在のコードで再生成しません。
+
+v9のcompleted-v9.json.gz・v9-digests.jsonは、v10実装前のe8ceceb141fb2082ff19a64d809edcb2958c826eで固定しました。seed20260923は星原7対青凪9、403球・103打席、守備刺殺の合計は24/27です。IndexedDBの4ストア実保存と4seedの全記録ハッシュを凍結し、v10の実装から旧期待値を再生成していません。

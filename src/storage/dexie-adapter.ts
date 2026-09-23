@@ -112,7 +112,7 @@ export class DexieStorageAdapter implements StorageAdapter {
     const blocks: Block[] = [];
     const refs: BlockRef[] = [];
     for (const [kind, value] of [
-      ['definitions', definitionsFor(version)],
+      ['definitions', definitionsFor(version, record.state.config)],
       ['game', record],
     ] as const) {
       const text = canonicalJson(value);
@@ -283,11 +283,13 @@ export class DexieStorageAdapter implements StorageAdapter {
       ensure(!Object.hasOwn(payloads, ref.logicalKey), '保存キーが重複しています');
       payloads[ref.logicalKey] = JSON.parse(text);
     }
+    validateCompletedRecord(payloads.game);
+    const record = payloads.game;
     ensure(
-      canonicalJson(payloads.definitions) === canonicalJson(definitionsFor(version)),
+      canonicalJson(payloads.definitions) ===
+        canonicalJson(definitionsFor(version, record.state.config)),
       'モデル定義が一致しません',
     );
-    validateCompletedRecord(payloads.game);
     ensure(
       gameModel(payloads.game.state.simulationVersion).version === version,
       '保存の版と試合の版が一致しません',

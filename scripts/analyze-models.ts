@@ -145,6 +145,7 @@ function analyze(version: GameModelVersion) {
         group.exitSpeedSum += event.battedBall.exitVelocityCentiKph;
         for (const action of event.runnerActions) {
           if (
+            bases > 0 &&
             action.from !== 'batter' &&
             (action.to === 'home' ? 4 : action.to) - action.from > bases
           )
@@ -170,7 +171,12 @@ function analyze(version: GameModelVersion) {
     runsPerGame: runs / count,
     draws,
     pitchesPerAppearance: pitches / appearances,
-    battingAverage: hits / (appearances - (outcomes.walk ?? 0) - (outcomes.hitByPitch ?? 0)),
+    battingAverage:
+      hits /
+      (appearances -
+        (outcomes.walk ?? 0) -
+        (outcomes.hitByPitch ?? 0) -
+        (outcomes.sacrificeFly ?? 0)),
     appearances,
     walkRate: (outcomes.walk ?? 0) / appearances,
     hitByPitchRate: (outcomes.hitByPitch ?? 0) / appearances,

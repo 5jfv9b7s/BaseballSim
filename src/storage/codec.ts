@@ -1,3 +1,5 @@
+import { validateMatchConfig, type MatchConfig } from '../game/config.ts';
+import { GAME_MODEL_V7 } from '../game/model-v7.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { MODEL as PITCH_MODEL } from '../engine/model.ts';
 import { createGame, runToCompletion } from '../game/engine.ts';
@@ -69,6 +71,15 @@ const VERSIONS_V6 = Object.freeze({
   rulesetVersion: GAME_MODEL_V6.rulesetVersion,
 });
 
+const VERSIONS_V7 = Object.freeze({
+  ...VERSIONS_V6,
+  saveFormatVersion: 'v01-completed-game-7',
+  dataSchemaVersion: 'game-prototype-schema-v7',
+  statDefinitionVersion: 'game-stats-prototype-v2',
+  simulationVersion: GAME_MODEL_V7.version,
+  rulesetVersion: GAME_MODEL_V7.rulesetVersion,
+});
+
 export function versionsFor(version: GameModelVersion) {
   gameModel(version);
   return version === 'game-prototype-v1'
@@ -81,9 +92,20 @@ export function versionsFor(version: GameModelVersion) {
           ? VERSIONS_V4
           : version === 'game-prototype-v5'
             ? VERSIONS_V5
-            : VERSIONS_V6;
+            : version === 'game-prototype-v6'
+              ? VERSIONS_V6
+              : VERSIONS_V7;
 }
-export function definitionsFor(version: GameModelVersion) {
+export function definitionsFor(version: GameModelVersion, config?: MatchConfig) {
+  if (version === 'game-prototype-v7') {
+    validateMatchConfig(config);
+    return {
+      versions: VERSIONS_V7,
+      gameModel: GAME_MODEL_V7,
+      config: structuredClone(config),
+      fieldPositions: FIELD_POSITIONS,
+    };
+  }
   return version === 'game-prototype-v1'
     ? DEFINITIONS
     : {
@@ -155,7 +177,8 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
       candidate.kind === 'completed-game-prototype-v3' ||
       candidate.kind === 'completed-game-prototype-v4' ||
       candidate.kind === 'completed-game-prototype-v5' ||
-      candidate.kind === 'completed-game-prototype-v6',
+      candidate.kind === 'completed-game-prototype-v6' ||
+      candidate.kind === 'completed-game-prototype-v7',
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
@@ -174,8 +197,11 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
             ? 'game-prototype-v4'
             : candidate.kind === 'completed-game-prototype-v5'
               ? 'game-prototype-v5'
-              : 'game-prototype-v6';
-  const replay = createGame(candidate.seed, undefined, version);
+              : candidate.kind === 'completed-game-prototype-v6'
+                ? 'game-prototype-v6'
+                : 'game-prototype-v7';
+  if (version === 'game-prototype-v7') validateMatchConfig(candidate.state?.config);
+  const replay = createGame(candidate.seed, undefined, version, candidate.state?.config);
   runToCompletion(replay);
   finalizeGame(replay);
   ensure(

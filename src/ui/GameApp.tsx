@@ -17,6 +17,7 @@ const labels: Record<AppearanceOutcome, string> = {
   hitByPitch: '死球',
   strikeout: '三振',
   battedOut: '打球アウト',
+  sacrificeFly: '犠牲フライ',
 };
 const pitchLabels = {
   ball: 'ボール',
@@ -32,7 +33,13 @@ function eventText(event: GameEvent): string {
     return `投手交代：${playerName(fixture, event.substitution.outPlayerId)} → ${playerName(fixture, event.substitution.inPlayerId)}`;
   if (event.kind === 'halfEnd') return '攻守交代・終了判定';
   if (event.kind === 'aborted') return '投球上限に達したため異常停止';
-  return `${event.pitch ? playerName(fixture, event.pitch.batterId) : ''}：${event.outcome ? labels[event.outcome] : event.pitch ? pitchLabels[event.pitch.ruling] : ''}${event.runDecisions.length ? `（${event.runDecisions.length}得点）` : ''}`;
+  const outcomeLabel =
+    event.fieldingEvaluation?.play === 'doublePlay' && event.fieldingEvaluation.completed
+      ? '併殺打'
+      : event.outcome
+        ? labels[event.outcome]
+        : '';
+  return `${event.pitch ? playerName(fixture, event.pitch.batterId) : ''}：${event.outcome ? outcomeLabel : event.pitch ? pitchLabels[event.pitch.ruling] : ''}${event.runDecisions.length ? `（${event.runDecisions.length}得点）` : ''}`;
 }
 
 type Action =
@@ -184,6 +191,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v7">併殺・犠飛対応試作 v7</option>
             <option value="game-prototype-v6">3ボール配球試作 v6</option>
             <option value="game-prototype-v5">打球品質試作 v5</option>
             <option value="game-prototype-v4">2ストライク対応試作 v4</option>
@@ -321,6 +329,8 @@ function MatchGame() {
                       <th>四球</th>
                       <th>死球</th>
                       <th>三振</th>
+                      <th>犠飛</th>
+                      <th>併殺打</th>
                       <th>打率</th>
                     </tr>
                   </thead>
@@ -341,6 +351,8 @@ function MatchGame() {
                           <td>{p.walks}</td>
                           <td>{p.hitByPitch}</td>
                           <td>{p.strikeouts}</td>
+                          <td>{p.sacrificeFlies ?? '–'}</td>
+                          <td>{p.groundedIntoDoublePlays ?? '–'}</td>
                           <td>{battingAverage(p.hits, p.atBats)}</td>
                         </tr>
                       );
@@ -459,7 +471,12 @@ function MatchGame() {
           9回、最大12回、同点引き分け、サヨナラ、DH、打席間の自動継投。四死球・三振・単打・二塁打・三塁打・本塁打・打球アウトを生成します。
         </p>
         <p>
-          数式・係数は未校正です。失策、盗塁、犠打・犠飛、併殺、振り逃げ、暴投・捕逸、投手の勝敗・セーブは未対応です。試合中保存・シーズン進行・全世界セーブではありません。
+          v7は一塁走者のいる内野ゴロの併殺と、外野フライで三塁走者が生還する犠飛に対応します。
+          到達時間を比較し、成立する場合だけ選択します。他の走者は元の塁に留める試作です。
+          旧モデルでは犠飛・併殺打の成績は「–」で表示します。
+        </p>
+        <p>
+          数式・係数は未校正です。失策、盗塁、犠打、振り逃げ、暴投・捕逸、投手の勝敗・セーブは未対応です。試合中保存・シーズン進行・全世界セーブではありません。
         </p>
       </details>
       <footer>

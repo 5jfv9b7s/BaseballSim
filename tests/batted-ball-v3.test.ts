@@ -84,7 +84,7 @@ test('ミート・パワー・球速の境界で有限な打球を生成し、�
         for (let i = 1; i <= 100; i++) {
           pitch.countBefore.strikes = 2;
           const rng = rngFor(game.state.rng, i);
-          const protect = generateBattedBall(pitch, game.fixture, 'home', rng);
+          const protect = generateBattedBall(pitch, game.fixture, 'home', rng, 'game-prototype-v5');
           assert.ok(protect.ball.exitVelocityCentiKph > 0);
           assert.ok(protect.ball.contactQuality!.exitSpeedPenaltyCentiKph >= 600);
           assert.ok(protect.ball.contactQuality!.exitSpeedPenaltyCentiKph <= 1200);

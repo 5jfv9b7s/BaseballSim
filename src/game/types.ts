@@ -1,10 +1,19 @@
+import type { MatchConfig } from './config.ts';
 import type { GameModelVersion } from './model-registry.ts';
 import type { Ability, Count, Fixture, PitchRecord, Player, RngState } from '../engine/types.ts';
 
 export type TeamSide = 'home' | 'away';
 export type Position = 'C' | '1B' | '2B' | '3B' | 'SS' | 'LF' | 'CF' | 'RF' | 'DH' | 'P';
 export type AppearanceOutcome =
-  'single' | 'double' | 'triple' | 'homeRun' | 'walk' | 'hitByPitch' | 'strikeout' | 'battedOut';
+  | 'single'
+  | 'double'
+  | 'triple'
+  | 'homeRun'
+  | 'walk'
+  | 'hitByPitch'
+  | 'strikeout'
+  | 'battedOut'
+  | 'sacrificeFly';
 
 export interface GamePlayer extends Player {
   powerVsRight: Ability;
@@ -48,6 +57,8 @@ export interface Situation {
 export interface GameState extends Situation {
   /** v1保存では省略。存在する場合は対応する版を厳密に使用する。 */
   simulationVersion?: GameModelVersion;
+  /** v7のみ。開始時の設定全体を固定し、保存・再実行にも使用する。 */
+  config?: MatchConfig;
   gameId: string;
   phase: 'readyForPitch' | 'halfComplete' | 'gameComplete' | 'aborted';
   nextEventSeq: number;
@@ -86,7 +97,12 @@ export interface BattedBall {
   batterFirstBaseTimeMs: number;
   projectedBases: 0 | 1 | 2 | 3 | 4;
   modelVersion:
-    'batted-ball-prototype-v1' | 'batted-ball-prototype-v2' | 'batted-ball-prototype-v3';
+    | 'batted-ball-prototype-v1'
+    | 'batted-ball-prototype-v2'
+    | 'batted-ball-prototype-v3'
+    | 'batted-ball-prototype-v4';
+  /** v7以降。打球接触から捕球までの時間と捕球地点（mm）。 */
+  fieldingContact?: { timeMs: number; location: { xMm: number; yMm: number } } | null;
   /** v5以降。打球速度の計算前に適用した接触優先の仮定。旧記録には追加しない。 */
   contactQuality?: { approach: 'normal' | 'protect'; exitSpeedPenaltyCentiKph: number };
   /** v2以降。捕球域外の打球を回収し各塁へ返球できる最短時間。 */
@@ -117,11 +133,13 @@ export interface ScoringCredit {
     | 'game-rules-prototype-v3'
     | 'game-rules-prototype-v4'
     | 'game-rules-prototype-v5'
-    | 'game-rules-prototype-v6';
+    | 'game-rules-prototype-v6'
+    | 'game-rules-prototype-v7';
 }
 
 export interface PitchDecision {
-  modelVersion: 'pitch-prototype-v2' | 'pitch-prototype-v3' | 'pitch-prototype-v4';
+  modelVersion:
+    'pitch-prototype-v2' | 'pitch-prototype-v3' | 'pitch-prototype-v4' | 'pitch-prototype-v5';
   swingProbability: number;
   contactProbability: number | null;
   foulProbability: number | null;
@@ -132,6 +150,7 @@ export interface PitchDecision {
 export interface GameEvent {
   /** v3以降の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
   pitchDecision?: PitchDecision;
+  fieldingEvaluation?: FieldingEvaluation;
   gameId: string;
   attemptNo: 1;
   eventSeq: number;
@@ -146,7 +165,10 @@ export interface GameEvent {
   outDecisions: {
     playerId: string;
     creditedPitcherId: string;
-    kind: 'strikeout' | 'battedOut';
+    kind: 'strikeout' | 'battedOut' | 'forceOut';
+    runInstanceId?: string;
+    orderInPlay?: number;
+    atBase?: 1 | 2;
     countsTowardInning: true;
   }[];
   runDecisions: {
@@ -165,10 +187,14 @@ export interface GameEvent {
     | 'game-rules-prototype-v3'
     | 'game-rules-prototype-v4'
     | 'game-rules-prototype-v5'
-    | 'game-rules-prototype-v6';
+    | 'game-rules-prototype-v6'
+    | 'game-rules-prototype-v7';
 }
 
 export interface BattingLine {
+  /** v7のみ。旧モデルでは未対応のため項目自体を省略する。 */
+  sacrificeFlies?: number;
+  groundedIntoDoublePlays?: number;
   playerId: string;
   plateAppearances: number;
   atBats: number;
@@ -221,10 +247,24 @@ export interface GameRecord {
     | 'completed-game-prototype-v5'
     | 'running-game-prototype-v5'
     | 'completed-game-prototype-v6'
-    | 'running-game-prototype-v6';
+    | 'running-game-prototype-v6'
+    | 'completed-game-prototype-v7'
+    | 'running-game-prototype-v7';
   seed: number;
   fixture: GameFixture;
   state: GameState;
   events: GameEvent[];
   result: GameResult | null;
+}
+
+/** 対象プレーだけの判断記録。未対応の守備成績を完成済みとして生成しない。 */
+export interface FieldingEvaluation {
+  modelVersion: 'in-play-prototype-v1';
+  play: 'doublePlay' | 'tagUp';
+  preparationTimeMs: number;
+  completed: boolean;
+  participants: { playerId: string; position: Position; role: 'field' | 'pivot' | 'receive' }[];
+  /** すべて打球接触を0とした時刻（ms）。同時到達は走者優先の試作規則。 */
+  defenseArrivalMs: number[];
+  runnerArrivalMs: number[];
 }

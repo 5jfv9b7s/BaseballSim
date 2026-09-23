@@ -9,6 +9,7 @@ export function hitDestinations(
   bases: number,
   ball: BattedBall | null,
 ): number[] {
+  const settings = state.simulationVersion === 'game-prototype-v7' ? state.config!.running : m;
   const destinations = [0, 0, 0];
   let leadingDestination = 4;
   for (let i = 2; i >= 0; i--) {
@@ -25,18 +26,18 @@ export function hitDestinations(
       const next = destination + 1;
       const player = getPlayer(fixture, runner.currentRunnerId);
       const speed =
-        m.runnerBaseMetersPerSecond +
-        (m.runnerAbilityMetersPerSecond * player.runningSpeed.valueMilli) / 120000;
+        settings.runnerBaseMetersPerSecond +
+        (settings.runnerAbilityMetersPerSecond * player.runningSpeed.valueMilli) / 120000;
       const travel =
-        m.runnerReactionSeconds +
-        ((next - i - 1) * m.baseDistanceMeters - m.runnerLeadMeters) / speed;
+        settings.runnerReactionSeconds +
+        ((next - i - 1) * m.baseDistanceMeters - settings.runnerLeadMeters) / speed;
       const returnTime =
         next === 4
           ? ball.returnTimeMs.home
           : next === 3
             ? ball.returnTimeMs.third
             : ball.returnTimeMs.second;
-      if (travel + m.extraBaseSafetySeconds < returnTime / 1000) destination = next;
+      if (travel + settings.extraBaseSafetySeconds < returnTime / 1000) destination = next;
     }
     if (leadingDestination < 4) destination = Math.min(destination, leadingDestination - 1);
     destinations[i] = destination;

@@ -1,0 +1,124 @@
+{
+  "pitch": {
+    "baseWeights": {
+      "fastball": [0.01, 100],
+      "slider": [0.01, 100],
+      "fork": [0.01, 100]
+    },
+    "twoStrike": {
+      "fastball": [0.01, 100],
+      "slider": [0.01, 100],
+      "fork": [0.01, 100]
+    },
+    "threeBall": {
+      "fastball": [0.01, 100],
+      "slider": [0.01, 100],
+      "fork": [0.01, 100]
+    },
+    "oppositeSide": {
+      "fastball": [0.01, 100],
+      "slider": [0.01, 100],
+      "fork": [0.01, 100]
+    },
+    "zone": {
+      "leftMm": [-1000, 1000],
+      "rightMm": [0, 3000],
+      "bottomMm": [0, 3000],
+      "topMm": [0, 3000]
+    },
+    "positionErrorMinMm": [0, 3000],
+    "positionErrorScaleMm": [0, 3000],
+    "velocityRepeatabilityReduction": [0, 1],
+    "swingInBase": [0, 1],
+    "swingInAggression": [0, 1],
+    "swingInDiscipline": [0, 1],
+    "swingOutBase": [0, 1],
+    "swingOutAggression": [0, 1],
+    "swingOutDiscipline": [0, 1],
+    "contactBase": [0, 1],
+    "contactAbility": [0, 1],
+    "contactSpeedReferenceKph": [0, 200],
+    "contactSpeedPenaltyPerKph": [0, 0.1],
+    "contactOutsidePenalty": [0, 1],
+    "contactMin": [0, 1],
+    "contactMax": [0, 1],
+    "foulBase": [0, 1],
+    "foulAbilityReduction": [0, 1],
+    "aimXMm": {
+      "items": [-1000, 1000],
+      "length": 3
+    },
+    "aimZMm": {
+      "items": [0, 3000],
+      "length": 3
+    },
+    "chaseAimXMm": {
+      "items": [-1000, 1000],
+      "length": 3
+    },
+    "chaseAimZMm": {
+      "items": [0, 3000],
+      "length": 3
+    },
+    "threeBallAimXMm": {
+      "items": [-1000, 1000],
+      "length": 3
+    },
+    "threeBallAimZMm": {
+      "items": [0, 3000],
+      "length": 3
+    },
+    "protectInside": [0, 1],
+    "protectOutside": [0, 1],
+    "threeBallPatience": [0, 1],
+    "foulOutside": [0, 1],
+    "foulTwoStrike": [0, 1],
+    "bodyCenterMm": [0, 3000],
+    "bodyHalfWidthMm": [0, 3000],
+    "bodyBottomMm": [0, 3000],
+    "bodyTopMm": [0, 3000],
+    "deliveryDistanceMeters": [10, 25],
+    "avoidanceReactionSeconds": [0, 5],
+    "avoidanceDisciplineReductionSeconds": [0, 5],
+    "avoidanceSurpriseSeconds": [0, 5],
+    "avoidanceSpeedMetersPerSecond": [0, 20],
+    "avoidanceMaxShiftMm": [0, 1000],
+    "contactProtectBase": [0, 1],
+    "contactProtectAbility": [0, 1]
+  },
+  "battedBall": {
+    "gravityMetersPerSecond2": [1, 20],
+    "airborneDragFactor": [0.1, 1],
+    "fenceCenterMeters": [60, 160],
+    "fenceCornerMeters": [60, 160],
+    "fenceHeightMeters": [0, 20],
+    "exitSpeedBaseKph": [0, 200],
+    "exitSpeedPowerKph": [0, 200],
+    "exitSpeedPitchFactor": [0, 1],
+    "exitSpeedNoiseKph": [0, 200],
+    "angleMinimumDegrees": [-80, 80],
+    "fielderReactionBaseSeconds": [0, 5],
+    "fielderReactionReductionSeconds": [0, 5],
+    "throwBaseMetersPerSecond": [1, 40],
+    "throwAbilityMetersPerSecond": [0, 20],
+    "angleModeDegrees": [-80, 80],
+    "angleMaximumDegrees": [-80, 80],
+    "fielderAccelerationMetersPerSecond2": [1, 20],
+    "protectExitSpeedPenaltyCentiKph": [0, 3000],
+    "protectContactRecoveryCentiKph": [0, 3000]
+  },
+  "running": {
+    "runnerBaseMetersPerSecond": [1, 40],
+    "runnerAbilityMetersPerSecond": [0, 20],
+    "runnerLeadMeters": [0, 10],
+    "runnerReactionSeconds": [0, 5],
+    "extraBaseSafetySeconds": [0, 5]
+  },
+  "plays": {
+    "transferSeconds": [0, 5],
+    "pivotSeconds": [0, 5],
+    "tagUpReactionSeconds": [0, 5],
+    "tagUpSafetySeconds": [0, 5],
+    "coverPreparationPitchFraction": [0, 1]
+  }
+}

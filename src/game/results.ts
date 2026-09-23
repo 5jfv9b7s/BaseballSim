@@ -1,9 +1,10 @@
 import { ensure } from '../engine/validation.ts';
 import type { BattingLine, GameFixture, GameRecord, GameResult, PitchingLine } from './types.ts';
 
-function battingLine(playerId: string): BattingLine {
+function battingLine(playerId: string, extended: boolean): BattingLine {
   return {
     playerId,
+    ...(extended ? { sacrificeFlies: 0, groundedIntoDoublePlays: 0 } : {}),
     plateAppearances: 0,
     atBats: 0,
     hits: 0,
@@ -37,7 +38,9 @@ export function aggregateResult(record: GameRecord): GameResult {
   ensure(record.state.phase === 'gameComplete', '正常終了していない試合は成績確定できません');
   const fixture = record.fixture;
   const batting = ['away', 'home'].flatMap((side) =>
-    fixture.teams[side as 'away' | 'home'].lineup.map((p) => battingLine(p.playerId)),
+    fixture.teams[side as 'away' | 'home'].lineup.map((p) =>
+      battingLine(p.playerId, record.state.simulationVersion === 'game-prototype-v7'),
+    ),
   );
   const pitching = ['away', 'home'].flatMap((side) =>
     fixture.teams[side as 'away' | 'home'].pitcherIds.map((p) => pitchingLine(p)),
@@ -75,7 +78,7 @@ export function aggregateResult(record: GameRecord): GameResult {
   ) =>
     batting
       .filter((p) => fixture.teams[side].lineup.some((s) => s.playerId === p.playerId))
-      .reduce((sum, p) => sum + p[metric], 0);
+      .reduce((sum, p) => sum + (p[metric] ?? 0), 0);
   for (const side of ['away', 'home'] as const) {
     ensure(
       teamSum(fixture, side, 'runs') === record.state.score[side],
@@ -94,7 +97,8 @@ export function aggregateResult(record: GameRecord): GameResult {
   }
   for (const line of batting) {
     ensure(
-      line.plateAppearances === line.atBats + line.walks + line.hitByPitch,
+      line.plateAppearances ===
+        line.atBats + line.walks + line.hitByPitch + (line.sacrificeFlies ?? 0),
       '打席と打数の内訳が不正です',
     );
     ensure(

@@ -14,3 +14,7 @@ v3のcompleted-v3.json.gz・v3-digests.jsonは、変更前の9688dcfで同じ手
 v4のcompleted-v4.json.gz・v4-digests.jsonは、変更前の41be15dで同じ手順により生成しました。seed20260923は星原0対青凪7、334球・83打席です。v1～v3と同様に、現在の実装から期待値を作り直しません。
 
 v5のcompleted-v5.json.gz・v5-digests.jsonは、変更前のe892d5bで同じ手順により生成しました。seed20260923は星原6対青凪2、362球・90打席です。旧版の互換性を検査するため、現在の実装から期待値を作り直しません。
+
+v6のcompleted-v6.json.gz・v6-digests.jsonは、変更前の7ba1b2842a3889c9a8aa151a4a29c6374acfb482で固定しました。seed20260923は星原2対青凪3、326球・87打席です。v7の互換性試験用であり、現在の実装で期待値を再生成しません。
+
+match-v7-baseline.jsonはv7追加時の試験用設定です。実行時のconfig/match.jsonを調整しても旧v6との同値性や固定プレーの試験を維持するために分離しています。旧版保存の期待値とは別物です。

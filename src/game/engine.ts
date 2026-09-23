@@ -1,3 +1,7 @@
+import { createMatchConfig, validateMatchConfig, type MatchConfig } from './config.ts';
+import { simulateConfiguredPitch } from '../engine/pitch-configured.ts';
+import { generateConfiguredBattedBall } from './batted-ball-configured.ts';
+import { evaluateInPlay } from './in-play.ts';
 import { simulatePitchV4 } from '../engine/pitch-v4.ts';
 import { simulatePitchV3 } from '../engine/pitch-v3.ts';
 import { simulatePitchV2 } from '../engine/pitch-v2.ts';
@@ -88,13 +92,19 @@ export function createGame(
   seed = 20260923,
   fixture = createGameFixture(),
   version: GameModelVersion = CURRENT_GAME_MODEL,
+  config?: MatchConfig,
 ): GameRecord {
   gameModel(version);
+  if (version === 'game-prototype-v7') {
+    config ??= createMatchConfig();
+    validateMatchConfig(config);
+  } else ensure(config === undefined, '旧モデルに設定を指定することはできません');
   integer(seed, 1, 0xffffffff, 'seed');
   validateGameFixture(fixture);
   const gameId = `game-${seed}`;
   const state: GameState = {
     gameId,
+    ...(version === 'game-prototype-v7' ? { config: structuredClone(config!) } : {}),
     ...(version === 'game-prototype-v1' ? {} : { simulationVersion: version }),
     phase: 'readyForPitch',
     inning: 1,
@@ -190,6 +200,14 @@ export function resolveAppearance(
 ): void {
   const offense = offenseSide(state);
   let outcome = inputOutcome;
+  const evaluation =
+    inputOutcome === 'battedOut'
+      ? evaluateInPlay(state, fixture, event.battedBall, event.pitch)
+      : undefined;
+  if (evaluation) event.fieldingEvaluation = evaluation;
+  const doublePlay = evaluation?.play === 'doublePlay' && evaluation.completed;
+  if (evaluation?.play === 'tagUp' && evaluation.completed) outcome = 'sacrificeFly';
+  ensure(inputOutcome !== 'sacrificeFly', '犠飛は捕球と走者到達の判定から生成します');
   let hitBases =
     ({ single: 1, double: 2, triple: 3, homeRun: 4 } as Record<string, number>)[outcome] ?? 0;
 
@@ -236,7 +254,10 @@ export function resolveAppearance(
       to,
       responsiblePitcherId: runner.responsiblePitcherId,
       reason: outcome,
-      orderInPlay: event.runnerActions.length + 1,
+      orderInPlay:
+        event.runnerActions.length +
+        1 +
+        (state.simulationVersion === 'game-prototype-v7' ? event.outDecisions.length : 0),
     });
     if (to === 'home') {
       state.score[offense]++;
@@ -279,20 +300,47 @@ export function resolveAppearance(
     }
     move(newRunner, 'batter', hitBases === 4 ? 'home' : (hitBases as 1 | 2 | 3));
   } else {
+    if (doublePlay) {
+      const runner = state.baseOccupants[0]!;
+      state.baseOccupants[0] = null;
+      state.outs++;
+      event.outDecisions.push({
+        playerId: runner.currentRunnerId,
+        runInstanceId: runner.runInstanceId,
+        creditedPitcherId: pitcherId,
+        kind: 'forceOut',
+        atBase: 2,
+        orderInPlay: 1,
+        countsTowardInning: true,
+      });
+      addCredit(event, fixture, pitcherId, 'pitching', 'outsRecorded');
+      addCredit(event, fixture, batterId, 'batting', 'groundedIntoDoublePlays');
+    }
     state.outs++;
     const kind = outcome === 'strikeout' ? 'strikeout' : 'battedOut';
     event.outDecisions.push({
       playerId: batterId,
       creditedPitcherId: pitcherId,
       kind,
+      ...(doublePlay
+        ? { atBase: 1 as const, orderInPlay: 2 }
+        : outcome === 'sacrificeFly'
+          ? { orderInPlay: 1 }
+          : {}),
       countsTowardInning: true,
     });
     addCredit(event, fixture, pitcherId, 'pitching', 'outsRecorded');
+    if (outcome === 'sacrificeFly') {
+      const runner = state.baseOccupants[2]!;
+      state.baseOccupants[2] = null;
+      move(runner, 3, 'home');
+      addCredit(event, fixture, batterId, 'batting', 'sacrificeFlies');
+    }
   }
 
   addCredit(event, fixture, batterId, 'batting', 'plateAppearances');
   addCredit(event, fixture, pitcherId, 'pitching', 'battersFaced');
-  if (outcome !== 'walk' && outcome !== 'hitByPitch')
+  if (outcome !== 'walk' && outcome !== 'hitByPitch' && outcome !== 'sacrificeFly')
     addCredit(event, fixture, batterId, 'batting', 'atBats');
   if (hitBases > 0) {
     addCredit(event, fixture, batterId, 'batting', 'hits');
@@ -431,14 +479,16 @@ export function advanceGameEvent(
       } = pitchState;
       const commandId = `${state.gameId}:pitch:${state.nextEventSeq}`;
       const step =
-        state.simulationVersion === 'game-prototype-v6'
-          ? simulatePitchV4(context, pitchFixture, commandId)
-          : state.simulationVersion === 'game-prototype-v4' ||
-              state.simulationVersion === 'game-prototype-v5'
-            ? simulatePitchV3(context, pitchFixture, commandId)
-            : state.simulationVersion === 'game-prototype-v3'
-              ? simulatePitchV2(context, pitchFixture, commandId)
-              : simulatePitch(pitchState, pitchFixture, commandId);
+        state.simulationVersion === 'game-prototype-v7'
+          ? simulateConfiguredPitch(context, pitchFixture, commandId, state.config!.pitch)
+          : state.simulationVersion === 'game-prototype-v6'
+            ? simulatePitchV4(context, pitchFixture, commandId)
+            : state.simulationVersion === 'game-prototype-v4' ||
+                state.simulationVersion === 'game-prototype-v5'
+              ? simulatePitchV3(context, pitchFixture, commandId)
+              : state.simulationVersion === 'game-prototype-v3'
+                ? simulatePitchV2(context, pitchFixture, commandId)
+                : simulatePitch(pitchState, pitchFixture, commandId);
       if ('decision' in step) event.pitchDecision = step.decision;
       event.pitch = step.event.pitch;
       state.rng = step.state.rng;
@@ -470,13 +520,22 @@ export function advanceGameEvent(
           pitcherId,
         );
       } else if (step.event.stopReason === 'inPlayPending') {
-        const generated = generateBattedBall(
-          step.event.pitch,
-          fixture,
-          defense,
-          state.rng,
-          gameModel(state.simulationVersion).version,
-        );
+        const generated =
+          state.simulationVersion === 'game-prototype-v7'
+            ? generateConfiguredBattedBall(
+                step.event.pitch,
+                fixture,
+                defense,
+                state.rng,
+                state.config!,
+              )
+            : generateBattedBall(
+                step.event.pitch,
+                fixture,
+                defense,
+                state.rng,
+                gameModel(state.simulationVersion).version,
+              );
         state.rng = generated.rng;
         event.battedBall = generated.ball;
         const outcome = (['battedOut', 'single', 'double', 'triple', 'homeRun'] as const)[

@@ -21,6 +21,8 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/勝利|引き分け/);
     const score = await page.getByRole('region', { name: 'イニング別スコア' }).innerText();
     const statistics = await page.getByRole('region', { name: '試合成績' }).innerText();
+    expect(statistics).toContain('犠飛');
+    expect(statistics).toContain('併殺打');
     await save.click();
     await expect(page.getByRole('status')).toContainText('保存しました');
     await page.getByLabel('試合seed', { exact: true }).fill('20260924');
@@ -70,7 +72,7 @@ test('無効seedは試合を変更せず、画面切替は進行状態を保持�
   await expect(page.locator('.game-progress')).toHaveText('1球を処理');
 });
 
-for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5'] as const) {
+for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] as const) {
   test(`旧版${legacy}の実セーブを読み込み、新旧モデルを選択して再現する`, async ({ page }) => {
     const frozen = JSON.parse(
       gunzipSync(
@@ -119,17 +121,19 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5'] as const) {
             ? '終了：284球 / 76打席'
             : legacy === 'v4'
               ? '終了：334球 / 83打席'
-              : '終了：362球 / 90打席',
+              : legacy === 'v5'
+                ? '終了：362球 / 90打席'
+                : '終了：326球 / 87打席',
     );
     await expect(page.locator('.game-page footer')).toContainText(`game-prototype-${legacy}`);
     const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
 
-    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v6');
+    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v7');
     await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
     await expect(run).toBeEnabled();
     await run.click();
     await expect(save).toBeEnabled();
-    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v6');
+    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v7');
     await save.click();
     await expect(page.getByRole('status')).toContainText('保存しました');
     await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();
@@ -147,3 +151,41 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5'] as const) {
     });
   });
 }
+
+test('犠飛を打席・打数と区別して表示し、保存後も同じ成績を復元する', async ({ page }) => {
+  await page.goto('/');
+  const reset = page.getByRole('button', { name: '新しい試合を準備', exact: true });
+  const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
+  const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
+  await expect(run).toBeEnabled();
+  await page.getByLabel('試合seed', { exact: true }).fill('387276917');
+  await reset.click();
+  await expect(run).toBeEnabled();
+  await run.click();
+  await expect(save).toBeEnabled();
+  const table = page.locator('.game-statistics table').first();
+  const headers = await table.locator('thead th').allTextContents();
+  const rows = await table
+    .locator('tbody tr')
+    .evaluateAll((rows) => rows.map((row) => [...row.children].map((cell) => cell.textContent)));
+  const sacrificeRows = rows.filter((row) => row[headers.indexOf('犠飛')] === '1');
+  expect(sacrificeRows).toHaveLength(1);
+  const row = sacrificeRows[0]!;
+  expect(row[headers.indexOf('打席')]).toBe('5');
+  expect(row[headers.indexOf('打数')]).toBe('3');
+  expect(row[headers.indexOf('四球')]).toBe('1');
+  expect(row[headers.indexOf('打点')]).toBe('1');
+  const statistics = await page.getByRole('region', { name: '試合成績' }).innerText();
+  await save.click();
+  await expect(page.getByRole('status')).toContainText('保存しました');
+  await page.reload();
+  await page.getByRole('button', { name: '保存した試合を読み込む', exact: true }).click();
+  await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(statistics, {
+    useInnerText: true,
+  });
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await page.screenshot({ path: `test-results/sacrifice-fly-${width}.png`, fullPage: true });
+  }
+});

@@ -117,7 +117,7 @@ test('制球が低ければ中央狙いでも外れ、四球を生成できる',
 });
 
 test('v6は新投球とv5打球を接続し、投球の版改変を保存検査で拒否する', () => {
-  const game = createGame(20260923);
+  const game = createGame(20260923, undefined, 'game-prototype-v6');
   runToCompletion(game);
   finalizeGame(game);
   assert.equal(game.state.simulationVersion, 'game-prototype-v6');

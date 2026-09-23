@@ -16,7 +16,8 @@ export function hitDestinations(
     if (!runner) continue;
     let destination = Math.min(4, i + 1 + bases);
     if (
-      (state.simulationVersion === m.version || state.simulationVersion === 'game-prototype-v3') &&
+      state.simulationVersion !== undefined &&
+      state.simulationVersion !== 'game-prototype-v1' &&
       bases < 4 &&
       destination < 4 &&
       ball?.returnTimeMs

@@ -108,11 +108,15 @@ export interface ScoringCredit {
   metricCode: string;
   amount: number;
   sourceEventSeq: number;
-  ruleRef: 'game-rules-prototype-v1' | 'game-rules-prototype-v2' | 'game-rules-prototype-v3';
+  ruleRef:
+    | 'game-rules-prototype-v1'
+    | 'game-rules-prototype-v2'
+    | 'game-rules-prototype-v3'
+    | 'game-rules-prototype-v4';
 }
 
 export interface PitchDecision {
-  modelVersion: 'pitch-prototype-v2';
+  modelVersion: 'pitch-prototype-v2' | 'pitch-prototype-v3';
   swingProbability: number;
   contactProbability: number | null;
   foulProbability: number | null;
@@ -121,7 +125,7 @@ export interface PitchDecision {
   hitByPitch: boolean;
 }
 export interface GameEvent {
-  /** v3の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
+  /** v3以降の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
   pitchDecision?: PitchDecision;
   gameId: string;
   attemptNo: 1;
@@ -150,7 +154,11 @@ export interface GameEvent {
   credits: ScoringCredit[];
   rngAfter: RngState;
   simulationVersion: GameModelVersion;
-  rulesetVersion: 'game-rules-prototype-v1' | 'game-rules-prototype-v2' | 'game-rules-prototype-v3';
+  rulesetVersion:
+    | 'game-rules-prototype-v1'
+    | 'game-rules-prototype-v2'
+    | 'game-rules-prototype-v3'
+    | 'game-rules-prototype-v4';
 }
 
 export interface BattingLine {
@@ -200,7 +208,9 @@ export interface GameRecord {
     | 'completed-game-prototype-v2'
     | 'running-game-prototype-v2'
     | 'completed-game-prototype-v3'
-    | 'running-game-prototype-v3';
+    | 'running-game-prototype-v3'
+    | 'completed-game-prototype-v4'
+    | 'running-game-prototype-v4';
   seed: number;
   fixture: GameFixture;
   state: GameState;

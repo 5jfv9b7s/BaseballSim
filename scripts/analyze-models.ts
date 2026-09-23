@@ -1,7 +1,7 @@
 import type { AppearanceOutcome } from '../src/game/types.ts';
 import { createGame, runToCompletion } from '../src/game/engine.ts';
 import { finalizeGame } from '../src/game/results.ts';
-import type { GameModelVersion } from '../src/game/model-registry.ts';
+import { GAME_MODEL_VERSIONS, type GameModelVersion } from '../src/game/model-registry.ts';
 
 const hitBases: Partial<Record<AppearanceOutcome, number>> = {
   single: 1,
@@ -23,7 +23,7 @@ if (
   throw new Error('試合数1～1000、開始番号1以上、合計1000000未満を指定してください');
 }
 const reports = [];
-for (const version of ['game-prototype-v1', 'game-prototype-v2', 'game-prototype-v3'] as const) {
+for (const version of GAME_MODEL_VERSIONS) {
   reports.push(analyze(version));
 }
 console.log(
@@ -33,7 +33,15 @@ console.log(
 function analyze(version: GameModelVersion) {
   const outcomes: Record<string, number> = {};
   const battedTypes: Record<string, { count: number; outs: number }> = {};
-  const pitchCounts: Record<string, { pitches: number; swings: number }> = {};
+  const pitchCounts: Record<
+    string,
+    { pitches: number; swings: number; contacts: number; fouls: number }
+  > = {};
+  const strikeouts = { looking: 0, swingingInside: 0, swingingOutside: 0 };
+  const twoStrikeZones = {
+    inside: { pitches: 0, swings: 0, contacts: 0, fouls: 0 },
+    outside: { pitches: 0, swings: 0, contacts: 0, fouls: 0 },
+  };
   let insidePitches = 0;
   let swungPitches = 0;
   let contacts = 0;
@@ -62,9 +70,25 @@ function analyze(version: GameModelVersion) {
         contacts += p.contact !== 'none' ? 1 : 0;
         fouls += p.contact === 'foul' ? 1 : 0;
         const key = p.countBefore.balls + '-' + p.countBefore.strikes;
-        const c = (pitchCounts[key] ??= { pitches: 0, swings: 0 });
+        const c = (pitchCounts[key] ??= { pitches: 0, swings: 0, contacts: 0, fouls: 0 });
         c.pitches++;
         c.swings += p.action === 'swing' ? 1 : 0;
+        c.contacts += p.contact !== 'none' ? 1 : 0;
+        c.fouls += p.contact === 'foul' ? 1 : 0;
+        const inside = p.zoneCode.startsWith('S_');
+        if (p.countBefore.strikes === 2) {
+          const zone = twoStrikeZones[inside ? 'inside' : 'outside'];
+          zone.pitches++;
+          zone.swings += p.action === 'swing' ? 1 : 0;
+          zone.contacts += p.contact !== 'none' ? 1 : 0;
+          zone.fouls += p.contact === 'foul' ? 1 : 0;
+        }
+        if (event.outcome === 'strikeout') {
+          if (p.ruling === 'calledStrike') strikeouts.looking++;
+          else if (p.ruling === 'swingingStrike')
+            strikeouts[inside ? 'swingingInside' : 'swingingOutside']++;
+          else throw new Error('三振の決着球が不正です');
+        }
       }
       if (event.outcome) outcomes[event.outcome] = (outcomes[event.outcome] ?? 0) + 1;
       if (event.battedBall) {
@@ -104,6 +128,8 @@ function analyze(version: GameModelVersion) {
     contactRate: contacts / swungPitches,
     foulPerContact: fouls / contacts,
     pitchCounts,
+    strikeouts,
+    twoStrikeZones,
     outcomes,
     extraAdvances,
     battedTypes: Object.fromEntries(

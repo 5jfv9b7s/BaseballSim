@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import baseline from './fixtures/match-v7-baseline.json' with { type: 'json' };
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import defaults from '../config/match.json' with { type: 'json' };
+import defaults from '../config/match.ts';
 import { createMatchConfig, validateMatchConfig, type MatchConfig } from '../src/game/config.ts';
 import { createGame, runToCompletion, advanceGameEvent } from '../src/game/engine.ts';
 import { finalizeGame } from '../src/game/results.ts';
@@ -175,7 +175,7 @@ test('開始時の設定を保存し、既定ファイル変更後も同じ試�
     const definitions = definitionsFor('game-prototype-v7', config);
     assert.deepEqual('config' in definitions ? definitions.config : null, config);
 
-    // JSONモジュールを一時変更し、ファイルを再ビルドした後の既定値変更と同じ条件を作る。
+    // 設定オブジェクトを一時変更し、ファイルを再ビルドした後の既定値変更と同じ条件を作る。
     defaults.pitch.contactBase = 0.75;
     assert.equal(createGame(20260923).state.config!.pitch.contactBase, 0.75);
     const loaded = (await storage.loadSnapshot()).record;

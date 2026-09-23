@@ -1,4 +1,4 @@
-import defaults from '../../config/match.json' with { type: 'json' };
+import defaults from '../../config/match.ts';
 import schema from './config-schema.json' with { type: 'json' };
 import { ensure } from '../engine/validation.ts';
 

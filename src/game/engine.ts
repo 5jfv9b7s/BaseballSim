@@ -1,3 +1,4 @@
+import { simulatePitchV2 } from '../engine/pitch-v2.ts';
 import type { Fixture, PrototypeState } from '../engine/types.ts';
 import { simulatePitch } from '../engine/pitch.ts';
 import { MODEL as PITCH_MODEL } from '../engine/model.ts';
@@ -5,7 +6,7 @@ import { ensure, integer, validateFixture, validateRng } from '../engine/validat
 import { generateBattedBall } from './batted-ball.ts';
 import { createGameFixture } from './fixture.ts';
 import { GAME_MODEL as m } from './model.ts';
-import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-v2.ts';
+import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-registry.ts';
 import { hitDestinations } from './running.ts';
 import type {
   AppearanceOutcome,
@@ -120,8 +121,7 @@ export function createGame(
     endReason: null,
   };
   return {
-    kind:
-      version === 'game-prototype-v1' ? 'running-game-prototype-v1' : 'running-game-prototype-v2',
+    kind: `running-${version}`,
     seed,
     fixture: structuredClone(fixture),
     state,
@@ -201,7 +201,10 @@ export function resolveAppearance(
       if (state.baseOccupants[i] && destinations[i]! >= 4 && ++score > state.score.away) {
         hitBases = Math.min(hitBases, 3 - i);
         outcome = (['single', 'double', 'triple'] as const)[hitBases - 1]!;
-        if (state.simulationVersion === 'game-prototype-v2') {
+        if (
+          state.simulationVersion !== undefined &&
+          state.simulationVersion !== 'game-prototype-v1'
+        ) {
           // 決勝走者より後ろの走者を重複しない塁で止め、余分な得点を付けない。
           let vacant = 3;
           for (let j = i - 1; j >= 0; j--) {
@@ -418,11 +421,18 @@ export function advanceGameEvent(
         rulesetVersion: PITCH_MODEL.rulesetVersion,
         initialDatasetVersion: fixture.initialDatasetVersion,
       };
-      const step = simulatePitch(
-        pitchState,
-        pitchFixture,
-        `${state.gameId}:pitch:${state.nextEventSeq}`,
-      );
+      const {
+        kind: _kind,
+        simulationVersion: _version,
+        rulesetVersion: _rules,
+        ...context
+      } = pitchState;
+      const commandId = `${state.gameId}:pitch:${state.nextEventSeq}`;
+      const step =
+        state.simulationVersion === 'game-prototype-v3'
+          ? simulatePitchV2(context, pitchFixture, commandId)
+          : simulatePitch(pitchState, pitchFixture, commandId);
+      if ('decision' in step) event.pitchDecision = step.decision;
       event.pitch = step.event.pitch;
       state.rng = step.state.rng;
       state.totalPitches++;
@@ -431,11 +441,12 @@ export function advanceGameEvent(
       addCredit(event, fixture, pitcherId, 'pitching', 'pitches');
       const pitch = event.pitch;
       const bodyX = pitch.battingSide === 'R' ? -410 : 410;
-      const hbp =
-        pitch.action === 'take' &&
-        Math.abs(pitch.actualLocation.xMm - bodyX) <= 75 &&
-        pitch.actualLocation.zMm >= 400 &&
-        pitch.actualLocation.zMm <= 1500;
+      const hbp = event.pitchDecision
+        ? event.pitchDecision.hitByPitch
+        : pitch.action === 'take' &&
+          Math.abs(pitch.actualLocation.xMm - bodyX) <= 75 &&
+          pitch.actualLocation.zMm >= 400 &&
+          pitch.actualLocation.zMm <= 1500;
       if (hbp) {
         pitch.ruling = 'hitByPitch';
         resolveAppearance(state, event, fixture, 'hitByPitch', batterId, pitcherId);

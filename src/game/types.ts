@@ -1,4 +1,4 @@
-import type { GameModelVersion } from './model-v2.ts';
+import type { GameModelVersion } from './model-registry.ts';
 import type { Ability, Count, Fixture, PitchRecord, Player, RngState } from '../engine/types.ts';
 
 export type TeamSide = 'home' | 'away';
@@ -108,10 +108,21 @@ export interface ScoringCredit {
   metricCode: string;
   amount: number;
   sourceEventSeq: number;
-  ruleRef: 'game-rules-prototype-v1' | 'game-rules-prototype-v2';
+  ruleRef: 'game-rules-prototype-v1' | 'game-rules-prototype-v2' | 'game-rules-prototype-v3';
 }
 
+export interface PitchDecision {
+  modelVersion: 'pitch-prototype-v2';
+  swingProbability: number;
+  contactProbability: number | null;
+  foulProbability: number | null;
+  bodyThreat: boolean;
+  avoidanceShiftMm: number | null;
+  hitByPitch: boolean;
+}
 export interface GameEvent {
+  /** v3の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
+  pitchDecision?: PitchDecision;
   gameId: string;
   attemptNo: 1;
   eventSeq: number;
@@ -139,7 +150,7 @@ export interface GameEvent {
   credits: ScoringCredit[];
   rngAfter: RngState;
   simulationVersion: GameModelVersion;
-  rulesetVersion: 'game-rules-prototype-v1' | 'game-rules-prototype-v2';
+  rulesetVersion: 'game-rules-prototype-v1' | 'game-rules-prototype-v2' | 'game-rules-prototype-v3';
 }
 
 export interface BattingLine {
@@ -187,7 +198,9 @@ export interface GameRecord {
     | 'completed-game-prototype-v1'
     | 'running-game-prototype-v1'
     | 'completed-game-prototype-v2'
-    | 'running-game-prototype-v2';
+    | 'running-game-prototype-v2'
+    | 'completed-game-prototype-v3'
+    | 'running-game-prototype-v3';
   seed: number;
   fixture: GameFixture;
   state: GameState;

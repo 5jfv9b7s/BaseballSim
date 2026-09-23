@@ -5,7 +5,10 @@ import { finalizeGame } from '../game/results.ts';
 import { createGameFixture } from '../game/fixture.ts';
 import { FIELD_POSITIONS, GAME_MODEL } from '../game/model.ts';
 import type { GameRecord } from '../game/types.ts';
-import { GAME_MODEL_V2, gameModel, type GameModelVersion } from '../game/model-v2.ts';
+import { GAME_MODEL_V2 } from '../game/model-v2.ts';
+import { GAME_MODEL_V3 } from '../game/model-v3.ts';
+import { PITCH_MODEL_V2 } from '../engine/model-v2.ts';
+import { gameModel, type GameModelVersion } from '../game/model-registry.ts';
 
 export const SAVE_FORMAT = 'v01-completed-game-1';
 export const VERSIONS = Object.freeze({
@@ -30,17 +33,28 @@ const VERSIONS_V2 = Object.freeze({
   simulationVersion: GAME_MODEL_V2.version,
   rulesetVersion: GAME_MODEL_V2.rulesetVersion,
 });
+const VERSIONS_V3 = Object.freeze({
+  ...VERSIONS_V2,
+  saveFormatVersion: 'v01-completed-game-3',
+  dataSchemaVersion: 'game-prototype-schema-v3',
+  simulationVersion: GAME_MODEL_V3.version,
+  rulesetVersion: GAME_MODEL_V3.rulesetVersion,
+});
 export function versionsFor(version: GameModelVersion) {
   gameModel(version);
-  return version === 'game-prototype-v1' ? VERSIONS : VERSIONS_V2;
+  return version === 'game-prototype-v1'
+    ? VERSIONS
+    : version === 'game-prototype-v2'
+      ? VERSIONS_V2
+      : VERSIONS_V3;
 }
 export function definitionsFor(version: GameModelVersion) {
   return version === 'game-prototype-v1'
     ? DEFINITIONS
     : {
         versions: versionsFor(version),
-        pitchModel: PITCH_MODEL,
-        gameModel: GAME_MODEL_V2,
+        pitchModel: version === 'game-prototype-v3' ? PITCH_MODEL_V2 : PITCH_MODEL,
+        gameModel: gameModel(version),
         fieldPositions: FIELD_POSITIONS,
       };
 }
@@ -95,7 +109,8 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
   const candidate = value as GameRecord;
   ensure(
     candidate.kind === 'completed-game-prototype-v1' ||
-      candidate.kind === 'completed-game-prototype-v2',
+      candidate.kind === 'completed-game-prototype-v2' ||
+      candidate.kind === 'completed-game-prototype-v3',
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
@@ -104,7 +119,11 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
     '未対応の初期データです',
   );
   const version =
-    candidate.kind === 'completed-game-prototype-v1' ? 'game-prototype-v1' : 'game-prototype-v2';
+    candidate.kind === 'completed-game-prototype-v1'
+      ? 'game-prototype-v1'
+      : candidate.kind === 'completed-game-prototype-v2'
+        ? 'game-prototype-v2'
+        : 'game-prototype-v3';
   const replay = createGame(candidate.seed, undefined, version);
   runToCompletion(replay);
   finalizeGame(replay);

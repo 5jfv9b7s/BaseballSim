@@ -1,4 +1,8 @@
-import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from '../src/game/model-v2.ts';
+import {
+  CURRENT_GAME_MODEL,
+  gameModel,
+  type GameModelVersion,
+} from '../src/game/model-registry.ts';
 import { createGame, runToCompletion } from '../src/game/engine.ts';
 import { finalizeGame } from '../src/game/results.ts';
 

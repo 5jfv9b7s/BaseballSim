@@ -1,6 +1,6 @@
 import type { PitchRecord, RngState } from '../engine/types.ts';
 import type { GameFixture, TeamSide } from './types.ts';
-import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-v2.ts';
+import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-registry.ts';
 import { generateBattedBall as generateV1 } from './batted-ball-v1.ts';
 import { generateBattedBallV2 } from './batted-ball-v2.ts';
 

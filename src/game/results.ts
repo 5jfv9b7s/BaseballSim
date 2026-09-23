@@ -137,10 +137,7 @@ export function finalizeGame(record: GameRecord): GameResult {
   if (record.result) return record.result;
   const result = aggregateResult(record);
   record.result = result;
-  record.kind =
-    record.state.simulationVersion === 'game-prototype-v2'
-      ? 'completed-game-prototype-v2'
-      : 'completed-game-prototype-v1';
+  record.kind = `completed-${record.state.simulationVersion ?? 'game-prototype-v1'}`;
   return result;
 }
 

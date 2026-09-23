@@ -70,68 +70,72 @@ test('無効seedは試合を変更せず、画面切替は進行状態を保持�
   await expect(page.locator('.game-progress')).toHaveText('1球を処理');
 });
 
-test('旧版の実セーブを読み込み、新旧モデルを選択して再現する', async ({ page }) => {
-  const frozen = JSON.parse(
-    gunzipSync(
-      readFileSync(new URL('../tests/fixtures/completed-v1.json.gz', import.meta.url)),
-    ).toString(),
-  );
-  await page.goto('/');
-  const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
-  const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
-  await expect(run).toBeEnabled();
-  await page.evaluate(async (tables) => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('BaseballSim-v01-results');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(Object.keys(tables), 'readwrite');
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error);
-        for (const [name, rows] of Object.entries(tables)) {
-          for (const row of rows as Record<string, unknown>[]) {
-            tx.objectStore(name).put({
-              ...row,
-              ...(row.payloadBytes
-                ? { payloadBytes: new Uint8Array(row.payloadBytes as number[]) }
-                : {}),
-            });
-          }
-        }
+for (const legacy of ['v1', 'v2'] as const) {
+  test(`旧版${legacy}の実セーブを読み込み、新旧モデルを選択して再現する`, async ({ page }) => {
+    const frozen = JSON.parse(
+      gunzipSync(
+        readFileSync(new URL(`../tests/fixtures/completed-${legacy}.json.gz`, import.meta.url)),
+      ).toString(),
+    );
+    await page.goto('/');
+    const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
+    const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
+    await expect(run).toBeEnabled();
+    await page.evaluate(async (tables) => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('BaseballSim-v01-results');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
       });
-    } finally {
-      db.close();
-    }
-  }, frozen);
-  await page.reload();
-  await page.getByRole('button', { name: '保存した試合を読み込む', exact: true }).click();
-  await expect(page.locator('.game-progress')).toHaveText('終了：234球 / 84打席');
-  await expect(page.locator('.game-page footer')).toContainText('game-prototype-v1');
-  const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(Object.keys(tables), 'readwrite');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+          for (const [name, rows] of Object.entries(tables)) {
+            for (const row of rows as Record<string, unknown>[]) {
+              tx.objectStore(name).put({
+                ...row,
+                ...(row.payloadBytes
+                  ? { payloadBytes: new Uint8Array(row.payloadBytes as number[]) }
+                  : {}),
+              });
+            }
+          }
+        });
+      } finally {
+        db.close();
+      }
+    }, frozen);
+    await page.reload();
+    await page.getByRole('button', { name: '保存した試合を読み込む', exact: true }).click();
+    await expect(page.locator('.game-progress')).toHaveText(
+      legacy === 'v1' ? '終了：234球 / 84打席' : '終了：235球 / 88打席',
+    );
+    await expect(page.locator('.game-page footer')).toContainText(`game-prototype-${legacy}`);
+    const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
 
-  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v2');
-  await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
-  await expect(run).toBeEnabled();
-  await run.click();
-  await expect(save).toBeEnabled();
-  await expect(page.locator('.game-page footer')).toContainText('game-prototype-v2');
-  await save.click();
-  await expect(page.getByRole('status')).toContainText('保存しました');
-  await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();
-  await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(oldStatistics, {
-    useInnerText: true,
-  });
+    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v3');
+    await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
+    await expect(run).toBeEnabled();
+    await run.click();
+    await expect(save).toBeEnabled();
+    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v3');
+    await save.click();
+    await expect(page.getByRole('status')).toContainText('保存しました');
+    await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();
+    await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(oldStatistics, {
+      useInnerText: true,
+    });
 
-  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v1');
-  await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
-  await expect(run).toBeEnabled();
-  await run.click();
-  await expect(save).toBeEnabled();
-  await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(oldStatistics, {
-    useInnerText: true,
+    await page.getByLabel('試合モデル', { exact: true }).selectOption(`game-prototype-${legacy}`);
+    await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
+    await expect(run).toBeEnabled();
+    await run.click();
+    await expect(save).toBeEnabled();
+    await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(oldStatistics, {
+      useInnerText: true,
+    });
   });
-});
+}

@@ -1,4 +1,4 @@
-import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-v2.ts';
+import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-registry.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { createGame, stepRecord } from './engine.ts';
 import { finalizeGame } from './results.ts';

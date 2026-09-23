@@ -54,7 +54,7 @@ test('変更前の実セーブを復元し、v2保存後も前保存を同じv1�
     assert.equal(old.kind, 'completed-game-prototype-v1');
     assert.equal(old.state.totalPitches, 234);
     assert.deepEqual(old.state.score, { away: 0, home: 0 });
-    const next = createGame(20260923);
+    const next = createGame(20260923, undefined, 'game-prototype-v2');
     runToCompletion(next);
     finalizeGame(next);
     await storage.commitSnapshot(next, 1);
@@ -191,4 +191,52 @@ test('同一の投球・乱数でパワーは打球速度、守備範囲は到�
   const b = generateBattedBall(pitch, high, 'home', game.state.rng);
   assert.equal(b.ball.exitVelocityCentiKph - a.ball.exitVelocityCentiKph, 5500);
   assert.deepEqual(a.rng, b.rng);
+});
+
+test('変更前に固定した4条件のv2全記録ハッシュを維持する', async () => {
+  const digests = JSON.parse(
+    readFileSync(new URL('./fixtures/v2-digests.json', import.meta.url), 'utf8'),
+  );
+  for (const [seed, digest] of Object.entries(digests)) {
+    const record = createGame(Number(seed), undefined, 'game-prototype-v2');
+    runToCompletion(record);
+    finalizeGame(record);
+    assert.equal(await sha256(canonicalJson(record)), digest);
+    validateCompletedRecord(record);
+  }
+});
+
+test('変更前の実v2保存を読み込み、v3保存後に同じv2へ戻せる', async () => {
+  const frozen = JSON.parse(
+    gunzipSync(
+      readFileSync(new URL('./fixtures/completed-v2.json.gz', import.meta.url)),
+    ).toString(),
+  );
+  const db = new GameDatabase('legacy-v2-' + crypto.randomUUID());
+  try {
+    for (const [name, rows] of Object.entries(frozen)) {
+      await db.table(name).bulkPut(
+        (rows as Record<string, unknown>[]).map((row) => ({
+          ...row,
+          ...(row.payloadBytes
+            ? { payloadBytes: new Uint8Array(row.payloadBytes as number[]) }
+            : {}),
+        })),
+      );
+    }
+    const storage = new DexieStorageAdapter(db);
+    const old = (await storage.loadSnapshot()).record;
+    assert.equal(old.state.simulationVersion, 'game-prototype-v2');
+    assert.equal(old.state.totalPitches, 235);
+    assert.deepEqual(old.state.score, { away: 9, home: 1 });
+    const next = createGame(20260923);
+    runToCompletion(next);
+    finalizeGame(next);
+    assert.equal(next.state.simulationVersion, 'game-prototype-v3');
+    await storage.commitSnapshot(next, 1);
+    assert.deepEqual((await storage.loadSnapshot()).record, next);
+    assert.deepEqual((await storage.loadSnapshot(true)).record, old);
+  } finally {
+    await db.delete();
+  }
 });

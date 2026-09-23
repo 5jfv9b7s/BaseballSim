@@ -10,7 +10,7 @@ import {
   validateCompletedRecord,
   versionsFor,
 } from './codec.ts';
-import { gameModel } from '../game/model-v2.ts';
+import { gameModel } from '../game/model-registry.ts';
 import type { LoadedGame, SaveSlotInfo, StorageAdapter } from './adapter.ts';
 
 const LOCAL_WORLD = 'v01-local';

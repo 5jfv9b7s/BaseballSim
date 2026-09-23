@@ -1,7 +1,7 @@
 import type { AppearanceOutcome } from '../src/game/types.ts';
 import { createGame, runToCompletion } from '../src/game/engine.ts';
 import { finalizeGame } from '../src/game/results.ts';
-import type { GameModelVersion } from '../src/game/model-v2.ts';
+import type { GameModelVersion } from '../src/game/model-registry.ts';
 
 const hitBases: Partial<Record<AppearanceOutcome, number>> = {
   single: 1,
@@ -23,7 +23,7 @@ if (
   throw new Error('試合数1～1000、開始番号1以上、合計1000000未満を指定してください');
 }
 const reports = [];
-for (const version of ['game-prototype-v1', 'game-prototype-v2'] as const) {
+for (const version of ['game-prototype-v1', 'game-prototype-v2', 'game-prototype-v3'] as const) {
   reports.push(analyze(version));
 }
 console.log(
@@ -33,6 +33,12 @@ console.log(
 function analyze(version: GameModelVersion) {
   const outcomes: Record<string, number> = {};
   const battedTypes: Record<string, { count: number; outs: number }> = {};
+  const pitchCounts: Record<string, { pitches: number; swings: number }> = {};
+  let insidePitches = 0;
+  let swungPitches = 0;
+  let contacts = 0;
+  let fouls = 0;
+  let firstPitchFinishes = 0;
   let runs = 0,
     draws = 0,
     pitches = 0,
@@ -47,6 +53,19 @@ function analyze(version: GameModelVersion) {
     pitches += result.totalPitches;
     appearances += result.completedAppearances;
     for (const event of game.events) {
+      if (event.outcome && event.before.count.balls === 0 && event.before.count.strikes === 0)
+        firstPitchFinishes++;
+      if (event.pitch) {
+        const p = event.pitch;
+        insidePitches += p.zoneCode.startsWith('S_') ? 1 : 0;
+        swungPitches += p.action === 'swing' ? 1 : 0;
+        contacts += p.contact !== 'none' ? 1 : 0;
+        fouls += p.contact === 'foul' ? 1 : 0;
+        const key = p.countBefore.balls + '-' + p.countBefore.strikes;
+        const c = (pitchCounts[key] ??= { pitches: 0, swings: 0 });
+        c.pitches++;
+        c.swings += p.action === 'swing' ? 1 : 0;
+      }
       if (event.outcome) outcomes[event.outcome] = (outcomes[event.outcome] ?? 0) + 1;
       if (event.battedBall) {
         const type = (battedTypes[event.battedBall.type] ??= { count: 0, outs: 0 });
@@ -76,6 +95,15 @@ function analyze(version: GameModelVersion) {
     pitchesPerAppearance: pitches / appearances,
     battingAverage: hits / (appearances - (outcomes.walk ?? 0) - (outcomes.hitByPitch ?? 0)),
     appearances,
+    walkRate: (outcomes.walk ?? 0) / appearances,
+    hitByPitchRate: (outcomes.hitByPitch ?? 0) / appearances,
+    strikeoutRate: (outcomes.strikeout ?? 0) / appearances,
+    firstPitchFinishRate: firstPitchFinishes / appearances,
+    zoneRate: insidePitches / pitches,
+    swingRate: swungPitches / pitches,
+    contactRate: contacts / swungPitches,
+    foulPerContact: fouls / contacts,
+    pitchCounts,
     outcomes,
     extraAdvances,
     battedTypes: Object.fromEntries(

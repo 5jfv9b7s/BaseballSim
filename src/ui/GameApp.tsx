@@ -1,4 +1,4 @@
-import { CURRENT_GAME_MODEL, type GameModelVersion } from '../game/model-v2.ts';
+import { CURRENT_GAME_MODEL, type GameModelVersion } from '../game/model-registry.ts';
 import { useEffect, useRef, useState } from 'react';
 import { App as PitchLab } from './App.tsx';
 import type { GameCommand, GameView } from '../game/controller.ts';
@@ -184,6 +184,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v3">投球判断試作 v3</option>
             <option value="game-prototype-v2">改善試作 v2</option>
             <option value="game-prototype-v1">従来試作 v1</option>
           </select>

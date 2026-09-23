@@ -1,10 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-for (const viewport of [{ width: 1280, height: 960 }, { width: 390, height: 844 }]) {
+for (const viewport of [
+  { width: 1280, height: 960 },
+  { width: 390, height: 844 },
+]) {
   test(`投球・再現・表示のみ・不正seed・停止 (${viewport.width}px)`, async ({ page }) => {
     await page.setViewportSize(viewport);
     const errors: string[] = [];
-    page.on('pageerror', error => errors.push(error.message));
+    page.on('pageerror', (error) => errors.push(error.message));
     await page.goto('/');
     const advance = page.getByRole('button', { name: '1球進める' });
     const reset = page.getByRole('button', { name: '設定を適用してやり直す' });
@@ -20,6 +23,8 @@ for (const viewport of [{ width: 1280, height: 960 }, { width: 390, height: 844 
     await reset.click();
     await expect(page.getByText('まだ投球はありません。')).toBeVisible();
     await advance.click();
+    // Workerの応答が画面に反映されるまで待ってから、再現結果を読む。
+    await expect(page.locator('.result')).toContainText('空振り');
     const replay = JSON.parse(await page.locator('pre').innerText());
     expect(replay.event.pitch).toEqual(first.event.pitch);
     expect(replay.state.rng).toEqual(first.state.rng);
@@ -39,7 +44,9 @@ for (const viewport of [{ width: 1280, height: 960 }, { width: 390, height: 844 
     }
     await expect(page.getByRole('status')).toContainText('停止');
     await expect(advance).toBeDisabled();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
     await page.getByText('計算の検証データを見る', { exact: true }).click();
     await page.screenshot({ path: `test-results/pitch-${viewport.width}.png`, fullPage: true });
     expect(errors).toEqual([]);

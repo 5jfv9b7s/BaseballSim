@@ -21,3 +21,11 @@
 同期の確認方法：git status --short --branch、git rev-parse HEAD、git ls-remote origin refs/heads/mainでローカルとリモートのコミットを比較する。
 
 GitHub送信状況：originの接続確認とローカル初回コミットの準備まで完了。mainへのpushは自動承認レビューが、ソース・設定・knowledgeを含む30ファイルの外部送信について明示承認を求めたため未実施。ユーザーの送信承認後、git push -u origin mainとコミット一致確認を行う。
+
+## 2026-09-23 / W-003 / main・developの同期と書式整形
+
+ユーザーから両ブランチへの送信承認を受け、git push --atomic -u origin main developを実行。両ブランチにeb1d475を新規作成し、git ls-remoteで一致を確認。W-002の承認待ちは解消した。
+
+追加依頼に従い、Prettier 3.9.8、EditorConfig、format/format:checkコマンドを追加。ソース・テスト・構成・開発メモを整形し、元資料・ローカル指示書・生成物・ロックファイルは整形対象から除外する。
+
+検証結果：format:check、型検査、エンジン試験10件（2,000乱数条件を含む）、ビルド、Edgeでの画面試験2件が成功。初回の390px試験でWorker応答前にJSONを読む競合が表面化したため、テストに結果表示を待つ処理を追加し、PC幅・スマートフォン幅の両方で再確認した。ゲームロジック・モデル版・係数は変更していない。

@@ -9,7 +9,9 @@ export type Count = { balls: number; strikes: number };
 export type Ability = { valueMilli: RatingMilli; ceilingMilli: RatingMilli };
 export type Location = { xMm: Millimeter; zMm: Millimeter };
 export type ZoneBounds = { leftMm: number; rightMm: number; bottomMm: number; topMm: number };
-export type ZoneCode = `S_${'L' | 'M' | 'H'}${'L' | 'C' | 'R'}` | `B_${'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'}`;
+export type ZoneCode =
+  | `S_${'L' | 'M' | 'H'}${'L' | 'C' | 'R'}`
+  | `B_${'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'}`;
 export interface Player {
   playerId: Id;
   familyName: string;
@@ -79,18 +81,27 @@ export interface PitchRecord {
   contact: 'none' | 'foul' | 'fair';
   ruling: Ruling;
   measurement: {
-    spinRateRpm: null; spinAxis: null; release: null;
-    horizontalBreakMm: null; verticalBreakMm: null;
-    modelOutputVersion: 'endpoint-only-v1'; availableFields: [];
+    spinRateRpm: null;
+    spinAxis: null;
+    release: null;
+    horizontalBreakMm: null;
+    verticalBreakMm: null;
+    modelOutputVersion: 'endpoint-only-v1';
+    availableFields: [];
   };
   measurementModelVersion: 'endpoint-only-v1';
 }
 export interface PitchStep {
   state: PrototypeState;
   event: {
-    kind: 'pitch'; gameId: Id; eventSeq: number; sourceCommandId: Id;
-    simulationVersion: string; rulesetVersion: string;
-    before: { count: Count }; after: { count: Count };
+    kind: 'pitch';
+    gameId: Id;
+    eventSeq: number;
+    sourceCommandId: Id;
+    simulationVersion: string;
+    rulesetVersion: string;
+    before: { count: Count };
+    after: { count: Count };
     status: 'pitchOnly' | 'requiresResolution';
     stopReason: StopReason | null;
     pitch: PitchRecord;
@@ -102,6 +113,7 @@ export interface PitchStep {
     swingProbability: number;
     contactProbability: number | null;
     foulProbability: number | null;
-    rngBefore: RngState; rngAfter: RngState;
+    rngBefore: RngState;
+    rngAfter: RngState;
   };
 }

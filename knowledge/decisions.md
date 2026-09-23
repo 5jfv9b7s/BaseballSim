@@ -34,4 +34,8 @@
 
 ## D-006 / 2026-09-23 / 承認済み：GitHub接続先
 
-ユーザー指定の https://github.com/5jfv9b7s/BaseballSim.git をoriginにする。根拠：今回のGitHub接続依頼。初回確認時にリモートの既存コミットはなく、mainで現在の実装を同期する。既存の.gitignoreによるAGENTS.md・Docs/等の除外は維持する。
+ユーザー指定の https://github.com/5jfv9b7s/BaseballSim.git をoriginにする。根拠：今回のGitHub接続依頼。初回確認時にリモートの既存コミットはなく、後続の明示依頼によりmain・developの両方へ現在の実装を同期する。既存の.gitignoreによるAGENTS.md・Docs/等の除外は維持する。
+
+## D-007 / 2026-09-23 / 承認済み：コードの可読性
+
+ユーザーの「コードなど全般、改行や空白等を入れて読みやすく」という依頼に従い、コード・設定・開発メモの書式を統一する。2スペース・幅100文字を目安とし、元のDocs/とAGENTS.mdは整形対象から外す。継続用ツールのPrettier 3.9.8とEditorConfigは可逆的な実装判断として採用。処理やモデル係数を変更する依頼ではない。

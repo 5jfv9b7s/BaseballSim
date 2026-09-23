@@ -1,0 +1,16 @@
+# Original reference documents and local agent instructions
+Docs/
+AGENTS.md
+
+# Generated files
+node_modules/
+dist/
+test-results/
+playwright-report/
+blob-report/
+coverage/
+.nyc_output/
+.tmp/
+playwright/.cache/
+playwright/.auth/
+package-lock.json

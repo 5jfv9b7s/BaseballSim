@@ -33,27 +33,27 @@ npm.cmd run test:ui
 
 `check` は型検査・Node標準テスト・ビルドを実行します。`test:ui` は**ビルド済みのdist**を一時的に4173番ポートで配信し、インストール済みMicrosoft Edgeをヘッドレスで起動します。事前に`check`または`build`を実行してください。ブラウザテストにはEdgeが必要です。ポートが使用中ならそのプロセスを確認してください。
 
-| コマンド | 用途 |
-|---|---|
-| `npm.cmd run typecheck` | TypeScript検査のみ |
-| `npm.cmd test` | エンジン試験10件（2,000乱数条件の検証を含む） |
-| `npm.cmd run build` | 型検査後、静的配信用distを生成 |
-| `npm.cmd run preview` | distをローカル確認 |
-| `npm.cmd run test:ui` | 1280px / 390px幅で画面・Worker・再現・停止を確認 |
+| コマンド                | 用途                                             |
+| ----------------------- | ------------------------------------------------ |
+| `npm.cmd run typecheck` | TypeScript検査のみ                               |
+| `npm.cmd test`          | エンジン試験10件（2,000乱数条件の検証を含む）    |
+| `npm.cmd run build`     | 型検査後、静的配信用distを生成                   |
+| `npm.cmd run preview`   | distをローカル確認                               |
+| `npm.cmd run test:ui`   | 1280px / 390px幅で画面・Worker・再現・停止を確認 |
 
 ## 構成と設計
 
-GitHubの接続先は [5jfv9b7s/BaseballSim](https://github.com/5jfv9b7s/BaseballSim) です。mainを使用します。現在の.gitignoreではAGENTS.mdとDocs/はローカル保管で、GitHubへの同期対象に含めていません。別PCでは原資料を別途引き継いでください。
+GitHubの接続先は [5jfv9b7s/BaseballSim](https://github.com/5jfv9b7s/BaseballSim) です。mainとdevelopを使用します。現在の.gitignoreではAGENTS.mdとDocs/はローカル保管で、GitHubへの同期対象に含めていません。別PCでは原資料を別途引き継いでください。
 
-| 場所 | 責任 |
-|---|---|
-| `src/engine/` | 型、境界検査、乱数、17区画、純粋な1球計算、指示の一括処理 |
-| `src/data/fixture.ts` | 架空2球団・投手1人・捕手1人・打者1人の固定データ |
-| `src/worker.ts` | 正本の状態を保持し、指示をエンジンへ渡す |
-| `src/ui/` | Reactの表示用コピーと入力。試合用乱数は消費しない |
-| `tests/`, `e2e/` | 計算と実ブラウザの検証 |
-| `knowledge/` | quiz_appと同方式の現状・判断・知見・履歴 |
-| `Docs/` | 最初からあった引き継ぎ一式。原文を保持 |
+| 場所                  | 責任                                                      |
+| --------------------- | --------------------------------------------------------- |
+| `src/engine/`         | 型、境界検査、乱数、17区画、純粋な1球計算、指示の一括処理 |
+| `src/data/fixture.ts` | 架空2球団・投手1人・捕手1人・打者1人の固定データ          |
+| `src/worker.ts`       | 正本の状態を保持し、指示をエンジンへ渡す                  |
+| `src/ui/`             | Reactの表示用コピーと入力。試合用乱数は消費しない         |
+| `tests/`, `e2e/`      | 計算と実ブラウザの検証                                    |
+| `knowledge/`          | quiz_appと同方式の現状・判断・知見・履歴                  |
+| `Docs/`               | 最初からあった引き継ぎ一式。原文を保持                    |
 
 TypeScriptの`Player`はSQLの「選手の行」に近く、`playerId`・`pitchId`で参照します。ただし今回は1球に必要な項目だけの**試作用の射影**で、正式な全選手・全世界セーブ形式ではありません。プロフィールや能力の未実装項目を0で埋めていません。
 
@@ -68,3 +68,14 @@ IndexedDB＋Dexieは資料どおり保存段階で導入します。今回、保
 採用版はpackage.jsonとpackage-lock.jsonで固定しています：React / React DOM 19.3.0、Vite 8.3.0、Reactプラグイン6.1.1、TypeScript 7.0.2、Playwright 1.63.0。Node標準テストを使い、型定義もNode 24系に合わせています。
 
 2026-09-23に互換性を公式資料と実際の導入・ビルドで確認しました。ViteのNode要件は20.19以上または22.12以上で、今回の24.15.0は範囲内です。[Vite公式](https://vite.dev/guide/)、[ReactのVite構成案](https://react.dev/learn/build-a-react-app-from-scratch)、[NodeのTypeScript実行](https://nodejs.org/api/typescript.html)、[Playwright公式](https://playwright.dev/docs/intro)。これは全ブラウザ・Androidでの動作保証ではありません。
+
+## コードの整形
+
+コード・設定・開発メモは2スペースでインデントし、1行100文字を目安に改行します。複数の処理を1行に詰めず、読みやすい書式を保ちます。
+
+```powershell
+npm.cmd run format
+npm.cmd run format:check
+```
+
+formatは書式を揃え、format:checkは変更せず確認します。元資料Docs/、ローカルのAGENTS.md、生成物、package-lock.jsonは整形しません。設定は.prettierrc.json・.prettierignore・.editorconfigで管理します。ツールは[Prettier公式の導入手順](https://prettier.io/docs/install)を確認し、3.9.8で固定しました。

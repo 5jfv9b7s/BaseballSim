@@ -5,7 +5,12 @@ import { validateRng } from './validation.ts';
 export function nextRandom(state: RngState): { value: number; state: RngState } {
   validateRng(state);
   let word = state.fullState.word;
-  word ^= word << 13; word ^= word >>> 17; word ^= word << 5;
+  word ^= word << 13;
+  word ^= word >>> 17;
+  word ^= word << 5;
   word >>>= 0;
-  return { value: word / 0x100000000, state: { ...state, fullState: { word }, drawCount: state.drawCount + 1 } };
+  return {
+    value: word / 0x100000000,
+    state: { ...state, fullState: { word }, drawCount: state.drawCount + 1 },
+  };
 }

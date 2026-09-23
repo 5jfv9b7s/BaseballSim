@@ -1,5 +1,4 @@
 import { GAME_MODEL_V10 } from '../game/model-v10.ts';
-import { createErrorFixture } from '../game/fixture-v2.ts';
 import { validateErrorConfig, type ErrorConfig } from '../game/error-config.ts';
 import { GAME_MODEL_V9 } from '../game/model-v9.ts';
 import { validateMatchConfig, type MatchConfig } from '../game/config.ts';
@@ -207,7 +206,7 @@ export async function sha256(text: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-/** この版は固定fixtureの終了試合専用。再実行照合で全状態・全記録・参照まで検査する。 */
+/** 終了試合を保存名簿で再実行する。旧v1〜v9は凍結した固定名簿だけを許可する。 */
 export function validateCompletedRecord(value: unknown): asserts value is GameRecord {
   const encoded = canonicalJson(value);
   ensure(
@@ -230,15 +229,13 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
-  ensure(
-    canonicalJson(candidate.fixture) ===
-      canonicalJson(
-        candidate.kind === 'completed-game-prototype-v10'
-          ? createErrorFixture()
-          : createGameFixture(),
-      ),
-    '未対応の初期データです',
-  );
+  // v10は開始時の名簿全体を保存済み。編集後の現在値と比較しない。
+  // 名前・能力・持ち球・編成はcreateGameの検査と全イベント再実行で照合する。
+  if (candidate.kind !== 'completed-game-prototype-v10')
+    ensure(
+      canonicalJson(candidate.fixture) === canonicalJson(createGameFixture()),
+      '未対応の初期データです',
+    );
   const version =
     candidate.kind === 'completed-game-prototype-v1'
       ? 'game-prototype-v1'
@@ -263,7 +260,7 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
   if (version === 'game-prototype-v10') validateErrorConfig(candidate.state?.errorConfig);
   const replay = createGame(
     candidate.seed,
-    undefined,
+    candidate.fixture,
     version,
     candidate.state?.config,
     candidate.state?.errorConfig,

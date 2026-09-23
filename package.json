@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
+    "data:check": "node scripts/check-data.ts",
     "test": "node --test tests/*.test.ts",
     "test:ui": "playwright test",
     "pitch": "node scripts/pitch.ts",

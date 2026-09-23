@@ -3,6 +3,7 @@ import type { Command, View } from '../engine/session.ts';
 import type { PitchRecord, Ruling, StopReason } from '../engine/types.ts';
 import type { WorkerResponse } from '../worker.ts';
 import { FIXTURE } from '../data/fixture.ts';
+import { pitchNames } from '../data/pitch-types/index.ts';
 
 const rulingNames: Record<Ruling, string> = {
   ball: 'ボール',
@@ -11,7 +12,7 @@ const rulingNames: Record<Ruling, string> = {
   foul: 'ファウル',
   inPlay: 'フェア接触',
 };
-const pitchNames = { fastball: 'ストレート', slider: 'スライダー', fork: 'フォーク' };
+
 const stops: Record<StopReason, string> = {
   walkPending: '4球目のボール。四球による出塁処理は未実装のため、ここで停止します。',
   strikeoutPending: '3ストライク相当。三振・捕球・走者の処理は未実装のため、ここで停止します。',

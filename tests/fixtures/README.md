@@ -24,3 +24,5 @@ v7のcompleted-v7.json.gz・v7-digests.jsonは、v8の変更前の7ae4f121393104
 v8のcompleted-v8.json.gz・v8-digests.jsonは、v9実装前の3a34a384957de2e7d8c73da5604f7b3ef5cdbb5aで固定しました。seed20260923は星原7対青凪9、403球・103打席、野選1件です。4seedの全記録ハッシュと実保存は現在のコードで再生成しません。
 
 v9のcompleted-v9.json.gz・v9-digests.jsonは、v10実装前のe8ceceb141fb2082ff19a64d809edcb2958c826eで固定しました。seed20260923は星原7対青凪9、403球・103打席、守備刺殺の合計は24/27です。IndexedDBの4ストア実保存と4seedの全記録ハッシュを凍結し、v10の実装から旧期待値を再生成していません。
+
+v10のcompleted-v10.json.gz・v10-digests.json・game-fixture-v2.jsonは、データ分離前の3506e3905f13fb089b99d4b1297eadad1bca7b5dで固定しました。seed20260923は星原2対青凪3、310球・81打席です。分離後に生成し直した期待値ではありません。v10の4seedハッシュは凍結した名簿で検証し、新規編集データと区別します。

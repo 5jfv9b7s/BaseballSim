@@ -58,8 +58,12 @@ export function validateGameFixture(fixture: GameFixture): void {
   for (const side of ['away', 'home'] as const) {
     const team = fixture.teams[side];
     ensure(
-      team.side === side && team.lineup.length === 9 && team.pitcherIds.length === 3,
-      '打順9人・投手3人が必要です',
+      team.side === side &&
+        team.lineup.length === 9 &&
+        (fixture.initialDatasetVersion === 'game-fixture-v2'
+          ? team.pitcherIds.length >= 1
+          : team.pitcherIds.length === 3),
+      '打順9人と投手が必要です（旧名簿は投手3人）',
     );
     const positions = new Set(team.lineup.map((p) => p.position));
     ensure(
@@ -70,7 +74,7 @@ export function validateGameFixture(fixture: GameFixture): void {
       '守備位置が不正です',
     );
     const roster = [...team.lineup.map((p) => p.playerId), ...team.pitcherIds];
-    ensure(new Set(roster).size === 12, '名簿が重複しています');
+    ensure(new Set(roster).size === roster.length, '名簿が重複しています');
     const club = fixture.clubs.find((c) => c.clubId === team.clubId);
     ensure(
       club &&
@@ -78,6 +82,8 @@ export function validateGameFixture(fixture: GameFixture): void {
         roster.every((id) => club.playerIds.includes(id)),
       '球団の名簿参照が不正です',
     );
+    ensure(typeof team.name === 'string' && team.name.trim().length > 0, '球団名が必要です');
+    ensure(club.name === team.name, '球団名とチーム名が一致しません');
     for (const pitcherId of team.pitcherIds) {
       validateFixture({
         ...fixture,

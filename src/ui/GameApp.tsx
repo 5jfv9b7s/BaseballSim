@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { App as PitchLab } from './App.tsx';
 import type { GameCommand, GameView } from '../game/controller.ts';
 import type { GameWorkerResponse } from '../game-worker.ts';
-import type { AppearanceOutcome, GameEvent, TeamSide } from '../game/types.ts';
-import { createGameFixture, playerName } from '../game/fixture.ts';
+import type { AppearanceOutcome, GameEvent, GameFixture, TeamSide } from '../game/types.ts';
+import { playerName } from '../game/fixture.ts';
+import { createCurrentFixture } from '../data/datasets/current.ts';
 import { battingAverage, earnedRunAverage, inningsPitched } from '../game/results.ts';
 
-const fixture = createGameFixture();
+const initialFixture = createCurrentFixture();
 const labels: Record<AppearanceOutcome, string> = {
   single: '単打',
   double: '二塁打',
@@ -30,7 +31,7 @@ const pitchLabels = {
   hitByPitch: '死球',
 };
 
-function eventText(event: GameEvent): string {
+function eventText(event: GameEvent, fixture: GameFixture): string {
   if (event.substitution)
     return `投手交代：${playerName(fixture, event.substitution.outPlayerId)} → ${playerName(fixture, event.substitution.inPlayerId)}`;
   if (event.kind === 'halfEnd') return '攻守交代・終了判定';
@@ -121,6 +122,7 @@ function MatchGame() {
     };
   }, []);
 
+  const fixture = view?.fixture ?? initialFixture;
   const state = view?.state;
   const complete = state?.phase === 'gameComplete';
   const aborted = state?.phase === 'aborted';
@@ -518,7 +520,7 @@ function MatchGame() {
               <span>
                 {event.before.inning}回{event.before.half === 'top' ? '表' : '裏'}
               </span>{' '}
-              {eventText(event)}
+              {eventText(event, fixture)}
             </li>
           ))}
         </ol>

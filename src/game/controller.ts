@@ -2,7 +2,7 @@ import { CURRENT_GAME_MODEL, gameModel, type GameModelVersion } from './model-re
 import { ensure, id, integer } from '../engine/validation.ts';
 import { createGame, stepRecord } from './engine.ts';
 import { finalizeGame } from './results.ts';
-import type { GameEvent, GameResult, GameState } from './types.ts';
+import type { GameEvent, GameFixture, GameResult, GameState } from './types.ts';
 import type { SaveSlotInfo, StorageAdapter } from '../storage/adapter.ts';
 
 export type GameCommand = {
@@ -15,6 +15,7 @@ export type GameCommand = {
   | { kind: 'load'; previous: boolean }
 );
 export interface GameView {
+  fixture: GameFixture;
   revision: number;
   seed: number;
   state: GameState;
@@ -52,6 +53,7 @@ export class GameController {
   }
   query(): GameView {
     return structuredClone({
+      fixture: this.record.fixture,
       revision: this.revision,
       seed: this.record.seed,
       state: this.record.state,

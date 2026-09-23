@@ -1,0 +1,32 @@
+:root { font-family: "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; color: #e9eee8; background: #102a24; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1040px; margin: 0 auto; padding: 48px 28px 24px; }
+header { position: relative; padding-bottom: 32px; border-bottom: 1px solid #ffffff26; }
+.eyebrow { font-size: 11px; letter-spacing: 1.6px; color: #b8cbbf; }
+.badge { position: absolute; right: 0; top: 0; color: #e9c47e; border: 1px solid #e9c47e66; border-radius: 20px; padding: 5px 12px; font-size: 11px; }
+h1 { font-size: clamp(25px, 4vw, 38px); font-weight: 650; letter-spacing: .04em; margin: 22px 0 12px; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+p { line-height: 1.8; font-size: 13px; }
+header p, .muted, .hint { color: #afc2b7; }
+.matchup { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 40px; padding: 28px 8px; }
+.matchup h2 { margin: 8px 0 0; font-size: 23px; }.matchup p { margin: 6px 0 0; color: #afc2b7; }
+small { font-size: 12px; color: #afc2b7; font-weight: 400; }.versus { color: #bb9760; font-size: 12px; letter-spacing: 2px; }
+.workspace { display: grid; grid-template-columns: .86fr 1.14fr; gap: 20px; }
+.panel { background: #19362e; border: 1px solid #ffffff14; border-radius: 12px; padding: 24px; }
+.controls .muted { margin-bottom: 24px; }.count-input { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+label { display: block; font-size: 12px; color: #ccd9d0; margin-bottom: 16px; }
+input, select { width: 100%; background: #102a24; color: #f0f0e9; border: 1px solid #6c8778; border-radius: 6px; padding: 11px 12px; margin-top: 8px; font: inherit; font-size: 15px; }
+button { width: 100%; padding: 13px 10px; font: inherit; font-size: 13px; font-weight: 650; border: 0; border-radius: 6px; cursor: pointer; }
+.primary { background: #e6bd76; color: #142b24; }.secondary { border: 1px solid #688471; color: #e4ebe4; background: transparent; }
+button:hover:not(:disabled) { filter: brightness(1.12); }button:disabled { opacity: .45; cursor: default; }
+:focus-visible { outline: 3px solid #efc582; outline-offset: 3px; }.hint { font-size: 11px; margin: 8px 0 20px; }
+.count { border-top: 1px solid #ffffff1a; padding: 20px 0; display: flex; align-items: center; justify-content: space-between; }
+.count span { font-size: 12px; color: #afc2b7; }.count strong { font-size: 25px; font-variant-numeric: tabular-nums; }.count small { padding-left: 4px; }
+.panel-heading { display: flex; justify-content: space-between; align-items: baseline; }.panel-heading span { font-size: 12px; }
+.result { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; min-height: 54px; }.result strong { font-size: 22px; color: #f4e4bd; }.result span { font-size: 13px; color: #c9d7cc; }
+svg { width: 100%; max-height: 290px; display: block; }.legend { text-align: center; margin: 0; font-size: 11px; color: #e4c38c; }.legend span { color: #afc2b7; margin-left: 12px; }
+dl { display: flex; justify-content: space-around; gap: 10px; margin: 18px 0 0; font-size: 12px; }dt { color: #afc2b7; }dd { margin: 5px 0 0; font-variant-numeric: tabular-nums; }
+.history, details { margin-top: 20px; }.table-scroll { overflow-x: auto; }table { border-collapse: collapse; width: 100%; text-align: left; font-size: 12px; white-space: nowrap; }th { font-weight: 400; color: #afc2b7; }td, th { padding: 13px 10px; border-bottom: 1px solid #ffffff14; }td:first-child, th:first-child { padding-left: 0; }.empty { color: #afc2b7; text-align: center; padding: 25px; }
+.notice { padding: 18px 22px; border-left: 3px solid #e6bd76; background: #e6bd7610; }.error { color: #ffb8a6; }summary { cursor: pointer; font-size: 13px; }pre { font-size: 11px; overflow: auto; max-height: 430px; background: #102a24; padding: 16px; }footer { margin-top: 26px; color: #9db5a6; }footer p { font-size: 11px; margin: 4px 0; }
+@media(max-width: 650px) { main { padding: 24px 16px; }.badge { position: static; display: inline-block; margin-top: 16px; }.workspace { grid-template-columns: 1fr; }.matchup { gap: 14px; }.matchup .eyebrow { font-size: 9px; letter-spacing: .5px; }.matchup h2 { font-size: 18px; }.matchup p { font-size: 11px; }.panel { padding: 20px; } }

@@ -15,6 +15,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "check": "npm run typecheck && npm test && npm run build",
+    "verify:v01": "npm run check && npm run test:ui && npm run format:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "game": "node scripts/game.ts",

@@ -124,7 +124,9 @@ export interface ScoringCredit {
   creditId: string;
   playerId: string;
   clubId: string;
-  category: 'batting' | 'pitching';
+  category: 'batting' | 'pitching' | 'fielding';
+  /** 守備成績だけ。位置別の集計キー。 */
+  position?: DefensivePosition;
   metricCode: string;
   amount: number;
   sourceEventSeq: number;
@@ -136,7 +138,8 @@ export interface ScoringCredit {
     | 'game-rules-prototype-v5'
     | 'game-rules-prototype-v6'
     | 'game-rules-prototype-v7'
-    | 'game-rules-prototype-v8';
+    | 'game-rules-prototype-v8'
+    | 'game-rules-prototype-v9';
 }
 
 export interface PitchDecision {
@@ -153,6 +156,9 @@ export interface GameEvent {
   /** v3以降の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
   pitchDecision?: PitchDecision;
   fieldingEvaluation?: FieldingEvaluation;
+  /** v9の投球時のみ。守備参加者とアウトに関わる動作を保存する。 */
+  defensiveAlignment?: Defender[];
+  fieldingActions?: FieldingAction[];
   gameId: string;
   attemptNo: 1;
   eventSeq: number;
@@ -191,7 +197,8 @@ export interface GameEvent {
     | 'game-rules-prototype-v5'
     | 'game-rules-prototype-v6'
     | 'game-rules-prototype-v7'
-    | 'game-rules-prototype-v8';
+    | 'game-rules-prototype-v8'
+    | 'game-rules-prototype-v9';
 }
 
 export interface BattingLine {
@@ -234,6 +241,8 @@ export interface GameResult {
   innings: GameState['innings'];
   batting: BattingLine[];
   pitching: PitchingLine[];
+  /** v9以降。旧版の未対応成績は作らない。 */
+  fielding?: FieldingLine[];
   totalPitches: number;
   completedAppearances: number;
   contributionKey: string;
@@ -256,7 +265,9 @@ export interface GameRecord {
     | 'completed-game-prototype-v7'
     | 'running-game-prototype-v7'
     | 'completed-game-prototype-v8'
-    | 'running-game-prototype-v8';
+    | 'running-game-prototype-v8'
+    | 'completed-game-prototype-v9'
+    | 'running-game-prototype-v9';
   seed: number;
   fixture: GameFixture;
   state: GameState;
@@ -277,4 +288,32 @@ export interface FieldingEvaluation {
   /** すべて打球接触を0とした時刻（ms）。同時到達は走者優先の試作規則。 */
   defenseArrivalMs: number[];
   runnerArrivalMs: number[];
+}
+
+export type DefensivePosition = Exclude<Position, 'DH'>;
+
+export interface Defender {
+  playerId: string;
+  position: DefensivePosition;
+}
+
+/** v9で扱うアウトプレーの動作。時刻や未計算の失策情報は補完しない。 */
+export interface FieldingAction extends Defender {
+  actionSeq: number;
+  kind: 'field' | 'catch' | 'throw' | 'receive' | 'putout';
+  targetPlayerId?: string;
+  targetBase?: 1 | 2;
+  /** 同じイベントのoutDecisionsへの0始まり参照。刺殺の動作だけに付ける。 */
+  outDecisionIndex?: number;
+  /** アウトを成立させた送球の参照。間に合わない送球には付けない。 */
+  assistedOutIndices?: number[];
+}
+
+export interface FieldingLine extends Defender {
+  gamesAtPosition: number;
+  /** 守備位置についている間に取ったチームのアウト数。刺殺とは別。 */
+  fieldingOuts: number;
+  putouts: number;
+  assists: number;
+  doublePlayParticipations: number;
 }

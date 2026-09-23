@@ -192,6 +192,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v9">守備成績対応試作 v9</option>
             <option value="game-prototype-v8">野手選択対応試作 v8</option>
             <option value="game-prototype-v7">併殺・犠飛対応試作 v7</option>
             <option value="game-prototype-v6">3ボール配球試作 v6</option>
@@ -404,6 +405,47 @@ function MatchGame() {
                   </tbody>
                 </table>
               </div>
+
+              <h3>守備成績</h3>
+              {result.fielding ? (
+                <>
+                  <p>守備回はその位置で取ったチームのアウト数です。失策・守備率は未対応です。</p>
+                  <div className="table-scroll">
+                    <table aria-label={`${fixture.teams[side].name}の守備成績`}>
+                      <thead>
+                        <tr>
+                          <th>選手</th>
+                          <th>位置</th>
+                          <th>守備回</th>
+                          <th>刺殺</th>
+                          <th>補殺</th>
+                          <th>併殺関与</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result.fielding
+                          .filter((line) =>
+                            fixture.clubs
+                              .find((club) => club.clubId === fixture.teams[side].clubId)!
+                              .playerIds.includes(line.playerId),
+                          )
+                          .map((line) => (
+                            <tr key={`${line.playerId}:${line.position}`}>
+                              <th>{playerName(fixture, line.playerId)}</th>
+                              <td>{line.position}</td>
+                              <td>{inningsPitched(line.fieldingOuts)}</td>
+                              <td>{line.putouts}</td>
+                              <td>{line.assists}</td>
+                              <td>{line.doublePlayParticipations}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <p>このモデルでは守備成績を記録していません。</p>
+              )}
             </section>
           ))}
         </section>
@@ -481,6 +523,7 @@ function MatchGame() {
           三塁・本塁への送球選択や走塁死は未対応です。 各モデルで未対応の成績は「–」で表示します。
         </p>
         <p>
+          v9は位置別の守備回・刺殺・補殺・併殺関与を記録します。一塁手のゴロ処理は自ら一塁を踏む仮定です。
           数式・係数は未校正です。失策、盗塁、犠打、振り逃げ、暴投・捕逸、投手の勝敗・セーブは未対応です。試合中保存・シーズン進行・全世界セーブではありません。
         </p>
       </details>

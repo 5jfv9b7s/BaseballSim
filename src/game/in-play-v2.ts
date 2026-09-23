@@ -1,3 +1,4 @@
+import { usesFieldersChoice } from './model-registry.ts';
 import { evaluateInPlayTiming } from './in-play.ts';
 import type { BattedBall, FieldingEvaluation, GameEvent, GameFixture, GameState } from './types.ts';
 
@@ -8,7 +9,7 @@ export function evaluateInPlayV2(
   ball: BattedBall | null,
   pitch: GameEvent['pitch'],
 ): FieldingEvaluation | undefined {
-  if (state.simulationVersion !== 'game-prototype-v8') return undefined;
+  if (!usesFieldersChoice(state.simulationVersion)) return undefined;
 
   const timing = evaluateInPlayTiming(state, fixture, ball, pitch);
   if (!timing) return undefined;

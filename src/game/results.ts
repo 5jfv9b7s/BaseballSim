@@ -1,12 +1,19 @@
-import { usesMatchConfig, type GameModelVersion } from './model-registry.ts';
+import { usesMatchConfig, usesFieldersChoice, type GameModelVersion } from './model-registry.ts';
 import { ensure } from '../engine/validation.ts';
-import type { BattingLine, GameFixture, GameRecord, GameResult, PitchingLine } from './types.ts';
+import type {
+  BattingLine,
+  GameFixture,
+  GameRecord,
+  GameResult,
+  PitchingLine,
+  FieldingLine,
+} from './types.ts';
 
 function battingLine(playerId: string, version?: GameModelVersion): BattingLine {
   return {
     playerId,
     ...(usesMatchConfig(version) ? { sacrificeFlies: 0, groundedIntoDoublePlays: 0 } : {}),
-    ...(version === 'game-prototype-v8' ? { fieldersChoices: 0 } : {}),
+    ...(usesFieldersChoice(version) ? { fieldersChoices: 0 } : {}),
     plateAppearances: 0,
     atBats: 0,
     hits: 0,
@@ -47,6 +54,8 @@ export function aggregateResult(record: GameRecord): GameResult {
   const pitching = ['away', 'home'].flatMap((side) =>
     fixture.teams[side as 'away' | 'home'].pitcherIds.map((p) => pitchingLine(p)),
   );
+  const fielding: FieldingLine[] | undefined =
+    record.state.simulationVersion === 'game-prototype-v9' ? [] : undefined;
   const credits = new Set<string>();
   let pitchCount = 0;
   let appearanceCount = 0;
@@ -55,6 +64,27 @@ export function aggregateResult(record: GameRecord): GameResult {
       event.eventSeq === index + 1 && event.gameId === record.state.gameId,
       'イベント順が不正です',
     );
+    if (fielding && event.pitch) {
+      ensure(
+        event.defensiveAlignment?.length === 9 && event.fieldingActions,
+        '守備記録が不足しています',
+      );
+      for (const defender of event.defensiveAlignment) {
+        if (
+          !fielding.some(
+            (line) => line.playerId === defender.playerId && line.position === defender.position,
+          )
+        )
+          fielding.push({
+            ...defender,
+            gamesAtPosition: 1,
+            fieldingOuts: 0,
+            putouts: 0,
+            assists: 0,
+            doublePlayParticipations: 0,
+          });
+      }
+    }
     if (event.pitch) pitchCount++;
     if (event.outcome) appearanceCount++;
     for (const credit of event.credits) {
@@ -64,9 +94,15 @@ export function aggregateResult(record: GameRecord): GameResult {
       const line =
         credit.category === 'batting'
           ? batting.find((p) => p.playerId === credit.playerId)
-          : pitching.find((p) => p.playerId === credit.playerId);
+          : credit.category === 'pitching'
+            ? pitching.find((p) => p.playerId === credit.playerId)
+            : fielding?.find(
+                (p) => p.playerId === credit.playerId && p.position === credit.position,
+              );
       ensure(
-        line && credit.metricCode !== 'playerId' && Object.hasOwn(line, credit.metricCode),
+        line &&
+          Object.hasOwn(line, credit.metricCode) &&
+          typeof (line as unknown as Record<string, unknown>)[credit.metricCode] === 'number',
         '未対応の成績帰属です',
       );
       const counters = line as unknown as Record<string, number>;
@@ -96,6 +132,21 @@ export function aggregateResult(record: GameRecord): GameResult {
       .filter((p) => fixture.teams[side].pitcherIds.includes(p.playerId))
       .reduce((sum, p) => sum + p.runsAllowed, 0);
     ensure(allowed === record.state.score[opponent], '責任投手別失点と得点が一致しません');
+    if (fielding) {
+      const club = fixture.clubs.find((club) => club.clubId === fixture.teams[side].clubId)!;
+      const lines = fielding.filter((line) => club.playerIds.includes(line.playerId));
+      const outs = pitching
+        .filter((p) => fixture.teams[side].pitcherIds.includes(p.playerId))
+        .reduce((sum, p) => sum + p.outsRecorded, 0);
+      ensure(
+        lines.reduce((sum, line) => sum + line.putouts, 0) === outs,
+        '刺殺と投球アウトが一致しません',
+      );
+      ensure(
+        lines.reduce((sum, line) => sum + line.fieldingOuts, 0) === outs * 9,
+        '守備アウトと守備人数が一致しません',
+      );
+    }
   }
   for (const line of batting) {
     ensure(
@@ -132,6 +183,7 @@ export function aggregateResult(record: GameRecord): GameResult {
     innings: structuredClone(record.state.innings),
     batting,
     pitching,
+    ...(fielding ? { fielding } : {}),
     totalPitches: pitchCount,
     completedAppearances: appearanceCount,
     contributionKey: `${record.state.gameId}:attempt:1:result:1`,

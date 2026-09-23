@@ -1,3 +1,4 @@
+import { GAME_MODEL_V9 } from '../game/model-v9.ts';
 import { validateMatchConfig, type MatchConfig } from '../game/config.ts';
 import { GAME_MODEL_V8 } from '../game/model-v8.ts';
 import { GAME_MODEL_V7 } from '../game/model-v7.ts';
@@ -90,6 +91,15 @@ const VERSIONS_V8 = Object.freeze({
   rulesetVersion: GAME_MODEL_V8.rulesetVersion,
 });
 
+const VERSIONS_V9 = Object.freeze({
+  ...VERSIONS_V8,
+  saveFormatVersion: 'v01-completed-game-9',
+  dataSchemaVersion: 'game-prototype-schema-v9',
+  statDefinitionVersion: 'game-stats-prototype-v4',
+  simulationVersion: GAME_MODEL_V9.version,
+  rulesetVersion: GAME_MODEL_V9.rulesetVersion,
+});
+
 export function versionsFor(version: GameModelVersion) {
   gameModel(version);
   return version === 'game-prototype-v1'
@@ -106,7 +116,9 @@ export function versionsFor(version: GameModelVersion) {
               ? VERSIONS_V6
               : version === 'game-prototype-v7'
                 ? VERSIONS_V7
-                : VERSIONS_V8;
+                : version === 'game-prototype-v8'
+                  ? VERSIONS_V8
+                  : VERSIONS_V9;
 }
 export function definitionsFor(version: GameModelVersion, config?: MatchConfig) {
   if (usesMatchConfig(version)) {
@@ -191,7 +203,8 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
       candidate.kind === 'completed-game-prototype-v5' ||
       candidate.kind === 'completed-game-prototype-v6' ||
       candidate.kind === 'completed-game-prototype-v7' ||
-      candidate.kind === 'completed-game-prototype-v8',
+      candidate.kind === 'completed-game-prototype-v8' ||
+      candidate.kind === 'completed-game-prototype-v9',
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
@@ -214,7 +227,9 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
                 ? 'game-prototype-v6'
                 : candidate.kind === 'completed-game-prototype-v7'
                   ? 'game-prototype-v7'
-                  : 'game-prototype-v8';
+                  : candidate.kind === 'completed-game-prototype-v8'
+                    ? 'game-prototype-v8'
+                    : 'game-prototype-v9';
   if (usesMatchConfig(version)) validateMatchConfig(candidate.state?.config);
   const replay = createGame(candidate.seed, undefined, version, candidate.state?.config);
   runToCompletion(replay);

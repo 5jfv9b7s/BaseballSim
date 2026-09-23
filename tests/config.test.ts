@@ -159,7 +159,7 @@ test('既定設定は旧v6の投球・打球・乱数を維持し、指定係数
   assert.equal(canonicalJson(game.state), input);
 });
 
-for (const version of ['game-prototype-v7', 'game-prototype-v8'] as const) {
+for (const version of ['game-prototype-v7', 'game-prototype-v8', 'game-prototype-v9'] as const) {
   test(`${version}は開始時の設定を保存し、既定ファイル変更後も同じ試合を復元・再実行する`, async () => {
     const db = new GameDatabase('config-' + crypto.randomUUID());
     const previousDefault = defaults.pitch.contactBase;

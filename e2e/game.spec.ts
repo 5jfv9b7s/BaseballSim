@@ -72,7 +72,7 @@ test('無効seedは試合を変更せず、画面切替は進行状態を保持�
   await expect(page.locator('.game-progress')).toHaveText('1球を処理');
 });
 
-for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'] as const) {
+for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'] as const) {
   test(`旧版${legacy}の実セーブを読み込み、新旧モデルを選択して再現する`, async ({ page }) => {
     const frozen = JSON.parse(
       gunzipSync(
@@ -130,12 +130,12 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'] as const) {
     await expect(page.locator('.game-page footer')).toContainText(`game-prototype-${legacy}`);
     const oldStatistics = await page.getByRole('region', { name: '試合成績' }).innerText();
 
-    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v8');
+    await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v9');
     await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
     await expect(run).toBeEnabled();
     await run.click();
     await expect(save).toBeEnabled();
-    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v8');
+    await expect(page.locator('.game-page footer')).toContainText('game-prototype-v9');
     await save.click();
     await expect(page.getByRole('status')).toContainText('保存しました');
     await page.getByRole('button', { name: '前の保存を読み込む', exact: true }).click();
@@ -198,7 +198,9 @@ test('v8の野手選択を安打と区別して表示し、保存・再読込後
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();
-  await expect(page.getByLabel('試合モデル', { exact: true })).toHaveValue('game-prototype-v8');
+  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v8');
+  await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
+  await expect(run).toBeEnabled();
   await run.click();
   await expect(save).toBeEnabled();
   const table = page
@@ -232,4 +234,60 @@ test('v8の野手選択を安打と区別して表示し、保存・再読込後
     });
     await page.screenshot({ path: `test-results/fielders-choice-${width}.png`, fullPage: true });
   }
+});
+
+test('v9の守備成績を保存・復元し、旧版では未対応を明示する', async ({ page }) => {
+  await page.goto('/');
+  const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
+  const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
+  await expect(run).toBeEnabled();
+  await expect(page.getByLabel('試合モデル', { exact: true })).toHaveValue('game-prototype-v9');
+  await run.click();
+  await expect(save).toBeEnabled();
+  for (const [team, expectedOuts] of [
+    ['星原フォックス', 24],
+    ['青凪ハーバーズ', 27],
+  ] as const) {
+    const table = page.getByRole('table', { name: `${team}の守備成績`, exact: true });
+    const headers = await table.locator('thead th').allTextContents();
+    const rows = await table
+      .locator('tbody tr')
+      .evaluateAll((rows) => rows.map((row) => [...row.children].map((cell) => cell.textContent!)));
+    expect(rows.length).toBe(11);
+    expect(rows.every((row) => row[headers.indexOf('位置')] !== 'DH')).toBe(true);
+    expect(rows.reduce((sum, row) => sum + Number(row[headers.indexOf('刺殺')]), 0)).toBe(
+      expectedOuts,
+    );
+    const positionOuts = rows.reduce((sum, row) => {
+      const [innings, outs] = row[headers.indexOf('守備回')]!.split('.').map(Number);
+      return sum + innings! * 3 + outs!;
+    }, 0);
+    expect(positionOuts).toBe(expectedOuts * 9);
+  }
+  const statistics = await page.getByRole('region', { name: '試合成績' }).innerText();
+  await save.click();
+  await expect(page.getByRole('status')).toContainText('保存しました');
+  await page.reload();
+  await page.getByRole('button', { name: '保存した試合を読み込む', exact: true }).click();
+  await expect(page.getByRole('region', { name: '試合成績' })).toHaveText(statistics, {
+    useInnerText: true,
+  });
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({ path: `test-results/fielding-${width}.png`, fullPage: true });
+  }
+  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v8');
+  await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
+  await expect(run).toBeEnabled();
+  await run.click();
+  await expect(save).toBeEnabled();
+  await expect(
+    page.getByText('このモデルでは守備成績を記録していません。', { exact: true }),
+  ).toHaveCount(2);
+  await expect(
+    page.getByRole('table', { name: '青凪ハーバーズの守備成績', exact: true }),
+  ).toHaveCount(0);
 });

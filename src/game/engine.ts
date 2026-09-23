@@ -1,3 +1,4 @@
+import { recordFielding } from './fielding.ts';
 import { createMatchConfig, validateMatchConfig, type MatchConfig } from './config.ts';
 import { simulateConfiguredPitch } from '../engine/pitch-configured.ts';
 import { generateConfiguredBattedBall } from './batted-ball-configured.ts';
@@ -17,6 +18,7 @@ import {
   CURRENT_GAME_MODEL,
   gameModel,
   usesMatchConfig,
+  usesFieldersChoice,
   type GameModelVersion,
 } from './model-registry.ts';
 import { hitDestinations } from './running.ts';
@@ -208,7 +210,7 @@ export function resolveAppearance(
   let outcome = inputOutcome;
   const evaluation =
     inputOutcome === 'battedOut'
-      ? state.simulationVersion === 'game-prototype-v8'
+      ? usesFieldersChoice(state.simulationVersion)
         ? evaluateInPlayV2(state, fixture, event.battedBall, event.pitch)
         : evaluateInPlay(state, fixture, event.battedBall, event.pitch)
       : undefined;
@@ -566,6 +568,9 @@ export function advanceGameEvent(
       } else state.count = step.state.count;
     }
   }
+
+  if (state.simulationVersion === 'game-prototype-v9' && event.pitch)
+    recordFielding(event, fixture);
 
   state.nextEventSeq++;
   event.after = situation(state);

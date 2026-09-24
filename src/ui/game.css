@@ -4,6 +4,7 @@
   padding: 0 28px;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .app-nav button {
   width: auto;

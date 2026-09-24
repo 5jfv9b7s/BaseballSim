@@ -1,3 +1,4 @@
+import { createWorld } from '../src/world/engine.ts';
 import { createGame } from '../src/game/engine.ts';
 import { PITCH_TYPES } from '../src/data/pitch-types/index.ts';
 
@@ -10,8 +11,20 @@ for (const side of ['away', 'home'] as const) {
 }
 console.log(`選手${fixture.players.length}人 / 持ち球${fixture.pitches.length}件`);
 console.log(
-  '対応球種: ' +
+  '表示辞書の球種（計算対応とは別）: ' +
     Object.values(PITCH_TYPES)
       .map((type) => type.name)
       .join('、'),
+);
+
+const world = createWorld();
+console.log('現行モデルの計算対応: ストレート、スライダー、フォーク');
+console.log(
+  '日次データ: ' +
+    world.definitions.squads.length +
+    '球団 / ' +
+    world.definitions.squads.reduce((sum, squad) => sum + squad.players.length, 0) +
+    '選手 / ' +
+    world.definitions.schedule.length +
+    '試合（検査成功）',
 );

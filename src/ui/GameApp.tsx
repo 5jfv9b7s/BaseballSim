@@ -1,3 +1,4 @@
+import { WorldApp } from './WorldApp.tsx';
 import { CURRENT_GAME_MODEL, type GameModelVersion } from '../game/model-registry.ts';
 import { useEffect, useRef, useState } from 'react';
 import { App as PitchLab } from './App.tsx';
@@ -554,10 +555,20 @@ function MatchGame() {
 }
 
 export function GameApp() {
-  const [tab, setTab] = useState<'game' | 'lab'>('game');
+  const [tab, setTab] = useState<'game' | 'lab' | 'world'>('game');
+  const [worldOpened, setWorldOpened] = useState(false);
   return (
     <>
       <nav className="app-nav" aria-label="画面切替">
+        <button
+          aria-pressed={tab === 'world'}
+          onClick={() => {
+            setWorldOpened(true);
+            setTab('world');
+          }}
+        >
+          1日進行（v0.2）
+        </button>
         <button aria-pressed={tab === 'game'} onClick={() => setTab('game')}>
           1試合シミュレーション
         </button>
@@ -568,6 +579,11 @@ export function GameApp() {
       <div hidden={tab !== 'game'}>
         <MatchGame />
       </div>
+      {worldOpened && (
+        <div hidden={tab !== 'world'}>
+          <WorldApp />
+        </div>
+      )}
       {tab === 'lab' && <PitchLab />}
     </>
   );

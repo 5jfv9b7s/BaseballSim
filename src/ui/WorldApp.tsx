@@ -1,3 +1,4 @@
+import { SeasonCalendar } from './SeasonCalendar.tsx';
 import { ClubEditor } from './ClubEditor.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { WorldAction, WorldCommand, WorldView } from '../world/controller.ts';
@@ -9,6 +10,9 @@ export function WorldApp() {
   const [view, setView] = useState<WorldView | null>(null);
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState(false);
+  const [calendar, setCalendar] = useState<'short' | 'annual'>('short');
+  const [targetDate, setTargetDate] = useState('');
+  const autoThrough = useRef('');
   const [seed, setSeed] = useState('20260924');
   const [controlledSquadId, setControlledSquadId] = useState('');
   const [editorEpoch, setEditorEpoch] = useState(0);
@@ -40,6 +44,11 @@ export function WorldApp() {
   function continueDay() {
     const current = latest.current;
     if (!current) return;
+    if (current.currentDate > autoThrough.current) {
+      auto.current = false;
+      setRunning(false);
+      return;
+    }
     if (current.phase === 'playing') send({ kind: 'advance', count: 25 });
     else if (current.phase === 'readyToComplete')
       send({ kind: 'completeDay', date: current.currentDate });
@@ -64,8 +73,10 @@ export function WorldApp() {
         return;
       }
       if (lastAction.current === 'completeDay') {
-        auto.current = false;
-        setRunning(false);
+        if (data.view.currentDate > autoThrough.current) {
+          auto.current = false;
+          setRunning(false);
+        }
         setSelectedDate('');
         setSelectedGame('');
         setMessage(
@@ -83,12 +94,14 @@ export function WorldApp() {
         setSelectedDate('');
         setSelectedGame('');
         setSeed(String(data.view.seed));
+        setTargetDate('');
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
       if (lastAction.current === 'new') {
         setEditorEpoch((value) => value + 1);
         setSelectedDate('');
         setSelectedGame('');
+        setTargetDate('');
         setMessage('新しい日程を準備しました。');
       }
       if (data.view.phase === 'aborted') {
@@ -117,6 +130,25 @@ export function WorldApp() {
     };
   }, []);
 
+  function startThrough(date: string) {
+    const current = latest.current;
+    if (
+      !current ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isFinite(Date.parse(date + 'T00:00:00Z')) ||
+      new Date(date + 'T00:00:00Z').toISOString().slice(0, 10) !== date ||
+      date < current.currentDate ||
+      date > current.definitions.endDate
+    ) {
+      setError('進行先は現在日から日程最終日までの日付を指定してください。');
+      return;
+    }
+    autoThrough.current = date;
+    auto.current = true;
+    setRunning(true);
+    continueDay();
+  }
+
   const squadName = (squadId: string) =>
     view?.definitions.squads.find((squad) => squad.squadId === squadId)?.team.name ?? squadId;
   const disabled = !view || busy || running;
@@ -127,14 +159,23 @@ export function WorldApp() {
   const pickedGame =
     completedGames.find((game) => game.gameId === selectedGame) ?? completedGames[0];
   const result = pickedGame?.result;
-  const dates = view ? [...new Set([...view.completedDates, view.currentDate])].sort() : [];
+  const dates = view
+    ? [
+        ...new Set([
+          ...view.completedDates,
+          ...view.definitions.schedule.map((game) => game.date),
+          view.currentDate,
+          ...(selectedDate ? [selectedDate] : []),
+        ]),
+      ].sort()
+    : [];
 
   return (
     <main className="game-page world-page">
       <header>
         <div className="eyebrow">BASEBALL SIMULATOR / v1.0へ向けた球団運営</div>
-        <span className="badge">架空4球団・日次進行</span>
-        <h1>1日ずつ、リーグを進める。</h1>
+        <span className="badge">{view?.definitions.name ?? '架空4球団・日次進行'}</span>
+        <h1>シーズンを、日々の積み重ねで。</h1>
         <p>全試合の結果を成績と順位へ反映し、翌日へ進めます。</p>
       </header>
 
@@ -171,9 +212,7 @@ export function WorldApp() {
           <button
             disabled={disabled || !canRun}
             onClick={() => {
-              auto.current = true;
-              setRunning(true);
-              continueDay();
+              startThrough(view!.currentDate);
             }}
           >
             1日を自動進行
@@ -197,6 +236,50 @@ export function WorldApp() {
             日次確定を再試行
           </button>
         </div>
+        <div className="world-controls">
+          <label>
+            進行する最終日{' '}
+            <input
+              type="date"
+              value={targetDate || view?.currentDate || ''}
+              min={view?.currentDate}
+              max={view?.definitions.endDate}
+              disabled={disabled || !canRun}
+              onChange={(event) => setTargetDate(event.target.value)}
+            />
+          </label>
+          <button
+            disabled={disabled || !canRun}
+            onClick={() => startThrough(targetDate || view!.currentDate)}
+          >
+            指定日まで進行
+          </button>
+          <button
+            className="secondary"
+            disabled={disabled || !canRun}
+            onClick={() => {
+              const seventh = new Date(Date.parse(view!.currentDate + 'T00:00:00Z') + 6 * 86400000)
+                .toISOString()
+                .slice(0, 10);
+              startThrough(
+                seventh < view!.definitions.endDate ? seventh : view!.definitions.endDate,
+              );
+            }}
+          >
+            1週間を進行
+          </button>
+          <button
+            className="secondary"
+            disabled={disabled || !canRun}
+            onClick={() => startThrough(view!.definitions.endDate)}
+          >
+            シーズン終了まで進行
+          </button>
+        </div>
+        <p className="hint">
+          指定日を含めて1日ずつ進み、毎日自動保存します。保存失敗・試合の異常停止で期間進行も止まります。
+        </p>
+        {running && <p role="status">{autoThrough.current}の終了まで進行中</p>}
         {message && <p role="status">{message}</p>}
         {error && (
           <p role="alert" className="error">
@@ -205,6 +288,33 @@ export function WorldApp() {
         )}
         {view?.storageError && <p className="error">{view.storageError}</p>}
       </section>
+
+      {view && (
+        <SeasonCalendar
+          key={view.worldId + view.definitions.seasonId + editorEpoch}
+          view={view}
+          onSelect={(date) => {
+            setSelectedDate(date);
+            setSelectedGame('');
+          }}
+        />
+      )}
+
+      {view?.seasonSummary && (
+        <section className="panel" aria-label="シーズン終了要約">
+          <h2>シーズン終了</h2>
+          <p>
+            {view.seasonSummary.completedOn}までの全{view.seasonSummary.games}
+            試合を確定し、年度要約を保存しました。
+          </p>
+          <p>
+            {view.seasonSummary.title.status === 'decided'
+              ? '試作リーグ優勝：' + squadName(view.seasonSummary.title.squadId)
+              : '同率首位の決着規則が未定のため、優勝は未確定です。'}
+          </p>
+          <p>下の順位表・累計個人成績が今季の確定記録です。翌年度への更新と表彰は未対応です。</p>
+        </section>
+      )}
 
       {view?.management ? (
         <ClubEditor
@@ -401,6 +511,17 @@ export function WorldApp() {
       <details className="panel">
         <summary>新規日程・担当球団と試作の範囲</summary>
         <label>
+          新規プレイの日程
+          <select
+            value={calendar}
+            disabled={disabled}
+            onChange={(event) => setCalendar(event.target.value as 'short' | 'annual')}
+          >
+            <option value="short">短期確認（4日・6試合）</option>
+            <option value="annual">年間リーグ（各球団72試合）</option>
+          </select>
+        </label>
+        <label>
           新規プレイの担当球団
           <select
             value={
@@ -442,6 +563,7 @@ export function WorldApp() {
             }
             send({
               kind: 'new',
+              calendar,
               seed: Number(seed),
               controlledSquadId:
                 controlledSquadId ||
@@ -453,10 +575,10 @@ export function WorldApp() {
           新しい日程を準備
         </button>
         <p>
-          4球団・4日間・6試合と試合のない1日の試作です。日程を終えると停止します。球団と日程はデータファイルで編集できます。
+          短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日・全144試合の暫定構成です。日程構成は暫定仕様です。
         </p>
         <p>
-          試合はv0.1のv10モデルを使用します。係数は未校正です。追加2球団の能力は既存球団の複製です。二軍・疲労回復・成長・怪我・契約・年間日程は未対応です。
+          試合はv0.1のv10モデルを使用します。係数は未校正です。追加2球団の能力は既存球団の複製です。二軍・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
         </p>
       </details>
     </main>

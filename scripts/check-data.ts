@@ -1,4 +1,4 @@
-import { createWorld } from '../src/world/engine.ts';
+import { createWorld, createAnnualWorld } from '../src/world/engine.ts';
 import { createGame } from '../src/game/engine.ts';
 import { PITCH_TYPES } from '../src/data/pitch-types/index.ts';
 
@@ -27,4 +27,15 @@ console.log(
     '選手 / ' +
     world.definitions.schedule.length +
     '試合（検査成功）',
+);
+
+const annual = createAnnualWorld();
+console.log(
+  '年間日程: ' +
+    annual.definitions.schedule.length +
+    '試合 / ' +
+    annual.definitions.startDate +
+    '〜' +
+    annual.definitions.endDate +
+    '（検査成功）',
 );

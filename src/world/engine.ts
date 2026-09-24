@@ -1,3 +1,5 @@
+import { createAnnualDefinitions } from '../data/world/annual.ts';
+import { summarizeSeason } from './season.ts';
 import { initialManagement, managementFixture, advanceRotation } from './management.ts';
 import { createWorldDefinitions } from '../data/world/index.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
@@ -49,7 +51,10 @@ export function scheduledFixture(
 }
 
 export function validateDefinitions(definitions: WorldDefinitions): void {
-  ensure(definitions.version === 'world-definitions-v1', '未対応の世界定義です');
+  ensure(
+    ['world-definitions-v1', 'world-definitions-v2'].includes(definitions.version),
+    '未対応の世界定義です',
+  );
   ensure(definitions.statScope === 'firstRegular', '未対応の成績区分です');
   ensure(definitions.standingsRule === 'win-percentage-shared-rank-v1', '未対応の順位規則です');
   ensure(definitions.seedRule === 'game-id-fnv1a32-v1', '未対応のseed規則です');
@@ -62,9 +67,14 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
   validateDate(definitions.startDate);
   validateDate(definitions.endDate);
   const days = (Date.parse(definitions.endDate) - Date.parse(definitions.startDate)) / 86_400_000;
-  integer(days, 0, 30, '試作日程の日数差');
+  integer(days, 0, definitions.version === 'world-definitions-v2' ? 365 : 30, '試作日程の日数差');
   integer(definitions.squads.length, 2, 8, '球団数');
-  integer(definitions.schedule.length, 0, 32, '試作日程の試合数');
+  integer(
+    definitions.schedule.length,
+    0,
+    definitions.version === 'world-definitions-v2' ? 256 : 32,
+    '試作日程の試合数',
+  );
   const seen = new Set<string>();
   for (const squad of definitions.squads) {
     for (const value of [
@@ -168,7 +178,7 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
   ensure(scheduled, '日程にない試合です');
   const game = createGame(
     scheduledSeed(world.seed, gameId),
-    world.version === 'world-prototype-v2'
+    world.version !== 'world-prototype-v1'
       ? managementFixture(world, gameId, scheduledFixture(world.definitions, scheduled))
       : scheduledFixture(world.definitions, scheduled),
     'game-prototype-v10',
@@ -197,6 +207,11 @@ export function advanceWorld(world: WorldRecord, count: number): WorldRecord {
     }
     if (game.state.phase === 'aborted') break;
   }
+  return acceptGame(world, gameId, game);
+}
+
+/** 検証済み記録の集計と起用更新。検証時も同じ処理を使う。 */
+export function acceptGame(world: WorldRecord, gameId: string, game: GameRecord): WorldRecord {
   const next: WorldRecord = {
     ...world,
     games: { ...world.games, [gameId]: game },
@@ -208,7 +223,7 @@ export function advanceWorld(world: WorldRecord, count: number): WorldRecord {
     const scheduled = world.definitions.schedule.find((item) => item.gameId === gameId)!;
     applyContribution(next, gameContribution(world.definitions, scheduled, game));
     next.dayPlan.cursor++;
-    if (next.version === 'world-prototype-v2') next.management = advanceRotation(next, gameId);
+    if (next.version !== 'world-prototype-v1') next.management = advanceRotation(next, gameId);
   }
   return next;
 }
@@ -225,11 +240,28 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
     );
   }
   const currentDate = nextDate(expectedDate);
-  return {
+  const next: WorldRecord = {
     ...world,
     currentDate,
     dayPlan: plan({ definitions: world.definitions, currentDate }),
     completedDates: [...world.completedDates, expectedDate],
     lastCompletedDate: expectedDate,
+  };
+  if (next.version === 'world-prototype-v3' && currentDate > next.definitions.endDate) {
+    next.seasonSummary = summarizeSeason(next);
+  }
+  return next;
+}
+
+/** 年間プレイは新規作成時に選ぶ。旧世界の日程・乱数・保存を変更しない。 */
+export function createAnnualWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createAnnualDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v3' }> {
+  return {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v3',
+    seasonSummary: null,
   };
 }

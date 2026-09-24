@@ -68,7 +68,7 @@ export function initialManagement(
 
 export function canEditManagement(world: WorldRecord): boolean {
   return (
-    world.version === 'world-prototype-v2' &&
+    world.version !== 'world-prototype-v1' &&
     world.currentDate <= world.definitions.endDate &&
     world.dayPlan.cursor === 0 &&
     world.dayPlan.gameIds.every((gameId) => !world.games[gameId])
@@ -220,7 +220,7 @@ export function applyManagement(
   action: ManagementAction,
 ): ManagedWorld {
   ensure(
-    world.version === 'world-prototype-v2',
+    world.version !== 'world-prototype-v1',
     '旧世界は編成操作に未対応です。新しい球団運営を開始してください',
   );
   id(commandId);
@@ -234,7 +234,12 @@ export function applyManagement(
     return world;
   }
   ensure(canEditManagement(world), '編成変更は当日の全試合を始める前に行ってください');
-  integer(world.management.actions.length, 0, 255, '試作の編成変更回数');
+  integer(
+    world.management.actions.length,
+    0,
+    world.version === 'world-prototype-v3' ? 2047 : 255,
+    '試作の編成変更回数',
+  );
   const management = structuredClone(world.management);
   if (action.kind === 'setClubPlan') {
     validateClubPlan(world, action.squadId, action.lineup, action.pitchers);

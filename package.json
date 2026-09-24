@@ -1,6 +1,6 @@
 {
   "name": "baseball-sim",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -17,6 +17,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "check": "npm run typecheck && npm test && npm run build",
     "day": "node scripts/day.ts",
+    "season": "node scripts/season.ts",
+    "verify": "npm run check && npm run test:ui && npm run format:check",
     "verify:v02": "npm run check && npm run test:ui && npm run format:check",
     "verify:v01": "npm run check && npm run test:ui && npm run format:check",
     "format": "prettier --write .",

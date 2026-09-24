@@ -1,7 +1,13 @@
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createManagedWorld, worldPhase } from './engine.ts';
+import {
+  advanceWorld,
+  completeDay,
+  createManagedWorld,
+  createAnnualWorld,
+  worldPhase,
+} from './engine.ts';
 import { standings } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -14,7 +20,7 @@ import type { WorldRecord, WorldPhase, ManagementAction, ClubManagement } from '
 
 export type WorldAction =
   | ManagementAction
-  | { kind: 'new'; seed: number; controlledSquadId?: string }
+  | { kind: 'new'; seed: number; controlledSquadId?: string; calendar?: 'short' | 'annual' }
   | { kind: 'advance'; count: number }
   | { kind: 'completeDay'; date: string }
   | { kind: 'save' }
@@ -31,6 +37,7 @@ export interface WorldView {
   worldId: string;
   modelVersion: WorldRecord['version'];
   management: ClubManagement | null;
+  seasonSummary: import('./types.ts').SeasonSummary | null;
   canEditManagement: boolean;
   seed: number;
   definitions: WorldRecord['definitions'];
@@ -64,7 +71,9 @@ export class WorldController {
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
   private unsavedChanges = true;
-  private processed = new Map<string, { fingerprint: string; view: WorldView }>();
+  private processed = new Map<string, string>();
+  // 長期間の進行で過去の全画面を保持しない。古い再送には現在の正本を返す。
+  private recentResponses = new Map<string, WorldView>();
   private storage: WorldStorageAdapter;
 
   constructor(storage: WorldStorageAdapter) {
@@ -86,7 +95,8 @@ export class WorldController {
       revision: this.revision,
       worldId: world.worldId,
       modelVersion: world.version,
-      management: world.version === 'world-prototype-v2' ? world.management : null,
+      management: world.version !== 'world-prototype-v1' ? world.management : null,
+      seasonSummary: world.version === 'world-prototype-v3' ? world.seasonSummary : null,
       canEditManagement: canEditManagement(world),
       seed: world.seed,
       definitions: world.definitions,
@@ -135,7 +145,13 @@ export class WorldController {
       ),
       '未対応の世界指示です',
     );
-    if (command.kind === 'new') integer(command.seed, 1, 0xffffffff, '世界seed');
+    if (command.kind === 'new') {
+      integer(command.seed, 1, 0xffffffff, '世界seed');
+      ensure(
+        command.calendar === undefined || ['short', 'annual'].includes(command.calendar),
+        '日程種類が不正です',
+      );
+    }
     if (command.kind === 'advance') integer(command.count, 1, 25, '進行イベント数');
     if (command.kind === 'completeDay')
       ensure(typeof command.date === 'string', '完了日が不正です');
@@ -144,14 +160,17 @@ export class WorldController {
     const fingerprint = canonicalJson(command);
     const prior = this.processed.get(command.commandId);
     if (prior) {
-      ensure(prior.fingerprint === fingerprint, '同じ指示IDの内容が異なります');
-      return structuredClone(prior.view);
+      ensure(prior === fingerprint, '同じ指示IDの内容が異なります');
+      return structuredClone(this.recentResponses.get(command.commandId) ?? this.query());
     }
     ensure(command.expectedStateRevision === this.revision, '古い世界状態への指示です');
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createManagedWorld(command.seed, undefined, command.controlledSquadId);
+      this.world =
+        command.calendar === 'annual'
+          ? createAnnualWorld(command.seed, command.controlledSquadId)
+          : createManagedWorld(command.seed, undefined, command.controlledSquadId);
       this.unsavedChanges = true;
       this.storageError = null;
     }
@@ -228,7 +247,10 @@ export class WorldController {
     }
     this.revision++;
     const view = this.query();
-    this.processed.set(command.commandId, { fingerprint, view });
+    this.processed.set(command.commandId, fingerprint);
+    this.recentResponses.set(command.commandId, view);
+    if (this.recentResponses.size > 16)
+      this.recentResponses.delete(this.recentResponses.keys().next().value!);
     return structuredClone(view);
   }
 }

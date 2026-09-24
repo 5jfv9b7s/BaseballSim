@@ -25,7 +25,7 @@ export interface ScheduledGame {
 }
 
 export interface WorldDefinitions {
-  version: 'world-definitions-v1';
+  version: 'world-definitions-v1' | 'world-definitions-v2';
   seasonId: string;
   competitionId: string;
   statScope: 'firstRegular';
@@ -139,5 +139,23 @@ export type WorldRecord = WorldState &
   (
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
+    | {
+        version: 'world-prototype-v3';
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+      }
   );
-export type ManagedWorld = Extract<WorldRecord, { version: 'world-prototype-v2' }>;
+export type ManagedWorld = Extract<WorldRecord, { management: ClubManagement }>;
+
+export interface SeasonSummary {
+  version: 'season-summary-v1';
+  seasonId: string;
+  competitionId: string;
+  statScope: 'firstRegular';
+  completedOn: string;
+  games: number;
+  standingsRule: WorldDefinitions['standingsRule'];
+  clubs: ReturnType<typeof import('./stats.ts').standings>;
+  stats: SeasonStats;
+  title: { status: 'decided'; squadId: string } | { status: 'unresolved'; squadIds: string[] };
+}

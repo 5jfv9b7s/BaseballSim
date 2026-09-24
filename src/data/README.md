@@ -1,118 +1,86 @@
-# 選手・持ち球・チームの編集
+# 選手・持ち球・球団の編集
 
-新規の「捕球失策対応試作 v10」は、このフォルダのデータを使用します。架空の値であり、実在成績から査定したものではありません。
+新規の1試合v10、短期プレイ、年間プレイは、このフォルダの球団別データを共通で参照します。全4球団・全60選手・全36件の持ち球を明示した架空データです。他球団や控えの能力を実行時にコピー生成しません。
 
-## 編集する場所
+## 編集するファイル
 
-```text
-src/data/
-├─ players/
-│  ├─ away.ts          星原の選手名・左右・打撃・走塁・守備能力
-│  └─ home.ts          青凪の選手名・左右・打撃・走塁・守備能力
-├─ repertoires/
-│  ├─ away.ts          星原の各投手の持ち球・球速・制球
-│  └─ home.ts          青凪の各投手の持ち球・球速・制球
-├─ teams/
-│  ├─ away.ts          星原の球団名・打順・守備位置・継投順
-│  └─ home.ts          青凪の球団名・打順・守備位置・継投順
-├─ pitch-types/
-│  └─ index.ts         対応球種のコード・日本語名
-├─ datasets/
-│  ├─ current.ts       上の編集ファイルを新規試合用に組み立てる入口
-│  └─ legacy-v1.ts     旧v1〜v9の再現専用（通常は編集しない）
-├─ pitch-lab/
-│  └─ fixture.ts       独立した「1球の検証」専用の3選手
-└─ rating.ts           能力値を作る補助関数
-```
+| 球団           | 選手15人（控え3人を含む）                    | 持ち球9件                                            | 球団・初期編成                           |
+| -------------- | -------------------------------------------- | ---------------------------------------------------- | ---------------------------------------- |
+| 星原フォックス | [players/hoshihara.ts](players/hoshihara.ts) | [repertoires/hoshihara.ts](repertoires/hoshihara.ts) | [teams/hoshihara.ts](teams/hoshihara.ts) |
+| 青凪ハーバーズ | [players/aonagi.ts](players/aonagi.ts)       | [repertoires/aonagi.ts](repertoires/aonagi.ts)       | [teams/aonagi.ts](teams/aonagi.ts)       |
+| 湖白スワンズ   | [players/kohaku.ts](players/kohaku.ts)       | [repertoires/kohaku.ts](repertoires/kohaku.ts)       | [teams/kohaku.ts](teams/kohaku.ts)       |
+| 朝霧フォックス | [players/asagiri.ts](players/asagiri.ts)     | [repertoires/asagiri.ts](repertoires/asagiri.ts)     | [teams/asagiri.ts](teams/asagiri.ts)     |
 
-1選手はplayersの1オブジェクト、1つの持ち球はrepertoiresの1オブジェクトです。SQLにたとえると、選手の主キーがplayerId、持ち球の主キーがpitchId、持ち球や打順のplayerIdが選手への外部キーです。名前や配列位置からIDを作り直しません。
+- `players`：固定ID、氏名、左右、各能力、投手の適性など。各選手を独立した値として編集できます。
+- `repertoires`：投手ごとの持ち球、球速、制球、再現性。playerIdで選手に結び付けます。
+- `teams`：squadId、球団IDと名前、初期打順9人と守備位置、投手の順番、控え候補ID。
+- [world/rosters.ts](world/rosters.ts)：全球団のファイルを結合し、開始時に複製する入口。
+- [datasets/current.ts](datasets/current.ts)：同じデータから星原・青凪の1試合用名簿を作ります。
+- [pitch-types/index.ts](pitch-types/index.ts)：球種の表示辞書。辞書追加と計算対応の追加は別です。
+- [rating.ts](rating.ts)：能力値と上限を読みやすく指定する補助関数。
 
-`src/game/fixture.ts`と`fixture-v2.ts`、`src/data/fixture.ts`は既存コード向けの入口です。通常のデータ変更は上表の編集ファイルで行います。配球・打球・走塁の計算係数は[config](../../config/README.md)へ分けています。
+`away.ts`/`home.ts`の旧データ、`datasets/legacy-v1.ts`、旧世界の`world/teams.ts`は以前の実装の参照用として保持します。通常の編集先は上表です。過去モデルの凍結データや試験用保存を変更しないでください。
 
-## 名前・能力を変える
+## 能力・名前を変える
 
-例えば [players/away.ts](players/away.ts) の汐見航の姓や能力を編集します。既存のplayerIdは維持します。能力は配列順から計算せず、各選手に明示しています。
+例えば [players/hoshihara.ts](players/hoshihara.ts) の汐見航を編集します。既存playerIdは改名・並べ替えで変更しません。
 
 ```ts
 familyName: '汐見',
 givenName: '航',
-powerVsRight: rating(72000),          // 能力72.000、上限110.000
-powerVsLeft: rating(70000, 115000),   // 能力70.000、個別上限115.000
+powerVsRight: rating(72000),        // 能力72.000、上限110.000
+powerVsLeft: rating(70000, 115000), // 個別上限115.000
 ```
 
-| 項目                                   | 意味・単位                             |
-| -------------------------------------- | -------------------------------------- |
-| throwingHand / battingHand             | 投げる側R/L、打つ側R/L/S（両打ち）     |
-| batting.contactVsRight / contactVsLeft | 右／左投手へのミート                   |
-| batting.plateDiscipline                | 選球眼                                 |
-| swingAggressionMilli                   | スイング積極性、0〜100000              |
-| powerVsRight / powerVsLeft             | 右／左投手へのパワー                   |
-| runningSpeed                           | 走力                                   |
-| fieldingRange                          | 守備範囲                               |
-| armStrength                            | 肩力                                   |
-| fielding.catching                      | 捕球能力（限定した内野ゴロ失策に使用） |
+| 項目                                   | 意味                     |
+| -------------------------------------- | ------------------------ |
+| throwingHand / battingHand             | 投R/L、打R/L/S（両打ち） |
+| batting.contactVsRight / contactVsLeft | 右/左投手へのミート      |
+| batting.plateDiscipline                | 選球眼                   |
+| swingAggressionMilli                   | 積極性、0〜100000        |
+| powerVsRight / powerVsLeft             | 右/左投手へのパワー      |
+| runningSpeed / fieldingRange           | 走力 / 守備範囲          |
+| armStrength / fielding.catching        | 肩力 / 捕球能力          |
 
-ratingの第1引数は0〜120000の整数です。第2引数は現在値以上〜120000の上限で、省略時は110000です。未実装の全能力を0で補う構造にはしていません。
+ratingは0〜120000の整数（表示値の1000倍）。第2引数は現在値以上〜120000の上限で、省略時110000です。控え・湖白・朝霧の初期能力は既存選手の複製に由来する未校正値ですが、現在は各ファイルの独立値です。片方の編集が別球団へ波及することはありません。
 
-## 持ち球・球速を変える
+## 持ち球を変える
 
-[repertoires/away.ts](repertoires/away.ts) またはhome.tsで、playerIdが対象投手の行を編集します。
+該当球団のrepertoiresファイルで編集します。
 
-| 項目                     | 意味・範囲                                |
-| ------------------------ | ----------------------------------------- |
-| pitchId                  | この持ち球の不変ID。全持ち球で重複不可    |
-| playerId                 | 所有選手のID                              |
-| pitchTypeCode            | fastball / slider / fork                  |
-| acquisitionProgressMilli | 習得進度0〜100000。100000だけを試合で使用 |
-| control / repeatability  | 制球／再現性。ratingで指定                |
-| velocity.typicalCentiKph | 中心球速。14600＝146.00km/h、5000〜18000  |
-| velocity.maxCentiKph     | 最大球速。中心球速以上〜20000             |
-| velocity.spreadCentiKph  | 球速幅。450＝4.50km/h、0〜2000            |
+| 項目                     | 意味・範囲                               |
+| ------------------------ | ---------------------------------------- |
+| pitchId / playerId       | 持ち球固有ID / 所有選手ID                |
+| pitchTypeCode            | 計算対応はfastball / slider / fork       |
+| acquisitionProgressMilli | 習得進度0〜100000。100000だけ使用        |
+| control / repeatability  | 制球 / 再現性（rating）                  |
+| velocity.typicalCentiKph | 中心球速。14600＝146.00km/h、5000〜18000 |
+| velocity.maxCentiKph     | 最大球速。中心球速以上〜20000            |
+| velocity.spreadCentiKph  | 球速幅。450＝4.50km/h、0〜2000           |
 
-既存3球種を投手へ追加する場合は、持ち球1件を複製し、固有のpitchId・対象playerId・pitchTypeCode・各値を設定します。削除・未習得化する場合も、各登板予定投手に最低1つの習得済み球種を残してください。使用可能な球がない場合は開始時にエラーになります。
+各投手へ最低1つの習得済み球種を残してください。新しい球種名を辞書へ追加しただけでは現行モデルで投げられません。配球・物理モデル・設定・保存互換性を新モデル版で追加する必要があります。
 
-**カーブ等の新しい球種コードは、辞書への追加だけでは使用できません。** 表示用の球種型は辞書から導出し、計算用PitchTypeはそのうちfastball/slider/forkだけに限定します。辞書へ名前を追加しても、現行モデルの計算対応は増えません。新しいモデル版で配球の重み・カウント／左右補正・設定スキーマ・球種検査・必要な物理モデル・保存定義を揃え、固定入力と旧版互換性を検証してください。旧モデルの定義を直接書き換えて未知の球種を通すことはしません。
+## 選手・編成を追加変更する
 
-## 打順・守備・選手を追加変更する
+1. playersへ固有playerIdの選手を追加します。
+2. 野手はteamsのlineupかreserveBatterIdsへ、投手はpitcherIdsへ追加します。
+3. 投手にはrepertoiresの持ち球も必要です。
+4. `npm.cmd run data:check`で全選手・全球団・日程の整合性を確認します。
 
-- 打順はteamsのlineupの並び順です。playersの並び替えでは打順は変わりません。
-- lineupは9人。C/1B/2B/3B/SS/LF/CF/RF/DHを各1人ずつ配置します。
-- 継投順はpitcherIdsの並び順です。新規v10は1人以上の投手に対応し、同梱データは従来どおり3人です。追加投手も球数基準の継投に従います。
-- 選手追加はplayersへ固有のplayerIdで追加し、lineupの既存枠と入れ替えるか、投手ならpitcherIdsへ追加します。投手にはrepertoiresの習得済み球種も必要です。
-- 名簿は現時点で出場対象者のみです。使わない控え選手を登録する別枠・代打／守備交代は未対応です。入れ替えで不要になった選手と持ち球は同時に削除するか、有効な出場枠へ配置します。
-- 球団の所属一覧はteamsのIDから自動作成します。別ファイルで同じ所属を二重管理しません。削除したplayerIdを持ち球や編成に残さないでください。
-- v0.1の1試合入力は2球団です。v0.2の参加球団数は末尾の日次データで扱います。9人以外の打順は未対応です。
+打順はlineupの順です。野手9人・守備8位置とDHを重複なく指定してください。reserveBatterIdsは野手候補の区分であり、一二軍登録やベンチ入り資格ではありません。試作上限は控え候補17人です。1試合画面では初期打順9人と投手を使用し、控え候補を直接試合名簿へ追加しません。日程画面では開始前に控えからスタメンを選べます。
 
-## 反映と確認
+球団追加時は上表と同じ3ファイルを作り、world/rosters.tsの結合一覧と日程を揃える必要があります。現在の同梱日程は4球団用です。IDを表示名として変更せず、参照している全ファイルを整合させてください。
+
+## 日程と保存
+
+[config/season.ts](../../config/season.ts)に年間の年度・開幕/終了日・総当たり回数・節の間隔（日）、[world/schedule.ts](world/schedule.ts)に短期日程を置いています。年日程は[world/annual.ts](world/annual.ts)で生成します。現実の正式日程の再現ではありません。
+
+開始時に全入力を複製して保存します。ファイル編集は新しい試合/世界に反映し、開始済み世界や保存済み試合にはさかのぼりません。操作は[控え起用](../../ROSTER-IMPLEMENTATION.md)、年間進行は[進捗ガイド](../../V1.0-PROGRESS.md)を参照してください。
 
 ```powershell
-npm.cmd run typecheck
 npm.cmd run data:check
+npm.cmd run check
 npm.cmd run dev
 ```
 
-開発画面を再読み込みし、v10で「新しい試合を準備」を押します。配信済みdistへ反映する場合は `npm.cmd run build` が必要です。`data:check`はID参照・重複・能力と球速の範囲・編成・使用可能球を検査し、球団別人数を表示します。現在のデータを変更したり、保存を上書きしたりしません。
-
-`npm.cmd run verify:v02`は全体確認用です。画面の固定seedの数値・名前と一部の名簿同値試験は同梱データに対する期待値です。意図した編集で結果が変わるときは、**新規データ向けの期待値を根拠とともに更新**してください。`tests/fixtures/`の過去の名簿・全記録ハッシュ・保存ファイルは再生成せず、旧記録の再現性を守ります。
-
-## 保存への影響
-
-開始時に名簿を複製し、終了試合へ全選手・持ち球・チーム編成を保存します。v10の読込は保存内の名簿を検査して全試合を再実行するため、編集元の名前・能力・持ち球・打順が変わっても過去の保存を再現できます。画面もWorkerから受け取った試合の名簿を使います。新規試合を作ると、その時点の編集データへ切り替わります。
-
-v1〜v9はlegacy-v1の固定名簿を保持します。v10分離前の保存も復元可能です。今回の構造整理では既定のデータ値・試合用乱数・計算式・係数・モデル版・保存データの形を変えていません。入力として許可するv10の名簿を拡張しています。今回より古いアプリは独自名簿を未対応として拒否するため、編集後の保存を古いアプリで読めるとは扱いません。
-
-JSONファイルのアップロード・名簿編集画面・新しい球種の物理モデルは今回追加していません。コード上のデータファイルを編集する方式です。
-
-## v0.2の参加球団と日程
-
-[world/teams.ts](world/teams.ts)で参加球団、[world/schedule.ts](world/schedule.ts)で日程ID・日付・対戦・期間、[world/index.ts](world/index.ts)で大会と集計区分を編集します。新しい日次世界の入力は開始時に複製します。変更後は「新しい日程を準備」を実行してください。
-
-同梱の追加2球団は既存2球団の能力・持ち球を複製する試作です。元選手IDへ球団接頭辞を付け、名前や配列順をIDにしません。個別データへ差し替える場合はWorldSquadのplayers・pitches・teamを対応させます。各球団のsquadId、clubId、playerId、pitchIdは重複不可です。試合IDには__proto__、constructor等のオブジェクト予約名を使えません。
-
-data:checkは日次データも検査します。試作上限は2〜8球団・31日以内・32試合以内・各球団1日1試合です。日程に未定の値を置いて自動補完はしません。範囲・仮定・途中保存は [v0.2の実装](../../V0.2-IMPLEMENTATION.md) を参照してください。
-
-## 年間日程
-
-新規プレイで「年間リーグ」を選ぶと、[config/season.ts](../../config/season.ts)と[world/annual.ts](world/annual.ts)から生成します。年度・開幕/終了日・総当たり回数・節の間隔を設定できます。設定は開始時に日程へ展開して保存するので、ファイル変更が開始済み世界へさかのぼって反映されることはありません。
-
-既定は4球団・各72試合の暫定構成です。実在リーグの正式日程ではありません。`npm.cmd run data:check`で短期/年間の両方を検査します。旧[world/schedule.ts](world/schedule.ts)は短期確認用として継続します。
+画面を再読み込みして新規プレイを開始します。配信済みdistには再ビルドが必要です。意図したデータ編集で結果が変わる場合は、新規入力向けの期待値を根拠とともに更新してください。過去の保存・記録ハッシュ・凍結名簿は再生成せず互換性を守ります。

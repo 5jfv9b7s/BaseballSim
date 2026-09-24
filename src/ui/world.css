@@ -94,3 +94,12 @@
 .calendar-day[aria-current='date'] {
   outline: 2px solid #287653;
 }
+
+/* 氏名を省略しすぎず、小画面では表の中だけを横スクロールする。 */
+.world-page .roster-player-select {
+  min-width: 8rem;
+}
+
+.world-page .world-table select:not(.roster-player-select) {
+  min-width: 4.5rem;
+}

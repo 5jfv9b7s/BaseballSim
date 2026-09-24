@@ -1,3 +1,4 @@
+import { createRosterDefinitions } from '../data/world/rosters.ts';
 import { createAnnualDefinitions } from '../data/world/annual.ts';
 import { summarizeSeason } from './season.ts';
 import { initialManagement, managementFixture, advanceRotation } from './management.ts';
@@ -37,9 +38,16 @@ export function scheduledFixture(
     away: { ...away.team, side: 'away' as const },
     home: { ...home.team, side: 'home' as const },
   };
+  const activeIds = Object.values(teams).flatMap((team) => [
+    ...team.lineup.map((slot) => slot.playerId),
+    ...team.pitcherIds,
+  ]);
   return structuredClone({
     initialDatasetVersion: 'game-fixture-v2',
-    players: [...away.players, ...home.players],
+    players: [...away.players, ...home.players].filter(
+      (player) =>
+        definitions.version !== 'world-definitions-v3' || activeIds.includes(player.playerId),
+    ),
     pitches: [...away.pitches, ...home.pitches],
     teams,
     clubs: (['away', 'home'] as TeamSide[]).map((side) => ({
@@ -52,7 +60,9 @@ export function scheduledFixture(
 
 export function validateDefinitions(definitions: WorldDefinitions): void {
   ensure(
-    ['world-definitions-v1', 'world-definitions-v2'].includes(definitions.version),
+    ['world-definitions-v1', 'world-definitions-v2', 'world-definitions-v3'].includes(
+      definitions.version,
+    ),
     '未対応の世界定義です',
   );
   ensure(definitions.statScope === 'firstRegular', '未対応の成績区分です');
@@ -67,12 +77,12 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
   validateDate(definitions.startDate);
   validateDate(definitions.endDate);
   const days = (Date.parse(definitions.endDate) - Date.parse(definitions.startDate)) / 86_400_000;
-  integer(days, 0, definitions.version === 'world-definitions-v2' ? 365 : 30, '試作日程の日数差');
+  integer(days, 0, definitions.version !== 'world-definitions-v1' ? 365 : 30, '試作日程の日数差');
   integer(definitions.squads.length, 2, 8, '球団数');
   integer(
     definitions.schedule.length,
     0,
-    definitions.version === 'world-definitions-v2' ? 256 : 32,
+    definitions.version !== 'world-definitions-v1' ? 256 : 32,
     '試作日程の試合数',
   );
   const seen = new Set<string>();
@@ -87,6 +97,42 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       ensure(!seen.has(value), '球団・選手・持ち球IDが重複しています');
       seen.add(value);
     }
+    if (definitions.version === 'world-definitions-v3') {
+      ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
+      const listed = [
+        ...squad.team.lineup.map((slot) => slot.playerId),
+        ...squad.team.pitcherIds,
+        ...squad.reserveBatterIds,
+      ];
+      ensure(
+        new Set(listed).size === listed.length &&
+          listed.length === squad.players.length &&
+          listed.every((id) => squad.players.some((player) => player.playerId === id)),
+        '所属名簿と先発・投手・控えの区分が一致しません',
+      );
+      integer(squad.reserveBatterIds.length, 0, 17, '試作の控え野手数');
+      // 未出場選手にも能力検査を適用する。DHへ仮配置した検証用名簿は保存しない。
+      for (const reserveId of squad.reserveBatterIds) {
+        const other = definitions.squads.find((item) => item !== squad)!;
+        const fixture = scheduledFixture(definitions, {
+          gameId: 'validation',
+          date: definitions.startDate,
+          awaySquadId: squad.squadId,
+          homeSquadId: other.squadId,
+        });
+        const slot = fixture.teams.away.lineup.find((slot) => slot.position === 'DH')!;
+        const oldId = slot.playerId;
+        slot.playerId = reserveId;
+        fixture.players = fixture.players.filter((player) => player.playerId !== oldId);
+        fixture.players.push(
+          structuredClone(squad.players.find((player) => player.playerId === reserveId)!),
+        );
+        fixture.clubs[0]!.playerIds = fixture.clubs[0]!.playerIds.map((id) =>
+          id === oldId ? reserveId : id,
+        );
+        validateGameFixture(fixture);
+      }
+    } else ensure(squad.reserveBatterIds === undefined, '旧版の定義に控えを追加できません');
     // 試合予定のない球団も名簿を検査する。
     const other = definitions.squads.find((candidate) => candidate !== squad)!;
     validateGameFixture(
@@ -247,7 +293,7 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
     completedDates: [...world.completedDates, expectedDate],
     lastCompletedDate: expectedDate,
   };
-  if (next.version === 'world-prototype-v3' && currentDate > next.definitions.endDate) {
+  if ('seasonSummary' in next && currentDate > next.definitions.endDate) {
     next.seasonSummary = summarizeSeason(next);
   }
   return next;
@@ -263,5 +309,19 @@ export function createAnnualWorld(
     ...createManagedWorld(seed, definitions, controlledSquadId),
     version: 'world-prototype-v3',
     seasonSummary: null,
+  };
+}
+
+/** 控えと当日オーダーを持つ新規プレイ。旧保存へ後付けしない。 */
+export function createRosterWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createRosterDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v4' }> {
+  return {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v4',
+    seasonSummary: null,
+    gameLineups: {},
   };
 }

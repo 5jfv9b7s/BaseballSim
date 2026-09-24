@@ -27,11 +27,13 @@ for (const width of [1280, 390]) {
     const club = page.getByRole('region', { name: '球団運営', exact: true });
     await expect(club.getByRole('heading', { level: 2 })).toHaveText('担当球団：青凪ハーバーズ');
     await club.getByText('打順・守備・投手起用を編集', { exact: true }).click();
-    const firstPlayer = await club.locator('tbody tr').first().locator('td').first().innerText();
-    const secondPlayer = await club.locator('tbody tr').nth(1).locator('td').first().innerText();
+    const firstSelection = club.getByRole('combobox', { name: '1番の選手', exact: true });
+    const secondSelection = club.getByRole('combobox', { name: '2番の選手', exact: true });
+    const firstPlayer = await firstSelection.inputValue();
+    const secondPlayer = await secondSelection.inputValue();
     await club.getByRole('button', { name: '1番を下へ', exact: true }).click();
-    await expect(club.locator('tbody tr').first().locator('td').first()).toHaveText(secondPlayer);
-    await expect(club.locator('tbody tr').nth(1).locator('td').first()).toHaveText(firstPlayer);
+    await expect(firstSelection).toHaveValue(secondPlayer);
+    await expect(secondSelection).toHaveValue(firstPlayer);
     const firstPosition = await club.getByLabel('1番の守備位置', { exact: true }).inputValue();
     const secondPosition = await club.getByLabel('2番の守備位置', { exact: true }).inputValue();
     await club.getByLabel('1番の守備位置', { exact: true }).selectOption(secondPosition);
@@ -62,7 +64,7 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました');
     await expect(club.getByRole('heading', { level: 2 })).toHaveText('担当球団：青凪ハーバーズ');
     await club.getByText('打順・守備・投手起用を編集', { exact: true }).click();
-    await expect(club.locator('tbody tr').first().locator('td').first()).toHaveText(secondPlayer);
+    await expect(firstSelection).toHaveValue(secondPlayer);
     await expect(club.getByRole('combobox', { name: '使用する先発枠', exact: true })).toHaveValue(
       '2',
     );

@@ -29,6 +29,10 @@ export function ClubEditor({
 }) {
   const squadId = management.controlledSquadId;
   const squad = view.definitions.squads.find((squad) => squad.squadId === squadId)!;
+  const batterIds = [
+    ...squad.team.lineup.map((slot) => slot.playerId),
+    ...(squad.reserveBatterIds ?? []),
+  ];
   const currentLineup = management.idealLineups[squadId]!;
   const currentPlan = management.pitcherUsagePlans[squadId]!;
   const [batters, setBatters] = useState(() => structuredClone(currentLineup.battingOrder));
@@ -70,6 +74,7 @@ export function ClubEditor({
   };
   const invalid =
     new Set(batters.map((slot) => slot.battingRole)).size !== 9 ||
+    new Set(batters.map((slot) => slot.playerId)).size !== 9 ||
     new Set(rotation).size !== rotation.length;
   const plannedStarter = currentPlan.rotationSlots[currentPlan.nextSlotNo - 1]!.playerId;
   const actualStarter = today?.startingPitchers
@@ -77,6 +82,14 @@ export function ClubEditor({
     : today
       ? (management.starterOverrides[today.gameId] ?? plannedStarter)
       : null;
+
+  function selectBatter(index: number, playerId: string) {
+    const next = structuredClone(batters);
+    const prior = next.findIndex((slot) => slot.playerId === playerId);
+    if (prior !== -1) next[prior]!.playerId = next[index]!.playerId;
+    next[index]!.playerId = playerId;
+    setBatters(next);
+  }
 
   function reorder(index: number, direction: number) {
     const next = structuredClone(batters);
@@ -93,7 +106,7 @@ export function ClubEditor({
     if (nextSlot > next.length) setNextSlot(1);
   }
 
-  function savePlan() {
+  function draftLineup(): IdealLineup {
     const lineup: IdealLineup = {
       dhEnabled: true,
       battingOrder: batters.map((slot, index) => ({ ...slot, slotNo: index + 1 })),
@@ -107,6 +120,11 @@ export function ClubEditor({
         { positionCode: 'P', playerId: null },
       ],
     };
+    return lineup;
+  }
+
+  function savePlan() {
+    const lineup = draftLineup();
     const pitchers: PitcherUsagePlan = {
       rotationSlots: rotation.map((playerId, index) => ({ slotNo: index + 1, playerId })),
       nextSlotNo: nextSlot,
@@ -131,6 +149,31 @@ export function ClubEditor({
           {today.startingPitchers ? '（試合開始時に確定済み）' : ''}
         </p>
       )}
+      {today && view.gameLineups && (
+        <details>
+          <summary>今日のオーダーを確認</summary>
+          <p>
+            {today.lineups
+              ? '試合開始時に確定した配置'
+              : view.gameLineups[today.gameId]
+                ? '当日指定を使用'
+                : '理想オーダーを使用'}
+          </p>
+          <ol>
+            {(today.lineups
+              ? today.lineups[today.awaySquadId === squadId ? 'away' : 'home']
+              : (view.gameLineups[today.gameId] ?? currentLineup).battingOrder.map((slot) => ({
+                  playerId: slot.playerId,
+                  position: slot.battingRole,
+                }))
+            ).map((slot) => (
+              <li key={slot.playerId}>
+                {playerName(slot.playerId)} / {slot.position}
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
       {!view.canEditManagement && (
         <p className="hint">
           当日の試合開始後は編成を変更できません。翌日に進めると再び編集できます。
@@ -142,6 +185,16 @@ export function ClubEditor({
           確定すると自動保存します。当日の最初の試合を始める前に設定してください。
         </p>
         <h3>理想オーダー</h3>
+        {view.gameLineups && (
+          <p className="hint">
+            野手候補{batterIds.length}人から9人を選びます。下書きで外れている選手：
+            {batterIds
+              .filter((id) => !batters.some((slot) => slot.playerId === id))
+              .map(playerName)
+              .join('、') || 'なし'}
+            。 この入替は一二軍の登録変更ではありません。
+          </p>
+        )}
         <div className="world-table">
           <table>
             <thead>
@@ -156,7 +209,25 @@ export function ClubEditor({
               {batters.map((slot, index) => (
                 <tr key={slot.playerId}>
                   <th>{index + 1}番</th>
-                  <td>{playerName(slot.playerId)}</td>
+                  <td>
+                    {view.gameLineups ? (
+                      <select
+                        className="roster-player-select"
+                        aria-label={index + 1 + '番の選手'}
+                        value={slot.playerId}
+                        disabled={locked}
+                        onChange={(event) => selectBatter(index, event.target.value)}
+                      >
+                        {batterIds.map((id) => (
+                          <option key={id} value={id}>
+                            {playerName(id)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      playerName(slot.playerId)
+                    )}
+                  </td>
                   <td>
                     <select
                       aria-label={`${index + 1}番の守備位置`}
@@ -204,6 +275,36 @@ export function ClubEditor({
           </table>
         </div>
 
+        {view.gameLineups && today && (
+          <div className="world-controls">
+            <button
+              disabled={locked || invalid}
+              onClick={() =>
+                send({
+                  kind: 'setGameLineup',
+                  squadId,
+                  gameId: today.gameId,
+                  lineup: draftLineup(),
+                })
+              }
+            >
+              この打順を今日だけ指定して保存
+            </button>
+            <button
+              className="secondary"
+              disabled={locked || !view.gameLineups[today.gameId]}
+              onClick={() =>
+                send({ kind: 'setGameLineup', squadId, gameId: today.gameId, lineup: null })
+              }
+            >
+              今日の指定を解除
+            </button>
+            <p className="hint">
+              今日だけの指定は理想オーダーを変更しません。別の日には理想オーダーへ戻ります。
+              「編成を確定して自動保存」は理想オーダーを更新しますが、今日の指定は解除しません。
+            </p>
+          </div>
+        )}
         <h3>先発ローテーション</h3>
         <label>
           使用する先発枠{' '}

@@ -83,7 +83,11 @@ export function WorldApp() {
           data.view.lastCompletedDate + 'の全結果を反映し、翌日の状態を自動保存しました。',
         );
       }
-      if (lastAction.current === 'setClubPlan' || lastAction.current === 'setGameStarter')
+      if (
+        lastAction.current === 'setClubPlan' ||
+        lastAction.current === 'setGameStarter' ||
+        lastAction.current === 'setGameLineup'
+      )
         setMessage('編成を確定し、自動保存しました。');
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
       if (lastAction.current === 'load') {
@@ -578,7 +582,7 @@ export function WorldApp() {
           短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日・全144試合の暫定構成です。日程構成は暫定仕様です。
         </p>
         <p>
-          試合はv0.1のv10モデルを使用します。係数は未校正です。追加2球団の能力は既存球団の複製です。二軍・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
+          試合はv0.1のv10モデルを使用します。係数は未校正です。追加2球団の能力は既存球団の複製です。控え野手は各球団3人、能力は既存選手の複製です。一二軍登録・試合中の代打/交代・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
         </p>
       </details>
     </main>

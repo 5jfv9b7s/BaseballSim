@@ -92,7 +92,11 @@ export function validateClubPlan(
   const positions = lineup.battingOrder.map((slot) => slot.battingRole);
   ensure(
     new Set(ids).size === 9 &&
-      ids.every((id) => squad.team.lineup.some((slot) => slot.playerId === id)),
+      ids.every(
+        (id) =>
+          squad.team.lineup.some((slot) => slot.playerId === id) ||
+          (world.version === 'world-prototype-v4' && squad.reserveBatterIds?.includes(id)),
+      ),
     '打順の選手が重複、または球団の野手ではありません',
   );
   ensure(
@@ -171,9 +175,17 @@ export function managementFixture(
 ): GameFixture {
   const fixture = structuredClone(base);
   const scheduled = world.definitions.schedule.find((game) => game.gameId === gameId)!;
+  if (world.version === 'world-prototype-v4') {
+    fixture.players = world.definitions.squads
+      .filter((squad) => [scheduled.awaySquadId, scheduled.homeSquadId].includes(squad.squadId))
+      .flatMap((squad) => structuredClone(squad.players));
+  }
   for (const side of ['away', 'home'] as const) {
     const squadId = side === 'away' ? scheduled.awaySquadId : scheduled.homeSquadId;
-    const lineup = world.management.idealLineups[squadId]!;
+    const lineup =
+      (world.version === 'world-prototype-v4' && squadId === world.management.controlledSquadId
+        ? world.gameLineups[gameId]
+        : null) ?? world.management.idealLineups[squadId]!;
     const plan = world.management.pitcherUsagePlans[squadId]!;
     validateClubPlan(world, squadId, lineup, plan);
     const starter =
@@ -237,15 +249,39 @@ export function applyManagement(
   integer(
     world.management.actions.length,
     0,
-    world.version === 'world-prototype-v3' ? 2047 : 255,
+    'seasonSummary' in world ? 2047 : 255,
     '試作の編成変更回数',
   );
   const management = structuredClone(world.management);
+  const gameLineups =
+    world.version === 'world-prototype-v4' ? structuredClone(world.gameLineups) : null;
   if (action.kind === 'setClubPlan') {
     validateClubPlan(world, action.squadId, action.lineup, action.pitchers);
     management.idealLineups[action.squadId] = structuredClone(action.lineup);
     management.pitcherUsagePlans[action.squadId] = structuredClone(action.pitchers);
     management.policyRevisions[action.squadId]!++;
+  } else if (action.kind === 'setGameLineup') {
+    ensure(
+      world.version === 'world-prototype-v4' && gameLineups,
+      '当日オーダーは新しい名簿対応プレイで利用できます',
+    );
+    const game = world.definitions.schedule.find((game) => game.gameId === action.gameId);
+    ensure(
+      game &&
+        game.date === world.currentDate &&
+        [game.awaySquadId, game.homeSquadId].includes(action.squadId),
+      '担当球団の当日の試合を指定してください',
+    );
+    if (action.lineup === null) delete gameLineups[action.gameId];
+    else {
+      validateClubPlan(
+        world,
+        action.squadId,
+        action.lineup,
+        management.pitcherUsagePlans[action.squadId]!,
+      );
+      gameLineups[action.gameId] = structuredClone(action.lineup);
+    }
   } else {
     ensure(action.kind === 'setGameStarter', '未対応の編成指示です');
     const game = world.definitions.schedule.find((game) => game.gameId === action.gameId);
@@ -269,5 +305,7 @@ export function applyManagement(
     date: world.currentDate,
     action: structuredClone(action),
   });
-  return { ...world, management };
+  return world.version === 'world-prototype-v4'
+    ? { ...world, management, gameLineups: gameLineups! }
+    : { ...world, management };
 }

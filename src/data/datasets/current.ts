@@ -1,22 +1,27 @@
 import type { GameFixture, TeamSide } from '../../game/types.ts';
-import { players as awayPlayers } from '../players/away.ts';
-import { players as homePlayers } from '../players/home.ts';
-import { repertoires as awayPitches } from '../repertoires/away.ts';
-import { repertoires as homePitches } from '../repertoires/home.ts';
-import { team as awayTeam } from '../teams/away.ts';
-import { team as homeTeam } from '../teams/home.ts';
+import { players as awayPlayers } from '../players/hoshihara.ts';
+import { players as homePlayers } from '../players/aonagi.ts';
+import { repertoires as awayPitches } from '../repertoires/hoshihara.ts';
+import { repertoires as homePitches } from '../repertoires/aonagi.ts';
+import { squad as awaySquad } from '../teams/hoshihara.ts';
+import { squad as homeSquad } from '../teams/aonagi.ts';
 
-/**
- * 新規v10の入力データを組み立てる入口。
- * 毎回複製し、編集中の定義と開始済みの試合を独立させます。
- * 保存からの再現にはこの関数を使わず、保存された名簿を使います。
- */
+/** 新規v10も球団別の共通データを参照する。保存の再現には保存内名簿を使う。 */
 export function createCurrentFixture(): GameFixture {
-  const teams = { away: awayTeam, home: homeTeam };
+  const teams = {
+    away: { ...awaySquad.team, side: 'away' as const },
+    home: { ...homeSquad.team, side: 'home' as const },
+  };
+  const activeIds = Object.values(teams).flatMap((team) => [
+    ...team.lineup.map((slot) => slot.playerId),
+    ...team.pitcherIds,
+  ]);
   return structuredClone({
     initialDatasetVersion: 'game-fixture-v2',
-    players: [...awayPlayers, ...homePlayers],
-    pitches: [...awayPitches, ...homePitches],
+    players: [...awayPlayers, ...homePlayers].filter((player) =>
+      activeIds.includes(player.playerId),
+    ),
+    pitches: [...awayPitches, ...homePitches].filter((pitch) => activeIds.includes(pitch.playerId)),
     teams,
     clubs: (['away', 'home'] as const).map((side: TeamSide) => ({
       clubId: teams[side].clubId,

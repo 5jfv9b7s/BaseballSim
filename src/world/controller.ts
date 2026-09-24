@@ -1,13 +1,8 @@
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import {
-  advanceWorld,
-  completeDay,
-  createManagedWorld,
-  createAnnualWorld,
-  worldPhase,
-} from './engine.ts';
+import { advanceWorld, completeDay, createRosterWorld, worldPhase } from './engine.ts';
+import { createRosterDefinitions } from '../data/world/rosters.ts';
 import { standings } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -38,6 +33,7 @@ export interface WorldView {
   modelVersion: WorldRecord['version'];
   management: ClubManagement | null;
   seasonSummary: import('./types.ts').SeasonSummary | null;
+  gameLineups: Record<string, import('./types.ts').IdealLineup> | null;
   canEditManagement: boolean;
   seed: number;
   definitions: WorldRecord['definitions'];
@@ -55,6 +51,7 @@ export interface WorldView {
     score: { away: number; home: number } | null;
     totalPitches: number;
     result: GameResult | null;
+    lineups: Record<'away' | 'home', import('../game/types.ts').Team['lineup']> | null;
     startingPitchers: { away: string; home: string } | null;
   }[];
   stats: WorldRecord['stats'];
@@ -66,7 +63,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createManagedWorld();
+  private world: WorldRecord = createRosterWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -96,7 +93,8 @@ export class WorldController {
       worldId: world.worldId,
       modelVersion: world.version,
       management: world.version !== 'world-prototype-v1' ? world.management : null,
-      seasonSummary: world.version === 'world-prototype-v3' ? world.seasonSummary : null,
+      seasonSummary: 'seasonSummary' in world ? world.seasonSummary : null,
+      gameLineups: world.version === 'world-prototype-v4' ? world.gameLineups : null,
       canEditManagement: canEditManagement(world),
       seed: world.seed,
       definitions: world.definitions,
@@ -119,6 +117,9 @@ export class WorldController {
           score: game?.state.score ?? null,
           totalPitches: game?.state.totalPitches ?? 0,
           result: game?.result ?? null,
+          lineups: game
+            ? { away: game.fixture.teams.away.lineup, home: game.fixture.teams.home.lineup }
+            : null,
           startingPitchers: game
             ? {
                 away: game.fixture.teams.away.pitcherIds[0]!,
@@ -140,9 +141,16 @@ export class WorldController {
     ensure(command.localWorldId === 'v02-local', '対象のローカル世界が異なります');
     integer(command.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER - 1, '状態版');
     ensure(
-      ['new', 'advance', 'completeDay', 'save', 'load', 'setClubPlan', 'setGameStarter'].includes(
-        command.kind,
-      ),
+      [
+        'new',
+        'advance',
+        'completeDay',
+        'save',
+        'load',
+        'setClubPlan',
+        'setGameStarter',
+        'setGameLineup',
+      ].includes(command.kind),
       '未対応の世界指示です',
     );
     if (command.kind === 'new') {
@@ -167,14 +175,19 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world =
-        command.calendar === 'annual'
-          ? createAnnualWorld(command.seed, command.controlledSquadId)
-          : createManagedWorld(command.seed, undefined, command.controlledSquadId);
+      this.world = createRosterWorld(
+        command.seed,
+        command.controlledSquadId,
+        createRosterDefinitions(command.calendar),
+      );
       this.unsavedChanges = true;
       this.storageError = null;
     }
-    if (command.kind === 'setClubPlan' || command.kind === 'setGameStarter') {
+    if (
+      command.kind === 'setClubPlan' ||
+      command.kind === 'setGameStarter' ||
+      command.kind === 'setGameLineup'
+    ) {
       const {
         commandId,
         expectedStateRevision: _revision,

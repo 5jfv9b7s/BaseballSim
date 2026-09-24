@@ -1,4 +1,4 @@
-import { createWorld, createAnnualWorld } from '../src/world/engine.ts';
+import { createWorld, createAnnualWorld, createRosterWorld } from '../src/world/engine.ts';
 import { createGame } from '../src/game/engine.ts';
 import { PITCH_TYPES } from '../src/data/pitch-types/index.ts';
 
@@ -38,4 +38,11 @@ console.log(
     '〜' +
     annual.definitions.endDate +
     '（検査成功）',
+);
+
+const roster = createRosterWorld();
+console.log(
+  '控え対応名簿: ' +
+    roster.definitions.squads.reduce((sum, squad) => sum + squad.players.length, 0) +
+    '選手（検査成功）',
 );

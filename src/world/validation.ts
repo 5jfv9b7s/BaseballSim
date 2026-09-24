@@ -7,6 +7,7 @@ import {
   createWorld,
   createManagedWorld,
   createAnnualWorld,
+  createRosterWorld,
   createScheduledGame,
   acceptGame,
 } from './engine.ts';
@@ -44,16 +45,16 @@ function validateWithCache(
   ensure(value !== null && typeof value === 'object', '世界データが不正です');
   const candidate = value as WorldRecord;
   ensure(
-    ['world-prototype-v1', 'world-prototype-v2', 'world-prototype-v3'].includes(candidate.version),
+    [
+      'world-prototype-v1',
+      'world-prototype-v2',
+      'world-prototype-v3',
+      'world-prototype-v4',
+    ].includes(candidate.version),
     '未対応の世界モデルです',
   );
   ensure(Array.isArray(candidate.completedDates), '日次完了記録が不正です');
-  integer(
-    candidate.completedDates.length,
-    0,
-    candidate.version === 'world-prototype-v3' ? 366 : 31,
-    '完了日数',
-  );
+  integer(candidate.completedDates.length, 0, 'seasonSummary' in candidate ? 366 : 31, '完了日数');
   ensure(
     candidate.games !== null &&
       typeof candidate.games === 'object' &&
@@ -62,34 +63,37 @@ function validateWithCache(
   );
   const actions = candidate.version !== 'world-prototype-v1' ? candidate.management.actions : [];
   ensure(Array.isArray(actions), '編成履歴が不正です');
-  integer(
-    actions.length,
-    0,
-    candidate.version === 'world-prototype-v3' ? 2048 : 256,
-    '編成履歴の件数',
-  );
+  integer(actions.length, 0, 'seasonSummary' in candidate ? 2048 : 256, '編成履歴の件数');
   ensure(
     candidate.definitions.version ===
-      (candidate.version === 'world-prototype-v3'
-        ? 'world-definitions-v2'
-        : 'world-definitions-v1'),
+      (candidate.version === 'world-prototype-v4'
+        ? 'world-definitions-v3'
+        : candidate.version === 'world-prototype-v3'
+          ? 'world-definitions-v2'
+          : 'world-definitions-v1'),
     '世界モデルと日程定義の版が異なります',
   );
   let actionIndex = 0;
   let replay: WorldRecord =
-    candidate.version === 'world-prototype-v3'
-      ? createAnnualWorld(
+    candidate.version === 'world-prototype-v4'
+      ? createRosterWorld(
           candidate.seed,
           candidate.management.controlledSquadId,
           candidate.definitions,
         )
-      : candidate.version === 'world-prototype-v2'
-        ? createManagedWorld(
+      : candidate.version === 'world-prototype-v3'
+        ? createAnnualWorld(
             candidate.seed,
-            candidate.definitions,
             candidate.management.controlledSquadId,
+            candidate.definitions,
           )
-        : createWorld(candidate.seed, candidate.definitions);
+        : candidate.version === 'world-prototype-v2'
+          ? createManagedWorld(
+              candidate.seed,
+              candidate.definitions,
+              candidate.management.controlledSquadId,
+            )
+          : createWorld(candidate.seed, candidate.definitions);
 
   const replayDate = (requireComplete: boolean) => {
     while (actions[actionIndex]?.date === replay.currentDate) {

@@ -15,13 +15,19 @@ import type { WorldRecord } from './types.ts';
 
 export const WORLD_DATABASE_NAME = 'BaseballSim-v02-worlds';
 const LOCAL_WORLD = 'v02-local';
-type SaveFormat = 'v02-world-snapshot-v1' | 'v03-world-snapshot-v2' | 'v04-world-snapshot-v3';
+type SaveFormat =
+  | 'v02-world-snapshot-v1'
+  | 'v03-world-snapshot-v2'
+  | 'v04-world-snapshot-v3'
+  | 'v05-world-snapshot-v4';
 const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
     : version === 'world-prototype-v2'
       ? 'v03-world-snapshot-v2'
-      : 'v04-world-snapshot-v3';
+      : version === 'world-prototype-v3'
+        ? 'v04-world-snapshot-v3'
+        : 'v05-world-snapshot-v4';
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 
@@ -168,7 +174,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         bytes += cached.rawBytes;
         storedBytes += cached.payloadBytes.length;
         ensure(
-          bytes <= (world.version === 'world-prototype-v3' ? MAX_ANNUAL_RAW_BYTES : MAX_BYTES) &&
+          bytes <= ('seasonSummary' in world ? MAX_ANNUAL_RAW_BYTES : MAX_BYTES) &&
             storedBytes <= MAX_BYTES,
           '年間保存の容量上限を超えました',
         );
@@ -178,7 +184,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       const text = canonicalJson(value);
       const raw = new TextEncoder().encode(text);
       bytes += raw.length;
-      const compressed = world.version === 'world-prototype-v3';
+      const compressed = 'seasonSummary' in world;
       ensure(!compressed || raw.length <= 16 * 1024 * 1024, '保存ブロックが16MiBを超えました');
       ensure(
         bytes <= (compressed ? MAX_ANNUAL_RAW_BYTES : MAX_BYTES),
@@ -287,7 +293,11 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ensure(
           snapshot.blockRefs.length >= 3 &&
             snapshot.blockRefs.length <=
-              (snapshot.versions.simulationVersion === 'world-prototype-v3' ? 259 : 35),
+              (['world-prototype-v3', 'world-prototype-v4'].includes(
+                snapshot.versions.simulationVersion,
+              )
+                ? 259
+                : 35),
           '保存ブロック数が不正です',
         );
         const blocks = await db.save_blocks.bulkGet(snapshot.blockRefs.map((ref) => ref.blockId));
@@ -302,9 +312,13 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       '保存目録のハッシュが一致しません',
     );
     ensure(
-      ['world-prototype-v1', 'world-prototype-v2', 'world-prototype-v3'].includes(
-        snapshot.versions.simulationVersion,
-      ) && format === formatFor(snapshot.versions.simulationVersion),
+      [
+        'world-prototype-v1',
+        'world-prototype-v2',
+        'world-prototype-v3',
+        'world-prototype-v4',
+      ].includes(snapshot.versions.simulationVersion) &&
+        format === formatFor(snapshot.versions.simulationVersion),
       '未対応の世界保存形式です',
     );
     const values = new Map<string, unknown>();
@@ -315,7 +329,10 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       const ref = snapshot.blockRefs[index]!;
       ensure(
         block &&
-          block.codec === (format === 'v04-world-snapshot-v3' ? 'gzip' : 'none') &&
+          block.codec ===
+            (['v04-world-snapshot-v3', 'v05-world-snapshot-v4'].includes(format)
+              ? 'gzip'
+              : 'none') &&
           block.schemaVersion === format,
         '保存ブロックがありません、または未対応です',
       );
@@ -327,7 +344,10 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       ensure(
         Number.isSafeInteger(bytes) &&
           bytes >= 0 &&
-          bytes <= (format === 'v04-world-snapshot-v3' ? MAX_ANNUAL_RAW_BYTES : MAX_BYTES) &&
+          bytes <=
+            (['v04-world-snapshot-v3', 'v05-world-snapshot-v4'].includes(format)
+              ? MAX_ANNUAL_RAW_BYTES
+              : MAX_BYTES) &&
           storedBytes <= MAX_BYTES,
         '保存容量が不正です',
       );

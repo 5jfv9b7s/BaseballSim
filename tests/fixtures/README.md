@@ -1,0 +1,28 @@
+# 旧モデルの互換性用データ
+
+2026-09-23、変更前のコミット `3588781` の実装で生成したデータです。
+
+- `completed-v1.json.gz`：seed 20260923の終了試合を旧StorageAdapterで保存し、IndexedDBの4ストアをJSON化してgzip圧縮したもの。payloadBytesはJSON配列です。架空選手のみを含みます。
+- `v1-digests.json`：4種類のseedで、旧版の全GameRecordをcanonicalJson化したSHA-256です。
+
+新しい実装から期待値を再生成すると互換性破壊を見逃すため、モデル調整時に上書きしません。保存時刻・UUIDは凍結した旧保存そのものの値です。
+
+v2のcompleted-v2.json.gz・v2-digests.jsonは、変更前のb982a47で同じ手順により生成しました。seed20260923は9対1、235球です。v1と同様に、現在の実装から期待値を作り直しません。
+
+v3のcompleted-v3.json.gz・v3-digests.jsonは、変更前の9688dcfで同じ手順により生成しました。seed20260923は星原2対青凪0、284球・76打席です。v1/v2と同様に、現在の実装から期待値を作り直しません。
+
+v4のcompleted-v4.json.gz・v4-digests.jsonは、変更前の41be15dで同じ手順により生成しました。seed20260923は星原0対青凪7、334球・83打席です。v1～v3と同様に、現在の実装から期待値を作り直しません。
+
+v5のcompleted-v5.json.gz・v5-digests.jsonは、変更前のe892d5bで同じ手順により生成しました。seed20260923は星原6対青凪2、362球・90打席です。旧版の互換性を検査するため、現在の実装から期待値を作り直しません。
+
+v6のcompleted-v6.json.gz・v6-digests.jsonは、変更前の7ba1b2842a3889c9a8aa151a4a29c6374acfb482で固定しました。seed20260923は星原2対青凪3、326球・87打席です。v7の互換性試験用であり、現在の実装で期待値を再生成しません。
+
+match-v7-baseline.jsonはv7追加時の試験用設定です。実行時のconfig/match.tsを調整しても旧v6との同値性や固定プレーの試験を維持するために分離しています。旧版保存の期待値とは別物です。
+
+v7のcompleted-v7.json.gz・v7-digests.jsonは、v8の変更前の7ae4f1213931046255cc88e590a7977d76dd0688で固定しました。seed20260923は星原7対青凪9、403球・103打席、併殺2件です。旧版の実保存と4条件の全記録ハッシュを維持し、現在の実装で期待値を再生成しません。
+
+v8のcompleted-v8.json.gz・v8-digests.jsonは、v9実装前の3a34a384957de2e7d8c73da5604f7b3ef5cdbb5aで固定しました。seed20260923は星原7対青凪9、403球・103打席、野選1件です。4seedの全記録ハッシュと実保存は現在のコードで再生成しません。
+
+v9のcompleted-v9.json.gz・v9-digests.jsonは、v10実装前のe8ceceb141fb2082ff19a64d809edcb2958c826eで固定しました。seed20260923は星原7対青凪9、403球・103打席、守備刺殺の合計は24/27です。IndexedDBの4ストア実保存と4seedの全記録ハッシュを凍結し、v10の実装から旧期待値を再生成していません。
+
+v10のcompleted-v10.json.gz・v10-digests.json・game-fixture-v2.jsonは、データ分離前の3506e3905f13fb089b99d4b1297eadad1bca7b5dで固定しました。seed20260923は星原2対青凪3、310球・81打席です。分離後に生成し直した期待値ではありません。v10の4seedハッシュは凍結した名簿で検証し、新規編集データと区別します。

@@ -1,0 +1,106 @@
+{
+  "pitch": {
+    "baseWeights": {
+      "fastball": 50,
+      "slider": 30,
+      "fork": 20
+    },
+    "twoStrike": {
+      "fastball": 0.8,
+      "slider": 1.2,
+      "fork": 1.4
+    },
+    "threeBall": {
+      "fastball": 1.4,
+      "slider": 0.8,
+      "fork": 0.6
+    },
+    "oppositeSide": {
+      "fastball": 1,
+      "slider": 0.9,
+      "fork": 1.1
+    },
+    "zone": {
+      "leftMm": -216,
+      "rightMm": 216,
+      "bottomMm": 500,
+      "topMm": 1100
+    },
+    "positionErrorMinMm": 35,
+    "positionErrorScaleMm": 300,
+    "velocityRepeatabilityReduction": 0.7,
+    "swingInBase": 0.36,
+    "swingInAggression": 0.3,
+    "swingInDiscipline": 0.12,
+    "swingOutBase": 0.24,
+    "swingOutAggression": 0.2,
+    "swingOutDiscipline": 0.24,
+    "contactBase": 0.48,
+    "contactAbility": 0.46,
+    "contactSpeedReferenceKph": 130,
+    "contactSpeedPenaltyPerKph": 0.004,
+    "contactOutsidePenalty": 0.18,
+    "contactMin": 0.05,
+    "contactMax": 0.98,
+    "foulBase": 0.5,
+    "foulAbilityReduction": 0.15,
+    "aimXMm": [-190, 0, 190],
+    "aimZMm": [550, 800, 1050],
+    "chaseAimXMm": [-245, 0, 245],
+    "chaseAimZMm": [460, 800, 1140],
+    "threeBallAimXMm": [-100, 0, 100],
+    "threeBallAimZMm": [650, 800, 950],
+    "protectInside": 0.28,
+    "protectOutside": 0,
+    "threeBallPatience": 0.12,
+    "foulOutside": 0.1,
+    "foulTwoStrike": 0.03,
+    "bodyCenterMm": 410,
+    "bodyHalfWidthMm": 75,
+    "bodyBottomMm": 400,
+    "bodyTopMm": 1500,
+    "deliveryDistanceMeters": 18.44,
+    "avoidanceReactionSeconds": 0.18,
+    "avoidanceDisciplineReductionSeconds": 0.06,
+    "avoidanceSurpriseSeconds": 0.28,
+    "avoidanceSpeedMetersPerSecond": 0.9,
+    "avoidanceMaxShiftMm": 220,
+    "contactProtectBase": 0.08,
+    "contactProtectAbility": 0.08
+  },
+  "battedBall": {
+    "gravityMetersPerSecond2": 9.81,
+    "airborneDragFactor": 0.72,
+    "fenceCenterMeters": 120,
+    "fenceCornerMeters": 100,
+    "fenceHeightMeters": 3,
+    "exitSpeedBaseKph": 70,
+    "exitSpeedPowerKph": 55,
+    "exitSpeedPitchFactor": 0.16,
+    "exitSpeedNoiseKph": 24,
+    "angleMinimumDegrees": -45,
+    "fielderReactionBaseSeconds": 0.65,
+    "fielderReactionReductionSeconds": 0.25,
+    "throwBaseMetersPerSecond": 20,
+    "throwAbilityMetersPerSecond": 15,
+    "angleModeDegrees": 5,
+    "angleMaximumDegrees": 75,
+    "fielderAccelerationMetersPerSecond2": 8,
+    "protectExitSpeedPenaltyCentiKph": 1200,
+    "protectContactRecoveryCentiKph": 600
+  },
+  "running": {
+    "runnerBaseMetersPerSecond": 5,
+    "runnerAbilityMetersPerSecond": 4,
+    "runnerLeadMeters": 3,
+    "runnerReactionSeconds": 0.2,
+    "extraBaseSafetySeconds": 0.8
+  },
+  "plays": {
+    "transferSeconds": 0.35,
+    "pivotSeconds": 0.25,
+    "tagUpReactionSeconds": 0.2,
+    "tagUpSafetySeconds": 0.2,
+    "coverPreparationPitchFraction": 1
+  }
+}

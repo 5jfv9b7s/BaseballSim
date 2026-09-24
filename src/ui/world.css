@@ -1,0 +1,76 @@
+.world-page {
+  min-width: 0;
+}
+
+.world-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.world-table {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.world-table table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.world-table th,
+.world-table td {
+  padding: 0.65rem 0.75rem;
+  text-align: right;
+  border-bottom: 1px solid #dce4df;
+}
+
+.world-table th {
+  text-align: left;
+}
+
+.world-page label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.world-page select,
+.world-page input {
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+}
+
+.world-page p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .world-controls button {
+    flex: 1 1 100%;
+  }
+}
+
+.world-page > .panel {
+  margin-top: 20px;
+}
+.world-controls button {
+  width: auto;
+}
+
+.order-buttons button {
+  width: auto;
+  margin-left: 0.4rem;
+  padding: 0.5rem 0.8rem;
+}
+.rotation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}

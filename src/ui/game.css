@@ -1,0 +1,151 @@
+.app-nav {
+  max-width: 1040px;
+  margin: 20px auto 0;
+  padding: 0 28px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.app-nav button {
+  width: auto;
+  background: transparent;
+  border: 1px solid #688471;
+  color: #d5e1d8;
+  padding: 10px 18px;
+}
+.app-nav button[aria-pressed='true'] {
+  color: #102a24;
+  background: #e6bd76;
+  border-color: #e6bd76;
+}
+.game-page {
+  padding-top: 30px;
+}
+.game-score {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  text-align: center;
+  gap: 16px;
+  margin-top: 26px;
+  align-items: center;
+}
+.game-score h2 {
+  margin: 10px 0 6px;
+}
+.game-score strong {
+  font-size: 56px;
+  font-variant-numeric: tabular-nums;
+  color: #f4e4bd;
+}
+.game-inning {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.game-actions,
+.game-lines,
+.game-save,
+.game-log,
+.game-statistics {
+  margin-top: 20px;
+}
+.game-seed {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+.game-seed label {
+  margin: 0;
+}
+.game-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+.game-progress {
+  color: #f4e4bd;
+  margin-bottom: 0;
+}
+.base-status {
+  font-size: 12px;
+  color: #afc2b7;
+}
+.game-statistics {
+  display: grid;
+  gap: 20px;
+}
+.game-statistics h3 {
+  font-size: 13px;
+  color: #d5c49d;
+  margin: 22px 0 8px;
+}
+.game-log ol {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0;
+  font-size: 13px;
+}
+.game-log li {
+  border-top: 1px solid #ffffff14;
+  padding: 10px 0;
+  line-height: 1.8;
+}
+.game-log li span {
+  color: #a9c4b4;
+  margin-right: 10px;
+}
+@media (max-width: 650px) {
+  .app-nav {
+    padding: 0 16px;
+  }
+  .app-nav button {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  .game-score {
+    gap: 8px;
+    padding: 18px 10px;
+  }
+  .game-score h2 {
+    font-size: 13px;
+  }
+  .game-score strong {
+    font-size: 40px;
+  }
+  .game-inning {
+    font-size: 12px;
+  }
+  .game-inning small {
+    font-size: 10px;
+  }
+  .game-seed {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .game-buttons {
+    flex-wrap: wrap;
+  }
+  .game-buttons button {
+    flex: 1 1 160px;
+  }
+}
+
+.game-statistics > .panel {
+  min-width: 0;
+}
+
+.model-choice {
+  display: block;
+  margin-bottom: 18px;
+}
+.model-choice select {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  color: #e4ede6;
+  background: #102a24;
+  border: 1px solid #688471;
+  border-radius: 6px;
+}

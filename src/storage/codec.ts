@@ -1,0 +1,274 @@
+import { GAME_MODEL_V10 } from '../game/model-v10.ts';
+import { validateErrorConfig, type ErrorConfig } from '../game/error-config.ts';
+import { GAME_MODEL_V9 } from '../game/model-v9.ts';
+import { validateMatchConfig, type MatchConfig } from '../game/config.ts';
+import { GAME_MODEL_V8 } from '../game/model-v8.ts';
+import { GAME_MODEL_V7 } from '../game/model-v7.ts';
+import { ensure, integer } from '../engine/validation.ts';
+import { MODEL as PITCH_MODEL } from '../engine/model.ts';
+import { createGame, runToCompletion } from '../game/engine.ts';
+import { finalizeGame } from '../game/results.ts';
+import { createGameFixture } from '../game/fixture.ts';
+import { FIELD_POSITIONS, GAME_MODEL } from '../game/model.ts';
+import type { GameRecord } from '../game/types.ts';
+import { GAME_MODEL_V2 } from '../game/model-v2.ts';
+import { GAME_MODEL_V6 } from '../game/model-v6.ts';
+import { PITCH_MODEL_V4 } from '../engine/model-v4.ts';
+import { GAME_MODEL_V5 } from '../game/model-v5.ts';
+import { GAME_MODEL_V4 } from '../game/model-v4.ts';
+import { PITCH_MODEL_V3 } from '../engine/model-v3.ts';
+import { GAME_MODEL_V3 } from '../game/model-v3.ts';
+import { PITCH_MODEL_V2 } from '../engine/model-v2.ts';
+import { gameModel, usesMatchConfig, type GameModelVersion } from '../game/model-registry.ts';
+
+export const SAVE_FORMAT = 'v01-completed-game-1';
+export const VERSIONS = Object.freeze({
+  saveFormatVersion: SAVE_FORMAT,
+  dataSchemaVersion: 'game-prototype-schema-v1',
+  simulationVersion: GAME_MODEL.version,
+  rulesetVersion: GAME_MODEL.rulesetVersion,
+  statDefinitionVersion: 'game-stats-prototype-v1',
+  initialDatasetVersion: GAME_MODEL.datasetVersion,
+  rngAlgorithmVersion: 'xorshift32-v1',
+});
+export const DEFINITIONS = Object.freeze({
+  versions: VERSIONS,
+  pitchModel: PITCH_MODEL,
+  gameModel: GAME_MODEL,
+  fieldPositions: FIELD_POSITIONS,
+});
+const VERSIONS_V2 = Object.freeze({
+  ...VERSIONS,
+  saveFormatVersion: 'v01-completed-game-2',
+  dataSchemaVersion: 'game-prototype-schema-v2',
+  simulationVersion: GAME_MODEL_V2.version,
+  rulesetVersion: GAME_MODEL_V2.rulesetVersion,
+});
+const VERSIONS_V3 = Object.freeze({
+  ...VERSIONS_V2,
+  saveFormatVersion: 'v01-completed-game-3',
+  dataSchemaVersion: 'game-prototype-schema-v3',
+  simulationVersion: GAME_MODEL_V3.version,
+  rulesetVersion: GAME_MODEL_V3.rulesetVersion,
+});
+const VERSIONS_V4 = Object.freeze({
+  ...VERSIONS_V3,
+  saveFormatVersion: 'v01-completed-game-4',
+  dataSchemaVersion: 'game-prototype-schema-v4',
+  simulationVersion: GAME_MODEL_V4.version,
+  rulesetVersion: GAME_MODEL_V4.rulesetVersion,
+});
+
+const VERSIONS_V5 = Object.freeze({
+  ...VERSIONS_V4,
+  saveFormatVersion: 'v01-completed-game-5',
+  dataSchemaVersion: 'game-prototype-schema-v5',
+  simulationVersion: GAME_MODEL_V5.version,
+  rulesetVersion: GAME_MODEL_V5.rulesetVersion,
+});
+
+const VERSIONS_V6 = Object.freeze({
+  ...VERSIONS_V5,
+  saveFormatVersion: 'v01-completed-game-6',
+  dataSchemaVersion: 'game-prototype-schema-v6',
+  simulationVersion: GAME_MODEL_V6.version,
+  rulesetVersion: GAME_MODEL_V6.rulesetVersion,
+});
+
+const VERSIONS_V7 = Object.freeze({
+  ...VERSIONS_V6,
+  saveFormatVersion: 'v01-completed-game-7',
+  dataSchemaVersion: 'game-prototype-schema-v7',
+  statDefinitionVersion: 'game-stats-prototype-v2',
+  simulationVersion: GAME_MODEL_V7.version,
+  rulesetVersion: GAME_MODEL_V7.rulesetVersion,
+});
+
+const VERSIONS_V8 = Object.freeze({
+  ...VERSIONS_V7,
+  saveFormatVersion: 'v01-completed-game-8',
+  dataSchemaVersion: 'game-prototype-schema-v8',
+  statDefinitionVersion: 'game-stats-prototype-v3',
+  simulationVersion: GAME_MODEL_V8.version,
+  rulesetVersion: GAME_MODEL_V8.rulesetVersion,
+});
+
+const VERSIONS_V9 = Object.freeze({
+  ...VERSIONS_V8,
+  saveFormatVersion: 'v01-completed-game-9',
+  dataSchemaVersion: 'game-prototype-schema-v9',
+  statDefinitionVersion: 'game-stats-prototype-v4',
+  simulationVersion: GAME_MODEL_V9.version,
+  rulesetVersion: GAME_MODEL_V9.rulesetVersion,
+});
+
+const VERSIONS_V10 = Object.freeze({
+  ...VERSIONS_V9,
+  saveFormatVersion: 'v01-completed-game-10',
+  dataSchemaVersion: 'game-prototype-schema-v10',
+  statDefinitionVersion: 'game-stats-prototype-v5',
+  simulationVersion: GAME_MODEL_V10.version,
+  rulesetVersion: GAME_MODEL_V10.rulesetVersion,
+  initialDatasetVersion: GAME_MODEL_V10.datasetVersion,
+});
+
+export function versionsFor(version: GameModelVersion) {
+  gameModel(version);
+  return version === 'game-prototype-v1'
+    ? VERSIONS
+    : version === 'game-prototype-v2'
+      ? VERSIONS_V2
+      : version === 'game-prototype-v3'
+        ? VERSIONS_V3
+        : version === 'game-prototype-v4'
+          ? VERSIONS_V4
+          : version === 'game-prototype-v5'
+            ? VERSIONS_V5
+            : version === 'game-prototype-v6'
+              ? VERSIONS_V6
+              : version === 'game-prototype-v7'
+                ? VERSIONS_V7
+                : version === 'game-prototype-v8'
+                  ? VERSIONS_V8
+                  : version === 'game-prototype-v9'
+                    ? VERSIONS_V9
+                    : VERSIONS_V10;
+}
+export function definitionsFor(
+  version: GameModelVersion,
+  config?: MatchConfig,
+  errorConfig?: ErrorConfig,
+) {
+  if (usesMatchConfig(version)) {
+    validateMatchConfig(config);
+    if (version === 'game-prototype-v10') validateErrorConfig(errorConfig);
+    return {
+      ...(version === 'game-prototype-v10' ? { errorConfig: structuredClone(errorConfig!) } : {}),
+      versions: versionsFor(version),
+      gameModel: gameModel(version),
+      config: structuredClone(config),
+      fieldPositions: FIELD_POSITIONS,
+    };
+  }
+  return version === 'game-prototype-v1'
+    ? DEFINITIONS
+    : {
+        versions: versionsFor(version),
+        pitchModel:
+          version === 'game-prototype-v6'
+            ? PITCH_MODEL_V4
+            : version === 'game-prototype-v4' || version === 'game-prototype-v5'
+              ? PITCH_MODEL_V3
+              : version === 'game-prototype-v3'
+                ? PITCH_MODEL_V2
+                : PITCH_MODEL,
+        gameModel: gameModel(version),
+        fieldPositions: FIELD_POSITIONS,
+      };
+}
+
+export const MAX_SAVE_BYTES = 12 * 1024 * 1024;
+
+/** 順序が意味を持つ配列を保ち、オブジェクトのキーだけ正規化する。 */
+export function canonicalJson(value: unknown, depth = 0): string {
+  ensure(depth < 80, '保存データが深すぎます');
+  if (value === null || typeof value === 'boolean' || typeof value === 'string')
+    return JSON.stringify(value);
+  if (typeof value === 'number') {
+    ensure(Number.isFinite(value) && !Object.is(value, -0), '非有限数・負のゼロは保存できません');
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value))
+    return '[' + value.map((v) => canonicalJson(v, depth + 1)).join(',') + ']';
+  ensure(
+    typeof value === 'object' &&
+      value !== null &&
+      Object.getPrototypeOf(value) === Object.prototype,
+    'JSON以外の保存値です',
+  );
+  return (
+    '{' +
+    Object.keys(value)
+      .sort()
+      .map(
+        (key) =>
+          JSON.stringify(key) +
+          ':' +
+          canonicalJson((value as Record<string, unknown>)[key], depth + 1),
+      )
+      .join(',') +
+    '}'
+  );
+}
+
+export async function sha256(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/** 終了試合を保存名簿で再実行する。旧v1〜v9は凍結した固定名簿だけを許可する。 */
+export function validateCompletedRecord(value: unknown): asserts value is GameRecord {
+  const encoded = canonicalJson(value);
+  ensure(
+    new TextEncoder().encode(encoded).byteLength <= MAX_SAVE_BYTES,
+    '保存データの上限12MiBを超えています',
+  );
+  ensure(value !== null && typeof value === 'object', '試合データが不正です');
+  const candidate = value as GameRecord;
+  ensure(
+    candidate.kind === 'completed-game-prototype-v1' ||
+      candidate.kind === 'completed-game-prototype-v2' ||
+      candidate.kind === 'completed-game-prototype-v3' ||
+      candidate.kind === 'completed-game-prototype-v4' ||
+      candidate.kind === 'completed-game-prototype-v5' ||
+      candidate.kind === 'completed-game-prototype-v6' ||
+      candidate.kind === 'completed-game-prototype-v7' ||
+      candidate.kind === 'completed-game-prototype-v8' ||
+      candidate.kind === 'completed-game-prototype-v9' ||
+      candidate.kind === 'completed-game-prototype-v10',
+    '終了したv0.1試合だけを保存・復元できます',
+  );
+  integer(candidate.seed, 1, 0xffffffff, '保存seed');
+  // v10は開始時の名簿全体を保存済み。編集後の現在値と比較しない。
+  // 名前・能力・持ち球・編成はcreateGameの検査と全イベント再実行で照合する。
+  if (candidate.kind !== 'completed-game-prototype-v10')
+    ensure(
+      canonicalJson(candidate.fixture) === canonicalJson(createGameFixture()),
+      '未対応の初期データです',
+    );
+  const version =
+    candidate.kind === 'completed-game-prototype-v1'
+      ? 'game-prototype-v1'
+      : candidate.kind === 'completed-game-prototype-v2'
+        ? 'game-prototype-v2'
+        : candidate.kind === 'completed-game-prototype-v3'
+          ? 'game-prototype-v3'
+          : candidate.kind === 'completed-game-prototype-v4'
+            ? 'game-prototype-v4'
+            : candidate.kind === 'completed-game-prototype-v5'
+              ? 'game-prototype-v5'
+              : candidate.kind === 'completed-game-prototype-v6'
+                ? 'game-prototype-v6'
+                : candidate.kind === 'completed-game-prototype-v7'
+                  ? 'game-prototype-v7'
+                  : candidate.kind === 'completed-game-prototype-v8'
+                    ? 'game-prototype-v8'
+                    : candidate.kind === 'completed-game-prototype-v9'
+                      ? 'game-prototype-v9'
+                      : 'game-prototype-v10';
+  if (usesMatchConfig(version)) validateMatchConfig(candidate.state?.config);
+  if (version === 'game-prototype-v10') validateErrorConfig(candidate.state?.errorConfig);
+  const replay = createGame(
+    candidate.seed,
+    candidate.fixture,
+    version,
+    candidate.state?.config,
+    candidate.state?.errorConfig,
+  );
+  runToCompletion(replay);
+  finalizeGame(replay);
+  ensure(
+    canonicalJson(replay) === encoded,
+    '記録・成績・乱数状態・参照またはモデル版が一致しません',
+  );
+}

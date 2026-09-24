@@ -4,7 +4,11 @@ export type RatingMilli = number; // 整数 0..120000。境界で検査する。
 export type CentiKph = number;
 export type Millimeter = number;
 export type Side = 'R' | 'L';
-export type PitchType = 'fastball' | 'slider' | 'fork';
+/** 現行モデルが計算できる球種。表示用辞書への追加だけでは有効化しない。 */
+export type PitchType = Extract<
+  import('../data/pitch-types/index.ts').PitchTypeCode,
+  'fastball' | 'slider' | 'fork'
+>;
 export type Count = { balls: number; strikes: number };
 export type Ability = { valueMilli: RatingMilli; ceilingMilli: RatingMilli };
 export type Location = { xMm: Millimeter; zMm: Millimeter };

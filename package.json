@@ -1,6 +1,6 @@
 {
   "name": "baseball-sim",
-  "version": "0.0.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,16 +9,23 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
+    "data:check": "node scripts/check-data.ts",
     "test": "node --test tests/*.test.ts",
     "test:ui": "playwright test",
     "pitch": "node scripts/pitch.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "check": "npm run typecheck && npm test && npm run build",
+    "day": "node scripts/day.ts",
+    "verify:v02": "npm run check && npm run test:ui && npm run format:check",
+    "verify:v01": "npm run check && npm run test:ui && npm run format:check",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "game": "node scripts/game.ts",
+    "analyze:models": "node scripts/analyze-models.ts"
   },
   "dependencies": {
+    "dexie": "4.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -28,6 +35,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
+    "fake-indexeddb": "6.2.5",
     "prettier": "3.9.8",
     "typescript": "7.0.2",
     "vite": "8.3.0"

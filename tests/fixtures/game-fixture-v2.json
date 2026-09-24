@@ -1,0 +1,1629 @@
+{
+  "initialDatasetVersion": "game-fixture-v2",
+  "players": [
+    {
+      "playerId": "player-a-01",
+      "familyName": "汐見",
+      "givenName": "航",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 57000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 60000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 55000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 42000,
+      "powerVsRight": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 54000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 55000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 62000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-02",
+      "familyName": "瀬川",
+      "givenName": "律",
+      "throwingHand": "L",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 64000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 67000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 57000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 49000,
+      "powerVsRight": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 63000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-03",
+      "familyName": "朝倉",
+      "givenName": "悠",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 71000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 74000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 59000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 56000,
+      "powerVsRight": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 75000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 79000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 76000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-04",
+      "familyName": "風間",
+      "givenName": "颯",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 78000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 81000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 61000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 63000,
+      "powerVsRight": {
+        "valueMilli": 82000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 85000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 86000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 83000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-05",
+      "familyName": "森岡",
+      "givenName": "蓮",
+      "throwingHand": "L",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 85000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 88000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 63000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 42000,
+      "powerVsRight": {
+        "valueMilli": 92000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 90000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 55000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 90000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-06",
+      "familyName": "高瀬",
+      "givenName": "湊",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 62000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 65000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 65000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 49000,
+      "powerVsRight": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 54000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 62000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-07",
+      "familyName": "藤崎",
+      "givenName": "直",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 72000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 67000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 56000,
+      "powerVsRight": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 63000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 75000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 79000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-08",
+      "familyName": "小波",
+      "givenName": "蒼",
+      "throwingHand": "L",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 76000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 79000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 63000,
+      "powerVsRight": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 85000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 86000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 76000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-09",
+      "familyName": "夏目",
+      "givenName": "光",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 83000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 86000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 71000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 42000,
+      "powerVsRight": {
+        "valueMilli": 82000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 55000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 83000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-10",
+      "familyName": "川瀬",
+      "givenName": "陸",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 60000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 63000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 73000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 49000,
+      "powerVsRight": {
+        "valueMilli": 92000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 90000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 90000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-11",
+      "familyName": "羽田",
+      "givenName": "匠",
+      "throwingHand": "L",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 67000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 70000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 75000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 56000,
+      "powerVsRight": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 54000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 75000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 79000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 62000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-a-12",
+      "familyName": "青井",
+      "givenName": "誠",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 74000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 77000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 77000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 63000,
+      "powerVsRight": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 63000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 85000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 86000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-01",
+      "familyName": "星野",
+      "givenName": "航",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 60000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 63000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 55000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 42000,
+      "powerVsRight": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 54000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 55000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 76000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-02",
+      "familyName": "水原",
+      "givenName": "律",
+      "throwingHand": "L",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 67000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 70000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 57000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 49000,
+      "powerVsRight": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 63000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 83000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-03",
+      "familyName": "杉浦",
+      "givenName": "悠",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 74000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 77000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 59000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 56000,
+      "powerVsRight": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 75000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 79000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 90000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-04",
+      "familyName": "北見",
+      "givenName": "颯",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 81000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 84000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 61000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 63000,
+      "powerVsRight": {
+        "valueMilli": 82000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 85000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 86000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 62000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-05",
+      "familyName": "七瀬",
+      "givenName": "蓮",
+      "throwingHand": "L",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 58000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 61000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 63000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 42000,
+      "powerVsRight": {
+        "valueMilli": 92000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 90000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 55000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-06",
+      "familyName": "日高",
+      "givenName": "湊",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 65000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 68000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 65000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 49000,
+      "powerVsRight": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 54000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 76000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-07",
+      "familyName": "春川",
+      "givenName": "直",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 72000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 75000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 67000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 56000,
+      "powerVsRight": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 63000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 75000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 79000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 83000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-08",
+      "familyName": "秋月",
+      "givenName": "蒼",
+      "throwingHand": "L",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 79000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 82000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 63000,
+      "powerVsRight": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 85000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 86000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 90000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-09",
+      "familyName": "若宮",
+      "givenName": "光",
+      "throwingHand": "R",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 86000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 89000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 71000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 42000,
+      "powerVsRight": {
+        "valueMilli": 82000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 55000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 62000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-10",
+      "familyName": "花岡",
+      "givenName": "陸",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 63000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 66000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 73000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 49000,
+      "powerVsRight": {
+        "valueMilli": 92000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 90000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 65000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 72000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 69000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-11",
+      "familyName": "東野",
+      "givenName": "匠",
+      "throwingHand": "L",
+      "battingHand": "L",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 70000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 73000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 75000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 56000,
+      "powerVsRight": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 54000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 75000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 73000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 79000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 76000,
+          "ceilingMilli": 110000
+        }
+      }
+    },
+    {
+      "playerId": "player-h-12",
+      "familyName": "西森",
+      "givenName": "誠",
+      "throwingHand": "R",
+      "battingHand": "R",
+      "batting": {
+        "contactVsRight": {
+          "valueMilli": 77000,
+          "ceilingMilli": 110000
+        },
+        "contactVsLeft": {
+          "valueMilli": 80000,
+          "ceilingMilli": 110000
+        },
+        "plateDiscipline": {
+          "valueMilli": 77000,
+          "ceilingMilli": 110000
+        }
+      },
+      "swingAggressionMilli": 63000,
+      "powerVsRight": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "powerVsLeft": {
+        "valueMilli": 63000,
+        "ceilingMilli": 110000
+      },
+      "runningSpeed": {
+        "valueMilli": 85000,
+        "ceilingMilli": 110000
+      },
+      "fieldingRange": {
+        "valueMilli": 81000,
+        "ceilingMilli": 110000
+      },
+      "armStrength": {
+        "valueMilli": 86000,
+        "ceilingMilli": 110000
+      },
+      "fielding": {
+        "catching": {
+          "valueMilli": 83000,
+          "ceilingMilli": 110000
+        }
+      }
+    }
+  ],
+  "pitches": [
+    {
+      "pitchId": "repertoire-player-a-10-fastball",
+      "playerId": "player-a-10",
+      "pitchTypeCode": "fastball",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 14600,
+        "maxCentiKph": 15100,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-10-slider",
+      "playerId": "player-a-10",
+      "pitchTypeCode": "slider",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13300,
+        "maxCentiKph": 13800,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-10-fork",
+      "playerId": "player-a-10",
+      "pitchTypeCode": "fork",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13600,
+        "maxCentiKph": 14100,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-11-fastball",
+      "playerId": "player-a-11",
+      "pitchTypeCode": "fastball",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 57000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 14750,
+        "maxCentiKph": 15250,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-11-slider",
+      "playerId": "player-a-11",
+      "pitchTypeCode": "slider",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 57000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13450,
+        "maxCentiKph": 13950,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-11-fork",
+      "playerId": "player-a-11",
+      "pitchTypeCode": "fork",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 57000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13750,
+        "maxCentiKph": 14250,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-12-fastball",
+      "playerId": "player-a-12",
+      "pitchTypeCode": "fastball",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 14900,
+        "maxCentiKph": 15400,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-12-slider",
+      "playerId": "player-a-12",
+      "pitchTypeCode": "slider",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13600,
+        "maxCentiKph": 14100,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-a-12-fork",
+      "playerId": "player-a-12",
+      "pitchTypeCode": "fork",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13900,
+        "maxCentiKph": 14400,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-10-fastball",
+      "playerId": "player-h-10",
+      "pitchTypeCode": "fastball",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 14600,
+        "maxCentiKph": 15100,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-10-slider",
+      "playerId": "player-h-10",
+      "pitchTypeCode": "slider",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13300,
+        "maxCentiKph": 13800,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-10-fork",
+      "playerId": "player-h-10",
+      "pitchTypeCode": "fork",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 52000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13600,
+        "maxCentiKph": 14100,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-11-fastball",
+      "playerId": "player-h-11",
+      "pitchTypeCode": "fastball",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 57000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 14750,
+        "maxCentiKph": 15250,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-11-slider",
+      "playerId": "player-h-11",
+      "pitchTypeCode": "slider",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 57000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13450,
+        "maxCentiKph": 13950,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-11-fork",
+      "playerId": "player-h-11",
+      "pitchTypeCode": "fork",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 57000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13750,
+        "maxCentiKph": 14250,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-12-fastball",
+      "playerId": "player-h-12",
+      "pitchTypeCode": "fastball",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 14900,
+        "maxCentiKph": 15400,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-12-slider",
+      "playerId": "player-h-12",
+      "pitchTypeCode": "slider",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13600,
+        "maxCentiKph": 14100,
+        "spreadCentiKph": 450
+      }
+    },
+    {
+      "pitchId": "repertoire-player-h-12-fork",
+      "playerId": "player-h-12",
+      "pitchTypeCode": "fork",
+      "acquisitionProgressMilli": 100000,
+      "control": {
+        "valueMilli": 62000,
+        "ceilingMilli": 110000
+      },
+      "repeatability": {
+        "valueMilli": 70000,
+        "ceilingMilli": 110000
+      },
+      "velocity": {
+        "typicalCentiKph": 13900,
+        "maxCentiKph": 14400,
+        "spreadCentiKph": 450
+      }
+    }
+  ],
+  "teams": {
+    "away": {
+      "side": "away",
+      "clubId": "club-a",
+      "name": "星原フォックス",
+      "lineup": [
+        {
+          "playerId": "player-a-01",
+          "position": "CF"
+        },
+        {
+          "playerId": "player-a-02",
+          "position": "SS"
+        },
+        {
+          "playerId": "player-a-03",
+          "position": "RF"
+        },
+        {
+          "playerId": "player-a-04",
+          "position": "DH"
+        },
+        {
+          "playerId": "player-a-05",
+          "position": "1B"
+        },
+        {
+          "playerId": "player-a-06",
+          "position": "LF"
+        },
+        {
+          "playerId": "player-a-07",
+          "position": "3B"
+        },
+        {
+          "playerId": "player-a-08",
+          "position": "C"
+        },
+        {
+          "playerId": "player-a-09",
+          "position": "2B"
+        }
+      ],
+      "pitcherIds": ["player-a-10", "player-a-11", "player-a-12"]
+    },
+    "home": {
+      "side": "home",
+      "clubId": "club-h",
+      "name": "青凪ハーバーズ",
+      "lineup": [
+        {
+          "playerId": "player-h-01",
+          "position": "CF"
+        },
+        {
+          "playerId": "player-h-02",
+          "position": "SS"
+        },
+        {
+          "playerId": "player-h-03",
+          "position": "RF"
+        },
+        {
+          "playerId": "player-h-04",
+          "position": "DH"
+        },
+        {
+          "playerId": "player-h-05",
+          "position": "1B"
+        },
+        {
+          "playerId": "player-h-06",
+          "position": "LF"
+        },
+        {
+          "playerId": "player-h-07",
+          "position": "3B"
+        },
+        {
+          "playerId": "player-h-08",
+          "position": "C"
+        },
+        {
+          "playerId": "player-h-09",
+          "position": "2B"
+        }
+      ],
+      "pitcherIds": ["player-h-10", "player-h-11", "player-h-12"]
+    }
+  },
+  "clubs": [
+    {
+      "clubId": "club-a",
+      "name": "星原フォックス",
+      "playerIds": [
+        "player-a-01",
+        "player-a-02",
+        "player-a-03",
+        "player-a-04",
+        "player-a-05",
+        "player-a-06",
+        "player-a-07",
+        "player-a-08",
+        "player-a-09",
+        "player-a-10",
+        "player-a-11",
+        "player-a-12"
+      ]
+    },
+    {
+      "clubId": "club-h",
+      "name": "青凪ハーバーズ",
+      "playerIds": [
+        "player-h-01",
+        "player-h-02",
+        "player-h-03",
+        "player-h-04",
+        "player-h-05",
+        "player-h-06",
+        "player-h-07",
+        "player-h-08",
+        "player-h-09",
+        "player-h-10",
+        "player-h-11",
+        "player-h-12"
+      ]
+    }
+  ]
+}

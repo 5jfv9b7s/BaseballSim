@@ -567,7 +567,7 @@ export function GameApp() {
             setTab('world');
           }}
         >
-          1日進行（v0.2）
+          日程・球団運営
         </button>
         <button aria-pressed={tab === 'game'} onClick={() => setTab('game')}>
           1試合シミュレーション

@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 async function openWorld(page: Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: '1日進行（v0.2）', exact: true }).click();
+  await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await expect(page.getByRole('button', { name: '1日を自動進行', exact: true })).toBeEnabled();
 }
 
@@ -53,7 +53,7 @@ for (const width of [1280, 390]) {
     await expect(results).toContainText('この日の試合はありません');
     expect(await table.innerText()).toBe(secondStandings);
     await page.reload();
-    await page.getByRole('button', { name: '1日進行（v0.2）', exact: true }).click();
+    await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     await expect(autoLoad).toBeEnabled();
     await autoLoad.click();
     await expect(date).toHaveText('2026-09-27', { timeout: 20000 });
@@ -106,7 +106,7 @@ test('v0.2：一時停止・手動保存・再読み込みから同じ結果へ�
   await expect(page.getByTestId('world-date')).toHaveText('2026-09-25', { timeout: 20000 });
   const expected = await page.getByRole('region', { name: '順位表', exact: true }).innerText();
   await page.reload();
-  await page.getByRole('button', { name: '1日進行（v0.2）', exact: true }).click();
+  await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました');
   await expect(page.getByTestId('world-date')).toHaveText('2026-09-24');

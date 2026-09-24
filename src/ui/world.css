@@ -63,3 +63,14 @@
 .world-controls button {
   width: auto;
 }
+
+.order-buttons button {
+  width: auto;
+  margin-left: 0.4rem;
+  padding: 0.5rem 0.8rem;
+}
+.rotation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}

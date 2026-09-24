@@ -1,3 +1,4 @@
+import { initialManagement, managementFixture, advanceRotation } from './management.ts';
 import { createWorldDefinitions } from '../data/world/index.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { createGame, stepRecord, validateGameFixture } from '../game/engine.ts';
@@ -141,6 +142,20 @@ export function createWorld(seed = 20260924, definitions = createWorldDefinition
   };
 }
 
+/** 新しい担当球団プレイ。旧v0.2世界には管理データを後付けしない。 */
+export function createManagedWorld(
+  seed = 20260924,
+  definitions = createWorldDefinitions(),
+  controlledSquadId = definitions.squads[0]!.squadId,
+): import('./types.ts').ManagedWorld {
+  const world = createWorld(seed, definitions);
+  return {
+    ...world,
+    version: 'world-prototype-v2',
+    management: initialManagement(definitions, controlledSquadId),
+  };
+}
+
 export function worldPhase(world: WorldRecord): WorldPhase {
   if (world.currentDate > world.definitions.endDate) return 'scheduleComplete';
   const gameId = world.dayPlan.gameIds[world.dayPlan.cursor];
@@ -153,7 +168,9 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
   ensure(scheduled, '日程にない試合です');
   const game = createGame(
     scheduledSeed(world.seed, gameId),
-    scheduledFixture(world.definitions, scheduled),
+    world.version === 'world-prototype-v2'
+      ? managementFixture(world, gameId, scheduledFixture(world.definitions, scheduled))
+      : scheduledFixture(world.definitions, scheduled),
     'game-prototype-v10',
     world.definitions.matchConfig,
     world.definitions.errorConfig,
@@ -191,6 +208,7 @@ export function advanceWorld(world: WorldRecord, count: number): WorldRecord {
     const scheduled = world.definitions.schedule.find((item) => item.gameId === gameId)!;
     applyContribution(next, gameContribution(world.definitions, scheduled, game));
     next.dayPlan.cursor++;
+    if (next.version === 'world-prototype-v2') next.management = advanceRotation(next, gameId);
   }
   return next;
 }

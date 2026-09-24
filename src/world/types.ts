@@ -84,8 +84,7 @@ export interface StatApplicationMarker {
   contributionHash: string;
 }
 
-export interface WorldRecord {
-  version: 'world-prototype-v1';
+export interface WorldState {
   worldId: string;
   seed: number;
   definitions: WorldDefinitions;
@@ -100,3 +99,45 @@ export interface WorldRecord {
 }
 
 export type WorldPhase = 'playing' | 'readyToComplete' | 'scheduleComplete' | 'aborted';
+
+/** データ設計書6.2のうち、DH制の起用設定に使う射影。 */
+export interface IdealLineup {
+  battingOrder: {
+    slotNo: number;
+    playerId: string;
+    battingRole: Team['lineup'][number]['position'];
+  }[];
+  defense: {
+    positionCode: import('../game/types.ts').DefensivePosition;
+    playerId: string | null;
+  }[];
+  dhEnabled: true;
+}
+
+export interface PitcherUsagePlan {
+  rotationSlots: { slotNo: number; playerId: string }[];
+  nextSlotNo: number;
+  /** 今回は通常救援の優先順だけ。条件別役割・準備・疲労は未対応。 */
+  reliefRoles: { playerId: string; role: 'relief'; priority: number }[];
+}
+
+export type ManagementAction =
+  | { kind: 'setClubPlan'; squadId: string; lineup: IdealLineup; pitchers: PitcherUsagePlan }
+  | { kind: 'setGameStarter'; squadId: string; gameId: string; playerId: string | null };
+
+export interface ClubManagement {
+  version: 'club-management-v1';
+  controlledSquadId: string;
+  idealLineups: Record<string, IdealLineup>;
+  pitcherUsagePlans: Record<string, PitcherUsagePlan>;
+  policyRevisions: Record<string, number>;
+  starterOverrides: Record<string, string>;
+  actions: { commandId: string; sequence: number; date: string; action: ManagementAction }[];
+}
+
+export type WorldRecord = WorldState &
+  (
+    | { version: 'world-prototype-v1' }
+    | { version: 'world-prototype-v2'; management: ClubManagement }
+  );
+export type ManagedWorld = Extract<WorldRecord, { version: 'world-prototype-v2' }>;

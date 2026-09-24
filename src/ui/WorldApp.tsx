@@ -1,3 +1,4 @@
+import { ClubEditor } from './ClubEditor.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { WorldAction, WorldCommand, WorldView } from '../world/controller.ts';
 import type { WorldWorkerResponse } from '../world-worker.ts';
@@ -9,6 +10,8 @@ export function WorldApp() {
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState(false);
   const [seed, setSeed] = useState('20260924');
+  const [controlledSquadId, setControlledSquadId] = useState('');
+  const [editorEpoch, setEditorEpoch] = useState(0);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
@@ -69,8 +72,12 @@ export function WorldApp() {
           data.view.lastCompletedDate + 'の全結果を反映し、翌日の状態を自動保存しました。',
         );
       }
+      if (lastAction.current === 'setClubPlan' || lastAction.current === 'setGameStarter')
+        setMessage('編成を確定し、自動保存しました。');
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
       if (lastAction.current === 'load') {
+        setEditorEpoch((value) => value + 1);
+        setControlledSquadId(data.view.management?.controlledSquadId ?? '');
         auto.current = false;
         setRunning(false);
         setSelectedDate('');
@@ -79,6 +86,7 @@ export function WorldApp() {
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
       if (lastAction.current === 'new') {
+        setEditorEpoch((value) => value + 1);
         setSelectedDate('');
         setSelectedGame('');
         setMessage('新しい日程を準備しました。');
@@ -124,7 +132,7 @@ export function WorldApp() {
   return (
     <main className="game-page world-page">
       <header>
-        <div className="eyebrow">BASEBALL SIMULATOR / GAME v0.2</div>
+        <div className="eyebrow">BASEBALL SIMULATOR / v1.0へ向けた球団運営</div>
         <span className="badge">架空4球団・日次進行</span>
         <h1>1日ずつ、リーグを進める。</h1>
         <p>全試合の結果を成績と順位へ反映し、翌日へ進めます。</p>
@@ -197,6 +205,24 @@ export function WorldApp() {
         )}
         {view?.storageError && <p className="error">{view.storageError}</p>}
       </section>
+
+      {view?.management ? (
+        <ClubEditor
+          key={JSON.stringify([view.worldId, view.management.controlledSquadId, editorEpoch])}
+          view={view}
+          management={view.management}
+          disabled={disabled}
+          send={send}
+        />
+      ) : (
+        view && (
+          <section className="panel">
+            <p>
+              旧v0.2の世界です。従来の日次進行を利用できます。編成操作は新しい日程で利用してください。
+            </p>
+          </section>
+        )
+      )}
 
       <section className="panel" aria-label="順位表">
         <h2>順位表</h2>
@@ -373,7 +399,26 @@ export function WorldApp() {
       </section>
 
       <details className="panel">
-        <summary>新規日程と試作の範囲</summary>
+        <summary>新規日程・担当球団と試作の範囲</summary>
+        <label>
+          新規プレイの担当球団
+          <select
+            value={
+              controlledSquadId ||
+              view?.management?.controlledSquadId ||
+              view?.definitions.squads[0]?.squadId ||
+              ''
+            }
+            disabled={disabled}
+            onChange={(event) => setControlledSquadId(event.target.value)}
+          >
+            {view?.definitions.squads.map((squad) => (
+              <option key={squad.squadId} value={squad.squadId}>
+                {squad.team.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           世界seed{' '}
           <input
@@ -395,7 +440,14 @@ export function WorldApp() {
               setError('seedは1～4294967295の整数を入力してください。');
               return;
             }
-            send({ kind: 'new', seed: Number(seed) });
+            send({
+              kind: 'new',
+              seed: Number(seed),
+              controlledSquadId:
+                controlledSquadId ||
+                view?.management?.controlledSquadId ||
+                view?.definitions.squads[0]?.squadId,
+            });
           }}
         >
           新しい日程を準備

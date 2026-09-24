@@ -18,7 +18,7 @@ export interface WorldStorageAdapter {
   save(
     world: WorldRecord,
     stateRevision: number,
-    kind: 'auto' | 'manual',
+    kind: 'auto' | 'manual' | 'action',
     expectedStorageRevision: number,
   ): Promise<WorldSlots>;
   load(kind: WorldSlotKind): Promise<{ world: WorldRecord; slots: WorldSlots }>;

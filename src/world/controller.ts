@@ -1,6 +1,7 @@
+import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createWorld, worldPhase } from './engine.ts';
+import { advanceWorld, completeDay, createManagedWorld, worldPhase } from './engine.ts';
 import { standings } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -9,10 +10,11 @@ import {
   type WorldStorageAdapter,
 } from './storage.ts';
 import type { GameResult } from '../game/types.ts';
-import type { WorldRecord, WorldPhase } from './types.ts';
+import type { WorldRecord, WorldPhase, ManagementAction, ClubManagement } from './types.ts';
 
 export type WorldAction =
-  | { kind: 'new'; seed: number }
+  | ManagementAction
+  | { kind: 'new'; seed: number; controlledSquadId?: string }
   | { kind: 'advance'; count: number }
   | { kind: 'completeDay'; date: string }
   | { kind: 'save' }
@@ -27,6 +29,9 @@ export type WorldCommand = WorldAction & {
 export interface WorldView {
   revision: number;
   worldId: string;
+  modelVersion: WorldRecord['version'];
+  management: ClubManagement | null;
+  canEditManagement: boolean;
   seed: number;
   definitions: WorldRecord['definitions'];
   currentDate: string;
@@ -43,6 +48,7 @@ export interface WorldView {
     score: { away: number; home: number } | null;
     totalPitches: number;
     result: GameResult | null;
+    startingPitchers: { away: string; home: string } | null;
   }[];
   stats: WorldRecord['stats'];
   standings: ReturnType<typeof standings>;
@@ -53,7 +59,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world = createWorld();
+  private world: WorldRecord = createManagedWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -79,6 +85,9 @@ export class WorldController {
     return structuredClone({
       revision: this.revision,
       worldId: world.worldId,
+      modelVersion: world.version,
+      management: world.version === 'world-prototype-v2' ? world.management : null,
+      canEditManagement: canEditManagement(world),
       seed: world.seed,
       definitions: world.definitions,
       currentDate: world.currentDate,
@@ -100,6 +109,12 @@ export class WorldController {
           score: game?.state.score ?? null,
           totalPitches: game?.state.totalPitches ?? 0,
           result: game?.result ?? null,
+          startingPitchers: game
+            ? {
+                away: game.fixture.teams.away.pitcherIds[0]!,
+                home: game.fixture.teams.home.pitcherIds[0]!,
+              }
+            : null,
         };
       }),
       stats: world.stats,
@@ -115,7 +130,9 @@ export class WorldController {
     ensure(command.localWorldId === 'v02-local', '対象のローカル世界が異なります');
     integer(command.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER - 1, '状態版');
     ensure(
-      ['new', 'advance', 'completeDay', 'save', 'load'].includes(command.kind),
+      ['new', 'advance', 'completeDay', 'save', 'load', 'setClubPlan', 'setGameStarter'].includes(
+        command.kind,
+      ),
       '未対応の世界指示です',
     );
     if (command.kind === 'new') integer(command.seed, 1, 0xffffffff, '世界seed');
@@ -134,9 +151,35 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createWorld(command.seed);
+      this.world = createManagedWorld(command.seed, undefined, command.controlledSquadId);
       this.unsavedChanges = true;
       this.storageError = null;
+    }
+    if (command.kind === 'setClubPlan' || command.kind === 'setGameStarter') {
+      const {
+        commandId,
+        expectedStateRevision: _revision,
+        localWorldId: _worldId,
+        ...action
+      } = command;
+      const next = applyManagement(this.world, commandId, action);
+      if (next !== this.world) {
+        try {
+          const slots = await this.storage.save(
+            next,
+            this.revision + 1,
+            'action',
+            this.slots.storageRevision,
+          );
+          this.world = next;
+          this.slots = slots;
+          this.unsavedChanges = false;
+          this.storageError = null;
+        } catch (error) {
+          this.storageError = '編成の自動保存に失敗しました。変更はまだ適用していません。';
+          throw error;
+        }
+      }
     }
     if (command.kind === 'advance') {
       this.world = advanceWorld(this.world, command.count);

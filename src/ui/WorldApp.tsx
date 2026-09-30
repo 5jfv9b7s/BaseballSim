@@ -1,4 +1,5 @@
 import { SeasonCalendar } from './SeasonCalendar.tsx';
+import { RegistrationEditor } from './RegistrationEditor.tsx';
 import { ClubEditor } from './ClubEditor.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { WorldAction, WorldCommand, WorldView } from '../world/controller.ts';
@@ -86,7 +87,9 @@ export function WorldApp() {
       if (
         lastAction.current === 'setClubPlan' ||
         lastAction.current === 'setGameStarter' ||
-        lastAction.current === 'setGameLineup'
+        lastAction.current === 'setGameLineup' ||
+        lastAction.current === 'setRegistrations' ||
+        lastAction.current === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
@@ -338,6 +341,20 @@ export function WorldApp() {
         )
       )}
 
+      {view?.registration && (
+        <RegistrationEditor
+          key={JSON.stringify([
+            'registration',
+            view.worldId,
+            view.management?.controlledSquadId,
+            editorEpoch,
+          ])}
+          view={view}
+          disabled={disabled}
+          send={send}
+        />
+      )}
+
       <section className="panel" aria-label="順位表">
         <h2>順位表</h2>
         <p className="hint">
@@ -582,7 +599,7 @@ export function WorldApp() {
           短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日・全144試合の暫定構成です。日程構成は暫定仕様です。
         </p>
         <p>
-          試合はv0.1のv10モデルを使用します。係数は未校正です。追加2球団の能力は既存球団の複製です。控え野手は各球団3人、能力は既存選手の複製です。一二軍登録・試合中の代打/交代・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
+          係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍の試合・自動昇降格・試合中の代打/交代・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
         </p>
       </details>
     </main>

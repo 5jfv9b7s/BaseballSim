@@ -1,5 +1,10 @@
 import { ensure, id, integer } from '../engine/validation.ts';
 import { validateGameFixture } from '../game/engine.ts';
+import {
+  applyRegistrationAction,
+  resolveRegisteredRoster,
+  validateTodayRosters,
+} from './registration.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import type { GameFixture, Team } from '../game/types.ts';
 import type {
@@ -95,7 +100,7 @@ export function validateClubPlan(
       ids.every(
         (id) =>
           squad.team.lineup.some((slot) => slot.playerId === id) ||
-          (world.version === 'world-prototype-v4' && squad.reserveBatterIds?.includes(id)),
+          ('gameLineups' in world && squad.reserveBatterIds?.includes(id)),
       ),
     '打順の選手が重複、または球団の野手ではありません',
   );
@@ -175,7 +180,7 @@ export function managementFixture(
 ): GameFixture {
   const fixture = structuredClone(base);
   const scheduled = world.definitions.schedule.find((game) => game.gameId === gameId)!;
-  if (world.version === 'world-prototype-v4') {
+  if ('gameLineups' in world) {
     fixture.players = world.definitions.squads
       .filter((squad) => [scheduled.awaySquadId, scheduled.homeSquadId].includes(squad.squadId))
       .flatMap((squad) => structuredClone(squad.players));
@@ -183,7 +188,7 @@ export function managementFixture(
   for (const side of ['away', 'home'] as const) {
     const squadId = side === 'away' ? scheduled.awaySquadId : scheduled.homeSquadId;
     const lineup =
-      (world.version === 'world-prototype-v4' && squadId === world.management.controlledSquadId
+      ('gameLineups' in world && squadId === world.management.controlledSquadId
         ? world.gameLineups[gameId]
         : null) ?? world.management.idealLineups[squadId]!;
     const plan = world.management.pitcherUsagePlans[squadId]!;
@@ -201,6 +206,14 @@ export function managementFixture(
       starter,
       ...plan.reliefRoles.map((slot) => slot.playerId).filter((id) => id !== starter),
     ];
+    if (world.version === 'world-prototype-v5') {
+      const actual = resolveRegisteredRoster(world, squadId, gameId);
+      fixture.teams[side].lineup = actual.lineup.battingOrder.map((slot) => ({
+        playerId: slot.playerId,
+        position: slot.battingRole,
+      }));
+      fixture.teams[side].pitcherIds = actual.pitcherIds;
+    }
     const club = fixture.clubs.find((club) => club.clubId === fixture.teams[side].clubId)!;
     club.playerIds = [
       ...fixture.teams[side].lineup.map((slot) => slot.playerId),
@@ -253,16 +266,19 @@ export function applyManagement(
     '試作の編成変更回数',
   );
   const management = structuredClone(world.management);
-  const gameLineups =
-    world.version === 'world-prototype-v4' ? structuredClone(world.gameLineups) : null;
-  if (action.kind === 'setClubPlan') {
+  const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
+  let updated: ManagedWorld = world;
+  if (action.kind === 'setRegistrations' || action.kind === 'setGameBench') {
+    ensure(world.version === 'world-prototype-v5', '登録・ベンチ管理は新規プレイで利用できます');
+    updated = applyRegistrationAction(world, action, commandId);
+  } else if (action.kind === 'setClubPlan') {
     validateClubPlan(world, action.squadId, action.lineup, action.pitchers);
     management.idealLineups[action.squadId] = structuredClone(action.lineup);
     management.pitcherUsagePlans[action.squadId] = structuredClone(action.pitchers);
     management.policyRevisions[action.squadId]!++;
   } else if (action.kind === 'setGameLineup') {
     ensure(
-      world.version === 'world-prototype-v4' && gameLineups,
+      'gameLineups' in world && gameLineups,
       '当日オーダーは新しい名簿対応プレイで利用できます',
     );
     const game = world.definitions.schedule.find((game) => game.gameId === action.gameId);
@@ -305,7 +321,10 @@ export function applyManagement(
     date: world.currentDate,
     action: structuredClone(action),
   });
-  return world.version === 'world-prototype-v4'
-    ? { ...world, management, gameLineups: gameLineups! }
-    : { ...world, management };
+  const next: ManagedWorld =
+    'gameLineups' in updated
+      ? { ...updated, management, gameLineups: gameLineups! }
+      : { ...updated, management };
+  if (next.version === 'world-prototype-v5') validateTodayRosters(next);
+  return next;
 }

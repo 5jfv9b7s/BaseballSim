@@ -1,3 +1,10 @@
+import { createRegistrationDefinitions } from '../data/world/registrations.ts';
+import {
+  initialRegistration,
+  validateRegistrationDefinitions,
+  validateTodayRosters,
+  updateGameRosters,
+} from './registration.ts';
 import { createRosterDefinitions } from '../data/world/rosters.ts';
 import { createAnnualDefinitions } from '../data/world/annual.ts';
 import { summarizeSeason } from './season.ts';
@@ -46,7 +53,8 @@ export function scheduledFixture(
     initialDatasetVersion: 'game-fixture-v2',
     players: [...away.players, ...home.players].filter(
       (player) =>
-        definitions.version !== 'world-definitions-v3' || activeIds.includes(player.playerId),
+        !['world-definitions-v3', 'world-definitions-v4'].includes(definitions.version) ||
+        activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
     teams,
@@ -60,9 +68,12 @@ export function scheduledFixture(
 
 export function validateDefinitions(definitions: WorldDefinitions): void {
   ensure(
-    ['world-definitions-v1', 'world-definitions-v2', 'world-definitions-v3'].includes(
-      definitions.version,
-    ),
+    [
+      'world-definitions-v1',
+      'world-definitions-v2',
+      'world-definitions-v3',
+      'world-definitions-v4',
+    ].includes(definitions.version),
     '未対応の世界定義です',
   );
   ensure(definitions.statScope === 'firstRegular', '未対応の成績区分です');
@@ -97,7 +108,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       ensure(!seen.has(value), '球団・選手・持ち球IDが重複しています');
       seen.add(value);
     }
-    if (definitions.version === 'world-definitions-v3') {
+    if (['world-definitions-v3', 'world-definitions-v4'].includes(definitions.version)) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
       const listed = [
         ...squad.team.lineup.map((slot) => slot.playerId),
@@ -110,7 +121,12 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           listed.every((id) => squad.players.some((player) => player.playerId === id)),
         '所属名簿と先発・投手・控えの区分が一致しません',
       );
-      integer(squad.reserveBatterIds.length, 0, 17, '試作の控え野手数');
+      integer(
+        squad.reserveBatterIds.length,
+        0,
+        definitions.version === 'world-definitions-v4' ? 58 : 17,
+        '試作の控え野手数',
+      );
       // 未出場選手にも能力検査を適用する。DHへ仮配置した検証用名簿は保存しない。
       for (const reserveId of squad.reserveBatterIds) {
         const other = definitions.squads.find((item) => item !== squad)!;
@@ -163,6 +179,13 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       appearances.add(appearance);
     }
   }
+  if (definitions.version === 'world-definitions-v4') validateRegistrationDefinitions(definitions);
+  else
+    ensure(
+      definitions.registrationRules === undefined &&
+        definitions.squads.every((squad) => squad.registrationInputs === undefined),
+      '旧版へ登録データを追加できません',
+    );
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
 }
@@ -265,6 +288,8 @@ export function acceptGame(world: WorldRecord, gameId: string, game: GameRecord)
     contributions: { ...world.contributions },
     statApplicationMarkers: { ...world.statApplicationMarkers },
   };
+  if (next.version === 'world-prototype-v5')
+    next.registration = updateGameRosters(next, gameId, game);
   if (game.result) {
     const scheduled = world.definitions.schedule.find((item) => item.gameId === gameId)!;
     applyContribution(next, gameContribution(world.definitions, scheduled, game));
@@ -324,4 +349,22 @@ export function createRosterWorld(
     seasonSummary: null,
     gameLineups: {},
   };
+}
+
+/** 登録・ベンチ管理を持つ新規世界。旧世界の規則を変更しない。 */
+export function createRegistrationWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createRegistrationDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v5' }> {
+  ensure(definitions.version === 'world-definitions-v4', '登録対応の初期定義が必要です');
+  const world: Extract<WorldRecord, { version: 'world-prototype-v5' }> = {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v5',
+    seasonSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(definitions),
+  };
+  validateTodayRosters(world);
+  return world;
 }

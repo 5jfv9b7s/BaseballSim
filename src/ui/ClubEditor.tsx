@@ -79,9 +79,11 @@ export function ClubEditor({
   const plannedStarter = currentPlan.rotationSlots[currentPlan.nextSlotNo - 1]!.playerId;
   const actualStarter = today?.startingPitchers
     ? today.startingPitchers[today.awaySquadId === squadId ? 'away' : 'home']
-    : today
-      ? (management.starterOverrides[today.gameId] ?? plannedStarter)
-      : null;
+    : view.registrationPreview
+      ? view.registrationPreview.starterId
+      : today
+        ? (management.starterOverrides[today.gameId] ?? plannedStarter)
+        : null;
 
   function selectBatter(index: number, playerId: string) {
     const next = structuredClone(batters);
@@ -157,15 +159,19 @@ export function ClubEditor({
               ? '試合開始時に確定した配置'
               : view.gameLineups[today.gameId]
                 ? '当日指定を使用'
-                : '理想オーダーを使用'}
+                : view.registration
+                  ? '理想オーダーから登録・ベンチ資格を反映（代役は名簿順）'
+                  : '理想オーダーを使用'}
           </p>
           <ol>
-            {(today.lineups
-              ? today.lineups[today.awaySquadId === squadId ? 'away' : 'home']
-              : (view.gameLineups[today.gameId] ?? currentLineup).battingOrder.map((slot) => ({
-                  playerId: slot.playerId,
-                  position: slot.battingRole,
-                }))
+            {(view.registrationPreview
+              ? view.registrationPreview.lineup
+              : today.lineups
+                ? today.lineups[today.awaySquadId === squadId ? 'away' : 'home']
+                : (view.gameLineups[today.gameId] ?? currentLineup).battingOrder.map((slot) => ({
+                    playerId: slot.playerId,
+                    position: slot.battingRole,
+                  }))
             ).map((slot) => (
               <li key={slot.playerId}>
                 {playerName(slot.playerId)} / {slot.position}

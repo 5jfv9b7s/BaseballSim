@@ -14,6 +14,8 @@
 - `players`：固定ID、氏名、左右、各能力、投手の適性など。各選手を独立した値として編集できます。
 - `repertoires`：投手ごとの持ち球、球速、制球、再現性。playerIdで選手に結び付けます。
 - `teams`：squadId、球団IDと名前、初期打順9人と守備位置、投手の順番、控え候補ID。
+- registrations/{hoshihara,aonagi,kohaku,asagiri}.ts：全60人の初期登録（first/farm）と外国人枠（subject/exempt）。選手追加時は同じplayerIdをここにも追加します。
+- [world/registrations.ts](world/registrations.ts)：登録対応プレイの入口。規則は[config/registration.ts](../../config/registration.ts)を開始時に複製します。旧保存は保存内の値を使用します。
 - [world/rosters.ts](world/rosters.ts)：全球団のファイルを結合し、開始時に複製する入口。
 - [datasets/current.ts](datasets/current.ts)：同じデータから星原・青凪の1試合用名簿を作ります。
 - [pitch-types/index.ts](pitch-types/index.ts)：球種の表示辞書。辞書追加と計算対応の追加は別です。
@@ -67,7 +69,7 @@ ratingは0〜120000の整数（表示値の1000倍）。第2引数は現在値�
 3. 投手にはrepertoiresの持ち球も必要です。
 4. `npm.cmd run data:check`で全選手・全球団・日程の整合性を確認します。
 
-打順はlineupの順です。野手9人・守備8位置とDHを重複なく指定してください。reserveBatterIdsは野手候補の区分であり、一二軍登録やベンチ入り資格ではありません。試作上限は控え候補17人です。1試合画面では初期打順9人と投手を使用し、控え候補を直接試合名簿へ追加しません。日程画面では開始前に控えからスタメンを選べます。
+打順はlineupの順です。野手9人・守備8位置とDHを重複なく指定してください。reserveBatterIdsは野手候補の区分であり、一二軍登録やベンチ入り資格ではありません。旧0.5の控え上限は17人です。新しい登録対応世界は控え候補最大58人かつ球団所属合計70人以下を検査します。1試合画面では初期打順9人と投手を使用し、控え候補を直接試合名簿へ追加しません。日程画面では開始前に控えからスタメンを選べます。
 
 球団追加時は上表と同じ3ファイルを作り、world/rosters.tsの結合一覧と日程を揃える必要があります。現在の同梱日程は4球団用です。IDを表示名として変更せず、参照している全ファイルを整合させてください。
 

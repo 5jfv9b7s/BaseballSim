@@ -12,7 +12,9 @@ import type {
 /** v0.2の試作世界。契約・育成・疲労を実装済みの空データで補わない。 */
 export interface WorldSquad {
   squadId: string;
-  /** v3定義のみ。控え候補の区分で、一軍登録やベンチ入りを表すものではない。 */
+  /** v4定義の初期登録・資格。 */
+  registrationInputs?: import('./registration-types.ts').RegistrationInput[];
+  /** v3以降の定義。野手候補の区分で、登録・ベンチ入りとは別に保持する。 */
   reserveBatterIds?: string[];
   team: Omit<Team, 'side'>;
   players: GameFixture['players'];
@@ -27,7 +29,12 @@ export interface ScheduledGame {
 }
 
 export interface WorldDefinitions {
-  version: 'world-definitions-v1' | 'world-definitions-v2' | 'world-definitions-v3';
+  version:
+    | 'world-definitions-v1'
+    | 'world-definitions-v2'
+    | 'world-definitions-v3'
+    | 'world-definitions-v4';
+  registrationRules?: import('./registration-types.ts').RegistrationRules;
   seasonId: string;
   competitionId: string;
   statScope: 'firstRegular';
@@ -124,6 +131,7 @@ export interface PitcherUsagePlan {
 }
 
 export type ManagementAction =
+  | import('./registration-types.ts').RegistrationAction
   | { kind: 'setClubPlan'; squadId: string; lineup: IdealLineup; pitchers: PitcherUsagePlan }
   | { kind: 'setGameLineup'; squadId: string; gameId: string; lineup: IdealLineup | null }
   | { kind: 'setGameStarter'; squadId: string; gameId: string; playerId: string | null };
@@ -142,6 +150,13 @@ export type WorldRecord = WorldState &
   (
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
+    | {
+        version: 'world-prototype-v5';
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+        gameLineups: Record<string, IdealLineup>;
+        registration: import('./registration-types.ts').RegistrationState;
+      }
     | {
         version: 'world-prototype-v4';
         management: ClubManagement;

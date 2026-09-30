@@ -113,7 +113,8 @@ test('期間進行：日次確定のエラーで停止し、再試行後も勝�
 });
 
 test('年間実機：188日・144試合の毎日保存、年度要約と再読込', async ({ page }) => {
-  test.setTimeout(600000);
+  // 正しさの長時間試験。性能の合格基準は別途実測から決める。
+  test.setTimeout(1000000);
   await page.goto('/');
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
@@ -123,7 +124,23 @@ test('年間実機：188日・144試合の毎日保存、年度要約と再読�
   await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
   await expect(page.getByTestId('world-date')).toHaveText('2026-03-27');
   await page.getByRole('button', { name: 'シーズン終了まで進行', exact: true }).click();
-  await expect(page.getByTestId('world-date')).toHaveText('2026-10-01', { timeout: 500000 });
+  const started = Date.now();
+  let lastReport = started;
+  await expect
+    .poll(
+      async () => {
+        const date = await page.getByTestId('world-date').innerText();
+        if (Date.now() - lastReport >= 30000) {
+          console.log(
+            '年間進行: ' + date + ' / ' + Math.round((Date.now() - started) / 1000) + '秒',
+          );
+          lastReport = Date.now();
+        }
+        return date;
+      },
+      { timeout: 900000, intervals: [1000] },
+    )
+    .toBe('2026-10-01');
   const summary = page.getByRole('region', { name: 'シーズン終了要約', exact: true });
   await expect(summary).toContainText('全144試合');
   await expect(

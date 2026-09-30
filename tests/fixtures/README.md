@@ -28,3 +28,7 @@ v9のcompleted-v9.json.gz・v9-digests.jsonは、v10実装前のe8ceceb141fb2082
 v10のcompleted-v10.json.gz・v10-digests.json・game-fixture-v2.jsonは、データ分離前の3506e3905f13fb089b99d4b1297eadad1bca7b5dで固定しました。seed20260923は星原2対青凪3、310球・81打席です。分離後に生成し直した期待値ではありません。v10の4seedハッシュは凍結した名簿で検証し、新規編集データと区別します。
 
 world-v4-save.json.gzは登録管理追加前のa329c70で固定した途中世界です。当日オーダー指示1件と17イベントを含む正規化WorldRecordで、IndexedDB全ストアのダンプとは区別します。SHA-256: c628176527e11a77052d2fbb3eb4b5243ea2b0eadc610406761fbff94cdacc0f。登録実装後に期待値を再生成しません。
+
+## 固定希望追加前の登録対応保存
+
+world-v5-save.json.gzはf3e89ecの実装で、固定希望機能を編集する前に凍結したWorldRecordです。汐見航の抹消指示と17イベントを含みます。IndexedDB全ストアのダンプではありません。gzipファイル自体のSHA-256は6e75fa5f7ea4f1a7015fdb667502368d95662178bfd7ac68c588fe872c73092b。tests/roster-policy.test.tsで照合・保存読込・途中再開を検査し、新モデルから期待値を生成し直しません。

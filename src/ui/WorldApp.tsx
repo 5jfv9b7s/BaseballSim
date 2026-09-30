@@ -89,6 +89,7 @@ export function WorldApp() {
         lastAction.current === 'setGameStarter' ||
         lastAction.current === 'setGameLineup' ||
         lastAction.current === 'setRegistrations' ||
+        lastAction.current === 'setRosterPolicy' ||
         lastAction.current === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');

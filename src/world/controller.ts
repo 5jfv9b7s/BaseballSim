@@ -1,9 +1,10 @@
+import { rosterPolicyView } from './roster-policy.ts';
 import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createRegistrationWorld, worldPhase } from './engine.ts';
-import { createRegistrationDefinitions } from '../data/world/registrations.ts';
+import { advanceWorld, completeDay, createRosterPolicyWorld, worldPhase } from './engine.ts';
+import { createRosterPolicyDefinitions } from '../data/world/roster-policies.ts';
 import { standings } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -35,6 +36,7 @@ export interface WorldView {
   management: ClubManagement | null;
   seasonSummary: import('./types.ts').SeasonSummary | null;
   gameLineups: Record<string, import('./types.ts').IdealLineup> | null;
+  rosterPolicy: ReturnType<typeof rosterPolicyView> | null;
   registration: ReturnType<typeof registrationView> | null;
   registrationPreview: ReturnType<typeof registrationPreview>;
   canEditManagement: boolean;
@@ -66,7 +68,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createRegistrationWorld();
+  private world: WorldRecord = createRosterPolicyWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -98,9 +100,9 @@ export class WorldController {
       management: world.version !== 'world-prototype-v1' ? world.management : null,
       seasonSummary: 'seasonSummary' in world ? world.seasonSummary : null,
       gameLineups: 'gameLineups' in world ? world.gameLineups : null,
-      registration: world.version === 'world-prototype-v5' ? registrationView(world) : null,
-      registrationPreview:
-        world.version === 'world-prototype-v5' ? registrationPreview(world) : null,
+      rosterPolicy: world.version === 'world-prototype-v6' ? rosterPolicyView(world) : null,
+      registration: 'registration' in world ? registrationView(world) : null,
+      registrationPreview: 'registration' in world ? registrationPreview(world) : null,
       canEditManagement: canEditManagement(world),
       seed: world.seed,
       definitions: world.definitions,
@@ -158,6 +160,7 @@ export class WorldController {
         'setGameLineup',
         'setRegistrations',
         'setGameBench',
+        'setRosterPolicy',
       ].includes(command.kind),
       '未対応の世界指示です',
     );
@@ -183,10 +186,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createRegistrationWorld(
+      this.world = createRosterPolicyWorld(
         command.seed,
         command.controlledSquadId,
-        createRegistrationDefinitions(command.calendar),
+        createRosterPolicyDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;
@@ -196,7 +199,8 @@ export class WorldController {
       command.kind === 'setGameStarter' ||
       command.kind === 'setGameLineup' ||
       command.kind === 'setRegistrations' ||
-      command.kind === 'setGameBench'
+      command.kind === 'setGameBench' ||
+      command.kind === 'setRosterPolicy'
     ) {
       const {
         commandId,

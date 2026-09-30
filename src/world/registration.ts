@@ -1,9 +1,16 @@
-import { ensure, id, integer } from '../engine/validation.ts';
+import { id, integer } from '../engine/validation.ts';
 import type { GameRecord, Team } from '../game/types.ts';
 import type { WorldDefinitions, WorldRecord, WorldSquad, IdealLineup } from './types.ts';
 import type { RegistrationAction, RegistrationState, GameRoster } from './registration-types.ts';
 
-export type RegisteredWorld = Extract<WorldRecord, { version: 'world-prototype-v5' }>;
+export type RegisteredWorld = Extract<WorldRecord, { registration: RegistrationState }>;
+
+/** 自動処理が保留できる、既知の登録制約だけを区別する。 */
+export class RegistrationConstraintError extends Error {}
+
+function ensure(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new RegistrationConstraintError(message);
+}
 
 /** 暦日を足す。実時計や表示上のタイムゾーンを判定へ持ち込まない。 */
 export function registrationEligibleOn(date: string, days: number): string {
@@ -272,8 +279,16 @@ export function applyRegistrationAction(
   world: RegisteredWorld,
   action: RegistrationAction,
   sourceId: string,
+  automatic = false,
 ): RegisteredWorld {
-  const next: RegisteredWorld = { ...world, registration: structuredClone(world.registration) };
+  const next: RegisteredWorld = {
+    ...world,
+    registration: {
+      ...world.registration,
+      registrations: structuredClone(world.registration.registrations),
+      benchOverrides: { ...world.registration.benchOverrides },
+    },
+  };
   const squad = world.definitions.squads.find((item) => item.squadId === action.squadId)!;
   if (action.kind === 'setRegistrations') {
     ensure(
@@ -286,7 +301,10 @@ export function applyRegistrationAction(
       new Set(action.changes.map((change) => change.playerId)).size === action.changes.length,
       '登録変更の選手が重複しています',
     );
-    const moment = { date: world.currentDate, order: world.management.actions.length + 1 };
+    const moment = {
+      date: world.currentDate,
+      order: automatic ? 0 : world.management.actions.length + 1,
+    };
     for (const change of action.changes) {
       ensure(['first', 'farm'].includes(change.category), '登録区分が不正です');
       const current = next.registration.registrations.find(
@@ -304,7 +322,10 @@ export function applyRegistrationAction(
         );
       current.until = { ...moment };
       next.registration.registrations.push({
-        registrationId: `registration-${moment.order}-${change.playerId}`,
+        registrationId:
+          world.version === 'world-prototype-v6'
+            ? JSON.stringify(['registration', sourceId, change.playerId])
+            : `registration-${moment.order}-${change.playerId}`,
         playerId: change.playerId,
         clubId: squad.team.clubId,
         category: change.category,

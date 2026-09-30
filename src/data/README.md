@@ -73,6 +73,14 @@ ratingは0〜120000の整数（表示値の1000倍）。第2引数は現在値�
 
 球団追加時は上表と同じ3ファイルを作り、world/rosters.tsの結合一覧と日程を揃える必要があります。現在の同梱日程は4球団用です。IDを表示名として変更せず、参照している全ファイルを整合させてください。
 
+## 入れ替え方針と固定希望
+
+roster-policies/{hoshihara,aonagi,kohaku,asagiri}.tsに全4球団の方針と60選手の希望を明示しています。changeModeはmanual/auto、preferenceはfirstFixed/farmFixed/autoです。球団単位の設定で、実登録はregistrations/のデータとして別に編集します。
+
+初期値は全球団手動・全選手おまかせ。自動は固定希望だけを反映する試作です。人数枠や再登録待ちに抵触する希望は保留されます。おまかせ選手の能力評価による昇降格はまだ行いません。編集後はnpm.cmd run data:checkで全選手分の欠損・重複・他球団参照を検査してください。
+
+選手追加時は希望の行も追加します。球団を増やす場合はworld/roster-policies.tsの結合一覧、world/registrations.tsの登録一覧、名簿と日程を揃えます。開始済みの世界へファイル変更は反映せず、保存された方針・希望を使います。
+
 ## 日程と保存
 
 [config/season.ts](../../config/season.ts)に年間の年度・開幕/終了日・総当たり回数・節の間隔（日）、[world/schedule.ts](world/schedule.ts)に短期日程を置いています。年日程は[world/annual.ts](world/annual.ts)で生成します。現実の正式日程の再現ではありません。

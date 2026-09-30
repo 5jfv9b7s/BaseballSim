@@ -1,3 +1,4 @@
+import { applyRosterPolicyAction } from './roster-policy.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { validateGameFixture } from '../game/engine.ts';
 import {
@@ -206,7 +207,7 @@ export function managementFixture(
       starter,
       ...plan.reliefRoles.map((slot) => slot.playerId).filter((id) => id !== starter),
     ];
-    if (world.version === 'world-prototype-v5') {
+    if ('registration' in world) {
       const actual = resolveRegisteredRoster(world, squadId, gameId);
       fixture.teams[side].lineup = actual.lineup.battingOrder.map((slot) => ({
         playerId: slot.playerId,
@@ -268,8 +269,19 @@ export function applyManagement(
   const management = structuredClone(world.management);
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
-  if (action.kind === 'setRegistrations' || action.kind === 'setGameBench') {
-    ensure(world.version === 'world-prototype-v5', '登録・ベンチ管理は新規プレイで利用できます');
+  if (action.kind === 'setRosterPolicy') {
+    ensure(world.version === 'world-prototype-v6', '固定希望は新規プレイで利用できます');
+    updated = applyRosterPolicyAction(world, action, commandId);
+  } else if (action.kind === 'setRegistrations' || action.kind === 'setGameBench') {
+    ensure('registration' in world, '登録・ベンチ管理は新規プレイで利用できます');
+    if (action.kind === 'setRegistrations' && world.version === 'world-prototype-v6') {
+      const clubId = world.definitions.squads.find((squad) => squad.squadId === action.squadId)!
+        .team.clubId;
+      ensure(
+        world.rosterControl.policies[clubId]!.changeMode === 'manual',
+        '直接の登録変更は手動モードで行ってください',
+      );
+    }
     updated = applyRegistrationAction(world, action, commandId);
   } else if (action.kind === 'setClubPlan') {
     validateClubPlan(world, action.squadId, action.lineup, action.pitchers);
@@ -325,6 +337,6 @@ export function applyManagement(
     'gameLineups' in updated
       ? { ...updated, management, gameLineups: gameLineups! }
       : { ...updated, management };
-  if (next.version === 'world-prototype-v5') validateTodayRosters(next);
+  if ('registration' in next) validateTodayRosters(next);
   return next;
 }

@@ -1,3 +1,4 @@
+import { RosterPolicyEditor } from './RosterPolicyEditor.tsx';
 import { useEffect, useState } from 'react';
 import type { WorldAction, WorldView } from '../world/controller.ts';
 
@@ -22,11 +23,16 @@ export function RegistrationEditor({
   const preview = view.registrationPreview;
   const [first, setFirst] = useState(current);
   const [bench, setBench] = useState(preview?.roster.playerIds ?? []);
-  const currentKey = JSON.stringify([current, view.currentDate]);
+  const currentKey = JSON.stringify([
+    current,
+    view.currentDate,
+    view.rosterPolicy?.policy.changeMode,
+  ]);
   const benchKey = JSON.stringify([preview?.gameId, preview?.roster.playerIds]);
   useEffect(() => setFirst(current), [currentKey]);
   useEffect(() => setBench(preview?.roster.playerIds ?? []), [benchKey]);
   const locked = disabled || !view.canEditManagement;
+  const automatic = view.rosterPolicy?.policy.changeMode === 'auto';
   const changed = squad.players.some(
     (player) => first.includes(player.playerId) !== current.includes(player.playerId),
   );
@@ -48,8 +54,12 @@ export function RegistrationEditor({
       </p>
       <p className="hint">
         手動で登録・抹消します。抹消後は{rules.reentryDays}
-        日後から再登録できます。二軍の試合と自動昇降格は未対応です。
+        日後から再登録できます。二軍の試合は未対応です。
       </p>
+      {view.rosterPolicy && <RosterPolicyEditor view={view} disabled={disabled} send={send} />}
+      {automatic && (
+        <p className="hint">直接の登録変更は、入れ替え方針を手動に切り替えてから行ってください。</p>
+      )}
       <details>
         <summary>一軍登録・当日のベンチを編集</summary>
         <p>
@@ -104,7 +114,7 @@ export function RegistrationEditor({
                         type="checkbox"
                         aria-label={`${name}の一軍登録`}
                         checked={first.includes(player.playerId)}
-                        disabled={locked || waiting}
+                        disabled={locked || automatic || waiting}
                         onChange={(event) =>
                           setFirst(toggle(first, player.playerId, event.target.checked))
                         }
@@ -130,7 +140,7 @@ export function RegistrationEditor({
         </div>
         <div className="world-controls">
           <button
-            disabled={locked || !changed}
+            disabled={locked || automatic || !changed}
             onClick={() =>
               send({
                 kind: 'setRegistrations',

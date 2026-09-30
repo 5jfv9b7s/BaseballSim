@@ -3,6 +3,7 @@ import {
   createAnnualWorld,
   createRosterWorld,
   createRegistrationWorld,
+  createRosterPolicyWorld,
 } from '../src/world/engine.ts';
 import { createGame } from '../src/game/engine.ts';
 import { PITCH_TYPES } from '../src/data/pitch-types/index.ts';
@@ -54,3 +55,6 @@ console.log(
 
 const registered = createRegistrationWorld();
 console.log('登録・資格データ: ' + registered.registration.registrations.length + '人（検査成功）');
+
+const policies = createRosterPolicyWorld();
+console.log('固定希望データ: ' + policies.rosterControl.preferences.length + '人（検査成功）');

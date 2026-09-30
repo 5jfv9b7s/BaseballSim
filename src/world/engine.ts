@@ -1,3 +1,9 @@
+import { createRosterPolicyDefinitions } from '../data/world/roster-policies.ts';
+import {
+  initialRosterControl,
+  validateRosterPolicyDefinitions,
+  reconcileRosterPolicies,
+} from './roster-policy.ts';
 import { createRegistrationDefinitions } from '../data/world/registrations.ts';
 import {
   initialRegistration,
@@ -53,8 +59,9 @@ export function scheduledFixture(
     initialDatasetVersion: 'game-fixture-v2',
     players: [...away.players, ...home.players].filter(
       (player) =>
-        !['world-definitions-v3', 'world-definitions-v4'].includes(definitions.version) ||
-        activeIds.includes(player.playerId),
+        !['world-definitions-v3', 'world-definitions-v4', 'world-definitions-v5'].includes(
+          definitions.version,
+        ) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
     teams,
@@ -73,6 +80,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v2',
       'world-definitions-v3',
       'world-definitions-v4',
+      'world-definitions-v5',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -108,7 +116,11 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       ensure(!seen.has(value), '球団・選手・持ち球IDが重複しています');
       seen.add(value);
     }
-    if (['world-definitions-v3', 'world-definitions-v4'].includes(definitions.version)) {
+    if (
+      ['world-definitions-v3', 'world-definitions-v4', 'world-definitions-v5'].includes(
+        definitions.version,
+      )
+    ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
       const listed = [
         ...squad.team.lineup.map((slot) => slot.playerId),
@@ -124,7 +136,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       integer(
         squad.reserveBatterIds.length,
         0,
-        definitions.version === 'world-definitions-v4' ? 58 : 17,
+        ['world-definitions-v4', 'world-definitions-v5'].includes(definitions.version) ? 58 : 17,
         '試作の控え野手数',
       );
       // 未出場選手にも能力検査を適用する。DHへ仮配置した検証用名簿は保存しない。
@@ -179,12 +191,19 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       appearances.add(appearance);
     }
   }
-  if (definitions.version === 'world-definitions-v4') validateRegistrationDefinitions(definitions);
+  if (['world-definitions-v4', 'world-definitions-v5'].includes(definitions.version))
+    validateRegistrationDefinitions(definitions);
   else
     ensure(
       definitions.registrationRules === undefined &&
         definitions.squads.every((squad) => squad.registrationInputs === undefined),
       '旧版へ登録データを追加できません',
+    );
+  if (definitions.version === 'world-definitions-v5') validateRosterPolicyDefinitions(definitions);
+  else
+    ensure(
+      definitions.squads.every((squad) => squad.rosterPolicyInput === undefined),
+      '旧版へ固定希望を追加できません',
     );
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
@@ -288,8 +307,7 @@ export function acceptGame(world: WorldRecord, gameId: string, game: GameRecord)
     contributions: { ...world.contributions },
     statApplicationMarkers: { ...world.statApplicationMarkers },
   };
-  if (next.version === 'world-prototype-v5')
-    next.registration = updateGameRosters(next, gameId, game);
+  if ('registration' in next) next.registration = updateGameRosters(next, gameId, game);
   if (game.result) {
     const scheduled = world.definitions.schedule.find((item) => item.gameId === gameId)!;
     applyContribution(next, gameContribution(world.definitions, scheduled, game));
@@ -321,7 +339,9 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
   if ('seasonSummary' in next && currentDate > next.definitions.endDate) {
     next.seasonSummary = summarizeSeason(next);
   }
-  return next;
+  return next.version === 'world-prototype-v6' && currentDate <= next.definitions.endDate
+    ? reconcileRosterPolicies(next)
+    : next;
 }
 
 /** 年間プレイは新規作成時に選ぶ。旧世界の日程・乱数・保存を変更しない。 */
@@ -367,4 +387,23 @@ export function createRegistrationWorld(
   };
   validateTodayRosters(world);
   return world;
+}
+
+/** 固定希望と入れ替え方針を持つ世界。旧保存は元の版で再生する。 */
+export function createRosterPolicyWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createRosterPolicyDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v6' }> {
+  ensure(definitions.version === 'world-definitions-v5', '固定希望対応の初期定義が必要です');
+  const world: Extract<WorldRecord, { version: 'world-prototype-v6' }> = {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v6',
+    seasonSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(definitions),
+    rosterControl: initialRosterControl(definitions),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
 }

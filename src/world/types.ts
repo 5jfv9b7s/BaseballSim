@@ -9,9 +9,10 @@ import type {
   Team,
 } from '../game/types.ts';
 
-/** v0.2の試作世界。契約・育成・疲労を実装済みの空データで補わない。 */
+/** 段階別の世界定義。契約・育成など未実装のモデルを空データで補わない。 */
 export interface WorldSquad {
   squadId: string;
+  physicalInputs?: import('./physical-types.ts').PhysicalInput[];
   /** v5定義の入れ替え方針・全選手の固定希望。 */
   rosterPolicyInput?: import('./roster-policy-types.ts').RosterPolicyInput;
   /** v4以降の定義の初期登録・資格。 */
@@ -37,7 +38,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v3'
     | 'world-definitions-v4'
     | 'world-definitions-v5'
-    | 'world-definitions-v6';
+    | 'world-definitions-v6'
+    | 'world-definitions-v7';
+  physicalConfig?: import('./physical-types.ts').PhysicalConfig;
   farm?: import('./farm-types.ts').FarmCompetition;
   registrationRules?: import('./registration-types.ts').RegistrationRules;
   seasonId: string;
@@ -156,6 +159,16 @@ export type WorldRecord = WorldState &
   (
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
+    | {
+        version: 'world-prototype-v8';
+        physical: import('./physical-types.ts').PhysicalWorldState;
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+        farmSummary: SeasonSummary | null;
+        gameLineups: Record<string, IdealLineup>;
+        registration: import('./registration-types.ts').RegistrationState;
+        rosterControl: import('./roster-policy-types.ts').RosterControl;
+      }
     | {
         version: 'world-prototype-v7';
         management: ClubManagement;

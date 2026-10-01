@@ -112,3 +112,9 @@ npm.cmd run dev
 ```
 
 画面を再読み込みして新規プレイを開始します。配信済みdistには再ビルドが必要です。意図したデータ編集で結果が変わる場合は、新規入力向けの期待値を根拠とともに更新してください。過去の保存・記録ハッシュ・凍結名簿は再生成せず互換性を守ります。
+
+## 身体能力と開始時の体力・疲労（0.9.0）
+
+`physical/{hoshihara,aonagi,kohaku,asagiri}.ts`に各球団30人、計120人を選手IDで明示しています。一軍・二軍を通じて一つの身体状態を使います。`physical.stamina`と`physical.recovery`はvalueMilli/ceilingMilli（0〜120000）、energyMilli/fatigueMilliは0〜100000です。調子・怪我モデルの未実装値は補いません。新しい選手を追加するときはこちらにも入力を追加してください。
+
+消耗と回復の係数は`config/physical.ts`、式・単位・未校正の仮定は[身体状態ガイド](../../PHYSICAL-IMPLEMENTATION.md)です。設定と全身体入力は開始時に保存します。編集後は`npm.cmd run data:check`を実行し、新しい日程で確認してください。旧保存・既に開始した世界の値は変更しません。

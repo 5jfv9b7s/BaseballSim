@@ -1,3 +1,5 @@
+import { createPhysicalWorld } from '../src/world/engine.ts';
+import { createPhysicalDefinitions } from '../src/data/world/physical.ts';
 import { createFarmDefinitions } from '../src/data/world/farm.ts';
 import {
   createWorld,
@@ -72,3 +74,14 @@ console.log(
 
 const farmAnnual = createFarmWorld(undefined, undefined, createFarmDefinitions('annual'));
 console.log('一軍・二軍の年間日程: ' + farmAnnual.definitions.schedule.length + '試合（検査成功）');
+
+for (const calendar of ['short', 'annual'] as const) {
+  const physical = createPhysicalWorld(undefined, undefined, createPhysicalDefinitions(calendar));
+  console.log(
+    '身体データ: ' +
+      Object.keys(physical.physical.players).length +
+      '選手 / ' +
+      calendar +
+      '（検査成功）',
+  );
+}

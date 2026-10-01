@@ -22,7 +22,8 @@ type SaveFormat =
   | 'v05-world-snapshot-v4'
   | 'v06-world-snapshot-v5'
   | 'v07-world-snapshot-v6'
-  | 'v08-world-snapshot-v7';
+  | 'v08-world-snapshot-v7'
+  | 'v09-world-snapshot-v8';
 const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
@@ -36,7 +37,9 @@ const formatFor = (version: WorldRecord['version']): SaveFormat =>
             ? 'v06-world-snapshot-v5'
             : version === 'world-prototype-v6'
               ? 'v07-world-snapshot-v6'
-              : 'v08-world-snapshot-v7';
+              : version === 'world-prototype-v7'
+                ? 'v08-world-snapshot-v7'
+                : 'v09-world-snapshot-v8';
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 
@@ -308,6 +311,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
                 'world-prototype-v5',
                 'world-prototype-v6',
                 'world-prototype-v7',
+                'world-prototype-v8',
               ].includes(snapshot.versions.simulationVersion)
                 ? 259
                 : 35),
@@ -333,6 +337,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         'world-prototype-v5',
         'world-prototype-v6',
         'world-prototype-v7',
+        'world-prototype-v8',
       ].includes(snapshot.versions.simulationVersion) &&
         format === formatFor(snapshot.versions.simulationVersion),
       '未対応の世界保存形式です',
@@ -352,6 +357,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v06-world-snapshot-v5',
               'v07-world-snapshot-v6',
               'v08-world-snapshot-v7',
+              'v09-world-snapshot-v8',
             ].includes(format)
               ? 'gzip'
               : 'none') &&
@@ -373,6 +379,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v06-world-snapshot-v5',
               'v07-world-snapshot-v6',
               'v08-world-snapshot-v7',
+              'v09-world-snapshot-v8',
             ].includes(format)
               ? MAX_ANNUAL_RAW_BYTES
               : MAX_BYTES) &&

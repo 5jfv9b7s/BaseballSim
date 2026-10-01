@@ -36,3 +36,7 @@ world-v5-save.json.gzはf3e89ecの実装で、固定希望機能を編集する�
 ## 二軍追加前の固定希望対応保存
 
 world-v6-save.json.gzはa62e804の実装で二軍対応を編集する前に凍結したWorldRecordです。固定希望による抹消と17イベントを含みます。gzipファイル自体のSHA-256は8edc2ece17637e68c1e7bbda50ee4a4529c33083987b6e9384b01629f6abb573。tests/farm.test.tsで保存読込・途中継続を照合します。IndexedDB全ストアのダンプとは区別し、期待値は再生成しません。
+
+## world-v7-save.json.gz
+
+0.8.0（develop 89e449d）を変更する前に生成したcanonicalJsonのgzipです。初日の一軍2試合完了後、二軍最初の試合を17イベント進めています。world-prototype-v7 / definitions-v6で、身体状態はありません。gzip自体のSHA-256は`1b3f472893d0ca00a549fa0847f7712298a4e815c2250996768f9e1f62874c8d`。tests/physical.test.tsで固定ハッシュ、保存・読込、旧版の続行一致を確認します。新実装に合わせて再生成しないでください。

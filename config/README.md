@@ -131,3 +131,9 @@ pが正なら失策の成否にかかわらず試合の管理乱数を1回進め
 [farm.ts](farm.ts)は二軍の試作設定です。benchLimitはベンチ上限（既定26）、annualは開幕日・開催期限・総当たり回数・節間隔です。既定は3月28日開幕・9月15日期限・全72試合。一軍と合わせ216試合を同じ世界で処理します。二軍の期限は世界の開始〜終了期間内に指定してください。年度変更時はseason.tsと二軍の日付を併せて編集します。
 
 短期の二軍日程はsrc/data/farm/schedule.tsに明示しています。設定は開始時に日程とともに保存し、後から編集しても旧保存へ混入させません。二軍の成績係数や補正倍率ではありません。細則と未対応は[登録・二軍ガイド](../ROSTER-IMPLEMENTATION.md)を参照してください。npm.cmd run data:checkで短期・年間の両方を検査します。
+
+## 体力・疲労の係数（0.9.0）
+
+`physical.ts`はphysical-load-v1の未校正係数です。活動種別ごとのworkloadUnits、1000負荷単位あたりのenergyCostMilli/fatigueCostMilli、dailyRecovery、restAdviceを分けています。各整数は0〜100000。体力・疲労は1000で1ポイント、身体能力はdata/physicalのvalueMilli/ceilingMilliです。
+
+[式・数え方・操作方法](../PHYSICAL-IMPLEMENTATION.md)を確認してください。式を変える場合はモデル版も変えます。係数だけの編集は新規世界に適用し、旧保存は開始時の設定で再現します。休養目安は表示のみで、能力倍率・自動登板禁止の設定ではありません。`npm.cmd run data:check`で全選手と設定を検査します。

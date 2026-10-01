@@ -1,3 +1,4 @@
+import { PhysicalRoster } from './PhysicalRoster.tsx';
 import { allWorldSquads } from '../world/squads.ts';
 import { FarmRoster } from './FarmRoster.tsx';
 import { SeasonCalendar } from './SeasonCalendar.tsx';
@@ -393,6 +394,7 @@ export function WorldApp() {
         />
       )}
 
+      {view?.physical && <PhysicalRoster view={view} />}
       {view?.farm && <FarmRoster view={view} />}
 
       <section className="panel" aria-label="順位表">

@@ -1,3 +1,5 @@
+import { createPerformanceWorld } from '../src/world/engine.ts';
+import { createPerformanceDefinitions } from '../src/data/world/performance.ts';
 import { createConditionWorld } from '../src/world/engine.ts';
 import { createConditionDefinitions } from '../src/data/world/condition.ts';
 import { createRestWorld } from '../src/world/engine.ts';
@@ -107,6 +109,21 @@ for (const calendar of ['short', 'annual'] as const) {
     '調子データ: ' +
       Object.keys(world.condition.players).length +
       '選手 / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createPerformanceWorld(
+    undefined,
+    undefined,
+    createPerformanceDefinitions(calendar),
+  );
+  console.log(
+    '試合前補正: ' +
+      world.definitions.performanceConfig!.version +
+      ' / ' +
       calendar +
       '（検査成功）',
   );

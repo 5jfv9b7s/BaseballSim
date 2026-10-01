@@ -1,3 +1,4 @@
+import { PerformanceRoster } from './PerformanceRoster.tsx';
 import { ConditionRoster } from './ConditionRoster.tsx';
 import { RestPolicyEditor } from './RestPolicyEditor.tsx';
 import { PhysicalRoster } from './PhysicalRoster.tsx';
@@ -405,6 +406,7 @@ export function WorldApp() {
           send={send}
         />
       )}
+      {view?.performance && <PerformanceRoster view={view} />}
       {view?.condition && <ConditionRoster view={view} />}
       {view?.physical && <PhysicalRoster view={view} />}
       {view?.farm && <FarmRoster view={view} />}

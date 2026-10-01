@@ -261,6 +261,7 @@ export interface GameResult {
 }
 
 export interface GameRecord {
+  performance?: import('./performance-types.ts').PerformanceSnapshot;
   kind:
     | 'completed-game-prototype-v1'
     | 'running-game-prototype-v1'

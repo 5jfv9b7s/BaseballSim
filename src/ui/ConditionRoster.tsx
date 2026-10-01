@@ -9,7 +9,10 @@ export function ConditionRoster({ view }: { view: WorldView }) {
     <section className="panel" aria-label="選手の調子">
       <h2>選手の調子</h2>
       <p className="hint">
-        調子は体力・疲労と別の状態です。5段階で表示し、毎日なだらかに変わる試作です。能力補正にはまだ使いません。
+        調子は体力・疲労と別の状態です。5段階で表示し、毎日なだらかに変わる試作です。
+        {view.performance
+          ? '試合開始時の値を一時的な能力補正へ使います。'
+          : 'この保存では能力補正に使いません。'}
       </p>
       <details>
         <summary>全選手の調子と変化を確認</summary>

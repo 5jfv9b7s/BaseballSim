@@ -42,7 +42,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v6'
     | 'world-definitions-v7'
     | 'world-definitions-v8'
-    | 'world-definitions-v9';
+    | 'world-definitions-v9'
+    | 'world-definitions-v10';
+  performanceConfig?: import('../game/performance-types.ts').PerformanceConfig;
   conditionConfig?: import('./condition-types.ts').ConditionConfig;
   restModelVersion?: 'pitcher-rest-v1';
   restPolicyInputs?: import('./rest-types.ts').RestPolicyInput[];
@@ -166,6 +168,18 @@ export type WorldRecord = WorldState &
   (
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
+    | {
+        version: 'world-prototype-v11';
+        condition: import('./condition-types.ts').ConditionWorldState;
+        restControl: import('./rest-types.ts').RestControl;
+        physical: import('./physical-types.ts').PhysicalWorldState;
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+        farmSummary: SeasonSummary | null;
+        gameLineups: Record<string, IdealLineup>;
+        registration: import('./registration-types.ts').RegistrationState;
+        rosterControl: import('./roster-policy-types.ts').RosterControl;
+      }
     | {
         version: 'world-prototype-v10';
         condition: import('./condition-types.ts').ConditionWorldState;

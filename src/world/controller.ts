@@ -1,3 +1,4 @@
+import { performanceView } from './performance.ts';
 import { conditionView } from './condition.ts';
 import { physicalView } from './physical.ts';
 import { gameScope } from './squads.ts';
@@ -6,8 +7,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createConditionWorld, worldPhase } from './engine.ts';
-import { createConditionDefinitions } from '../data/world/condition.ts';
+import { advanceWorld, completeDay, createPerformanceWorld, worldPhase } from './engine.ts';
+import { createPerformanceDefinitions } from '../data/world/performance.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -33,6 +34,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  performance: ReturnType<typeof performanceView> | null;
   condition: ReturnType<typeof conditionView> | null;
   restPolicy: {
     teamRestPolicy: import('./rest-types.ts').RestRules;
@@ -85,7 +87,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createConditionWorld();
+  private world: WorldRecord = createPerformanceWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -120,6 +122,7 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      performance: world.version === 'world-prototype-v11' ? performanceView(world) : null,
       condition: 'condition' in world ? conditionView(world) : null,
       restPolicy:
         'restControl' in world
@@ -232,10 +235,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createConditionWorld(
+      this.world = createPerformanceWorld(
         command.seed,
         command.controlledSquadId,
-        createConditionDefinitions(command.calendar),
+        createPerformanceDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;

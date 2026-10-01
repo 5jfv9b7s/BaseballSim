@@ -25,7 +25,8 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('status')).toContainText('2026-09-24の全結果を反映');
     await expect(results).toContainText('表示している結果：2026-09-24');
     await expect(results).toContainText('0 − 2');
-    await expect(results).toContainText('2 − 4');
+    // world-prototype-v11：試合前の能力補正を含む既定seedの結果。
+    await expect(results).toContainText('2 − 5');
     const firstStandings = await table.innerText();
     await page
       .getByRole('region', { name: '累計個人成績', exact: true })

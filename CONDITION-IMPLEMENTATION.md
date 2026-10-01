@@ -2,7 +2,7 @@
 
 全120選手の調子を、基本能力・体力・疲労と別に保存します。個人ごとの滑らかな波を毎日進め、試合前の値を出場の有無にかかわらず記録します。画面は5段階と直近5／10チーム試合の変化を表示します。
 
-データ設計書v1.0・5.8／6.1、FR-COND-03〜07、AC-13／29を参照しています。変動式・係数は未校正のcondition-smooth-v1で、U-03の最終仕様ではありません。試合能力への補正は未実装です。
+データ設計書v1.0・5.8／6.1、FR-COND-03〜07、AC-13／29を参照しています。変動式・係数は未校正のcondition-smooth-v1で、U-03の最終仕様ではありません。本書の0.11.0時点では試合能力への補正は未実装です。0.12.0では[試合前補正](PERFORMANCE-IMPLEMENTATION.md)を追加しました。
 
 ## 確認方法
 
@@ -54,11 +54,11 @@ configの範囲は変動幅0〜100000、中立復帰0〜1000、区間2〜365日�
 
 ## 保存と未対応
 
-新規世界はworld-prototype-v10／world-definitions-v9／v011-world-snapshot-v10。condition.playersは資料のplayer_statesの調子部分、condition.samplesはcondition_samplesの射影です。conditionModelStateはmodelId・version・schemaId・必須の内部状態を持ちます。空の状態で未実装モデルを完成扱いにしません。
+0.11.0で作成した世界はworld-prototype-v10／world-definitions-v9／v011-world-snapshot-v10。condition.playersは資料のplayer_statesの調子部分、condition.samplesはcondition_samplesの射影です。conditionModelStateはmodelId・version・schemaId・必須の内部状態を持ちます。空の状態で未実装モデルを完成扱いにしません。
 
 開始時設定・内部乱数・指示・試合・日次を再実行して復元を照合します。日次保存失敗では調子も翌日も未確定のままにし、再送で二重更新しません。旧v1〜v9には調子を追加せず、元の版の結果と保存を維持します。
 
-能力への一時補正、状態を踏まえた野手の自動起用、怪我・復帰、練習や成長、移籍を跨ぐ比較は未対応です。ゲームv1.0は引き続き開発中で、係数校正は後工程です。
+試合前の一時補正は0.12.0で追加しました。状態を踏まえた野手の自動起用、怪我・復帰、練習や成長、移籍を跨ぐ比較は未対応です。ゲームv1.0は引き続き開発中で、係数校正は後工程です。
 
 検査はnpm.cmd run data:check、npm.cmd run check。画面はnpm.cmd run buildの後にnpm.cmd run test:ui -- e2e/condition.spec.ts。開発中は実際のdev URLでも表示を確認します。ビルド後previewの確認だけでは、起動済みViteの配信不整合を検出できません。
 

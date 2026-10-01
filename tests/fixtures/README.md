@@ -48,3 +48,7 @@ world-v6-save.json.gzはa62e804の実装で二軍対応を編集する前に凍�
 ## world-v9-save.json.gz
 
 0.10.0（e5f0f4e）の変更前実装で初日4試合・日次回復後、翌日17イベントを進めたcanonicalJsonのgzipです。調子状態はありません。gzip SHA-256はe054eeca48c114fd1ee7213a03099ec0adf233ea9444f63c57ac33afee5ff2f3。tests/condition.test.tsで固定ハッシュ、旧版での保存読込・続行一致を検査します。新実装に合わせて再生成しないでください。
+
+## world-v10-save.json.gz
+
+0.11.0（3636447）の変更前実装で、初日4試合と日次後、翌日17イベントを進めたcanonicalJsonのgzip。調子あり・試合前補正なし。gzip SHA-256は660a11e6809d3443e582069d600ae29bf82c8aa004fdb2574bf98a8e30a36941。tests/performance.test.tsで固定ハッシュ・旧版保存読込・続行を確認します。期待値を再生成しないでください。

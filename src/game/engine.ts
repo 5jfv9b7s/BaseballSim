@@ -1,3 +1,4 @@
+import { performanceFixture } from './performance.ts';
 import { createErrorConfig, validateErrorConfig, type ErrorConfig } from './error-config.ts';
 import { createErrorFixture } from './fixture-v2.ts';
 import { evaluateFieldingError } from './fielding-error.ts';
@@ -620,7 +621,7 @@ export function advanceGameEvent(
 
 export function stepRecord(record: GameRecord): void {
   // 正本所有者内のみで使用。1イベントの計算・検査が成功してからまとめて反映する。
-  const next = advanceGameEvent(record.state, record.fixture);
+  const next = advanceGameEvent(record.state, performanceFixture(record));
   record.state = next.state;
   record.events.push(next.event);
 }

@@ -1,3 +1,4 @@
+import { performanceFixture } from './performance.ts';
 import { ensure } from '../engine/validation.ts';
 import { hitDestinations } from './running.ts';
 import { evaluateInPlayV2 } from './in-play-v2.ts';
@@ -81,7 +82,12 @@ function reconstruct(context: Reconstruction, event: GameEvent, record: GameReco
       move(newRunner(), 1);
     } else if (hitBases) {
       // 失策で早く生還した走者も仮想塁上に残し、後続の安打による生還まで追う。
-      const destinations = hitDestinations(state, record.fixture, hitBases, event.battedBall);
+      const destinations = hitDestinations(
+        state,
+        performanceFixture(record),
+        hitBases,
+        event.battedBall,
+      );
       const previous = context.bases;
       context.bases = [null, null, null];
       for (let i = 2; i >= 0; i--) if (previous[i]) move(previous[i]!, destinations[i]!);
@@ -103,8 +109,8 @@ function reconstruct(context: Reconstruction, event: GameEvent, record: GameReco
       }
       const sacrifice =
         outcome === 'sacrificeFly' &&
-        evaluateInPlayV2(state, record.fixture, event.battedBall, event.pitch)?.resolution ===
-          'sacrificeFly';
+        evaluateInPlayV2(state, performanceFixture(record), event.battedBall, event.pitch)
+          ?.resolution === 'sacrificeFly';
       context.outs++;
       if (sacrifice && context.outs < 3 && context.bases[2]) {
         context.scored.add(context.bases[2].runInstanceId);

@@ -128,3 +128,7 @@ npm.cmd run dev
 ## 調子の初期値（0.11.0）
 
 condition/{球団名}.tsに全120人の初期調子・最初の終点・区間日数を明記しています。playerIdは名簿正本と一致させ、一二軍移動でも同じ状態を使用します。共通の次区間生成と表示境界はconfig/condition.ts。旧保存の途中状態へ編集値を注入せず、新規日程から適用します。単位と試作仮定は[調子ガイド](../../CONDITION-IMPLEMENTATION.md)、入力検査はnpm.cmd run data:checkです。
+
+## 試合前の実効能力（0.12.0）
+
+原能力はplayers/repertoires、調子はcondition、身体状態はphysicalの入力を使用し、補正済み能力をdataへ書き戻しません。共通の項目別係数はconfig/performance.ts、新規世界はworld/performance.ts。球団や一二軍だけを理由に異なる倍率を設けません。[補正の操作・保存](../../PERFORMANCE-IMPLEMENTATION.md)を参照してください。

@@ -150,7 +150,7 @@ test('調子の表示：5段階の境界と直近5/10試合の始点終点差、
 });
 
 test('欠場も試合前に採取：一二軍120人、分割進行・再適用・保存検査で二重計上しない', () => {
-  let base = createConditionWorld();
+  let base: ConditionWorld = createConditionWorld();
   const preview = registrationPreview(base)!;
   base = applyManagement(base, 'bench-rest', {
     kind: 'setGameBench',
@@ -216,7 +216,7 @@ test('休養日・登録移動：波は日次で進み、現在登録期間だ�
 });
 
 test('調子は能力・身体・試合乱数と分離し、旧v9と全短期試合・成績が一致する', () => {
-  let world = createConditionWorld();
+  let world: ConditionWorld = createConditionWorld();
   let old = createRestWorld();
   while (worldPhase(world) !== 'scheduleComplete') {
     world = finishDay(world);
@@ -355,7 +355,11 @@ test(
   '年間調子：216試合・188日の全試合前値と内部状態を保存復元する',
   { timeout: 600000 },
   async () => {
-    let world = createConditionWorld(20260924, undefined, createConditionDefinitions('annual'));
+    let world: ConditionWorld = createConditionWorld(
+      20260924,
+      undefined,
+      createConditionDefinitions('annual'),
+    );
     while (worldPhase(world) !== 'scheduleComplete') world = finishDay(world);
     assert.equal(world.completedDates.length, 188);
     assert.equal(Object.keys(world.condition.samples).length, 216);

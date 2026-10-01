@@ -216,6 +216,10 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
   ensure(value !== null && typeof value === 'object', '試合データが不正です');
   const candidate = value as GameRecord;
   ensure(
+    candidate.performance === undefined,
+    '状態補正を含む試合は日程の世界保存で保存・復元してください',
+  );
+  ensure(
     candidate.kind === 'completed-game-prototype-v1' ||
       candidate.kind === 'completed-game-prototype-v2' ||
       candidate.kind === 'completed-game-prototype-v3' ||

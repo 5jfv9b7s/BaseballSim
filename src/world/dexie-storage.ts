@@ -23,7 +23,8 @@ type SaveFormat =
   | 'v06-world-snapshot-v5'
   | 'v07-world-snapshot-v6'
   | 'v08-world-snapshot-v7'
-  | 'v09-world-snapshot-v8';
+  | 'v09-world-snapshot-v8'
+  | 'v010-world-snapshot-v9';
 const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
@@ -39,7 +40,9 @@ const formatFor = (version: WorldRecord['version']): SaveFormat =>
               ? 'v07-world-snapshot-v6'
               : version === 'world-prototype-v7'
                 ? 'v08-world-snapshot-v7'
-                : 'v09-world-snapshot-v8';
+                : version === 'world-prototype-v8'
+                  ? 'v09-world-snapshot-v8'
+                  : 'v010-world-snapshot-v9';
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 
@@ -312,6 +315,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
                 'world-prototype-v6',
                 'world-prototype-v7',
                 'world-prototype-v8',
+                'world-prototype-v9',
               ].includes(snapshot.versions.simulationVersion)
                 ? 259
                 : 35),
@@ -338,6 +342,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         'world-prototype-v6',
         'world-prototype-v7',
         'world-prototype-v8',
+        'world-prototype-v9',
       ].includes(snapshot.versions.simulationVersion) &&
         format === formatFor(snapshot.versions.simulationVersion),
       '未対応の世界保存形式です',
@@ -358,6 +363,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v07-world-snapshot-v6',
               'v08-world-snapshot-v7',
               'v09-world-snapshot-v8',
+              'v010-world-snapshot-v9',
             ].includes(format)
               ? 'gzip'
               : 'none') &&
@@ -380,6 +386,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v07-world-snapshot-v6',
               'v08-world-snapshot-v7',
               'v09-world-snapshot-v8',
+              'v010-world-snapshot-v9',
             ].includes(format)
               ? MAX_ANNUAL_RAW_BYTES
               : MAX_BYTES) &&

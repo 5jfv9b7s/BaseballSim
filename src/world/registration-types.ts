@@ -42,6 +42,7 @@ export interface PlayerRegistration {
 }
 
 export interface GameRoster {
+  restSnapshot?: import('./rest-types.ts').RestSnapshot;
   squadId: string;
   playerIds: string[];
   /** ベンチだけでは出場にしない。実際の打順・登板から更新する。 */

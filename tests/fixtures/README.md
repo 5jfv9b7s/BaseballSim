@@ -40,3 +40,7 @@ world-v6-save.json.gzはa62e804の実装で二軍対応を編集する前に凍�
 ## world-v7-save.json.gz
 
 0.8.0（develop 89e449d）を変更する前に生成したcanonicalJsonのgzipです。初日の一軍2試合完了後、二軍最初の試合を17イベント進めています。world-prototype-v7 / definitions-v6で、身体状態はありません。gzip自体のSHA-256は`1b3f472893d0ca00a549fa0847f7712298a4e815c2250996768f9e1f62874c8d`。tests/physical.test.tsで固定ハッシュ、保存・読込、旧版の続行一致を確認します。新実装に合わせて再生成しないでください。
+
+## world-v8-save.json.gz
+
+0.9.0（ee3f0ec）の変更前実装で、初日4試合と日次回復後、翌日の試合を17イベント進めたcanonicalJsonのgzipです。身体状態あり・休養方針なし。gzip SHA-256は`dcba625568874981ef41ff09fb87def8858295791ce2bc51bc5c66b36854d1d4`。tests/rest.test.tsで固定ハッシュ・旧版の再保存/読込・続行の一致を確認します。新しい起用結果に合わせて再生成しないでください。

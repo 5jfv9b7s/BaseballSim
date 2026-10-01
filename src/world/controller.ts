@@ -5,8 +5,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createPhysicalWorld, worldPhase } from './engine.ts';
-import { createPhysicalDefinitions } from '../data/world/physical.ts';
+import { advanceWorld, completeDay, createRestWorld, worldPhase } from './engine.ts';
+import { createRestDefinitions } from '../data/world/rest.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -32,6 +32,11 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  restPolicy: {
+    teamRestPolicy: import('./rest-types.ts').RestRules;
+    policyRevision: number;
+    individualRest: import('./rest-types.ts').IndividualRest[];
+  } | null;
   physical: ReturnType<typeof physicalView> | null;
   revision: number;
   worldId: string;
@@ -78,7 +83,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createPhysicalWorld();
+  private world: WorldRecord = createRestWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -113,6 +118,13 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      restPolicy:
+        'restControl' in world
+          ? {
+              ...world.restControl.teamPolicies[world.management.controlledSquadId]!,
+              ...world.restControl.pitcherUsagePlans[world.management.controlledSquadId]!,
+            }
+          : null,
       physical: 'physical' in world ? physicalView(world) : null,
       revision: this.revision,
       worldId: world.worldId,
@@ -191,6 +203,7 @@ export class WorldController {
         'setRegistrations',
         'setGameBench',
         'setRosterPolicy',
+        'setRestPolicy',
       ].includes(command.kind),
       '未対応の世界指示です',
     );
@@ -216,10 +229,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createPhysicalWorld(
+      this.world = createRestWorld(
         command.seed,
         command.controlledSquadId,
-        createPhysicalDefinitions(command.calendar),
+        createRestDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;
@@ -230,7 +243,8 @@ export class WorldController {
       command.kind === 'setGameLineup' ||
       command.kind === 'setRegistrations' ||
       command.kind === 'setGameBench' ||
-      command.kind === 'setRosterPolicy'
+      command.kind === 'setRosterPolicy' ||
+      command.kind === 'setRestPolicy'
     ) {
       const {
         commandId,

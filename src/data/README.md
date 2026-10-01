@@ -118,3 +118,9 @@ npm.cmd run dev
 `physical/{hoshihara,aonagi,kohaku,asagiri}.ts`に各球団30人、計120人を選手IDで明示しています。一軍・二軍を通じて一つの身体状態を使います。`physical.stamina`と`physical.recovery`はvalueMilli/ceilingMilli（0〜120000）、energyMilli/fatigueMilliは0〜100000です。調子・怪我モデルの未実装値は補いません。新しい選手を追加するときはこちらにも入力を追加してください。
 
 消耗と回復の係数は`config/physical.ts`、式・単位・未校正の仮定は[身体状態ガイド](../../PHYSICAL-IMPLEMENTATION.md)です。設定と全身体入力は開始時に保存します。編集後は`npm.cmd run data:check`を実行し、新しい日程で確認してください。旧保存・既に開始した世界の値は変更しません。
+
+## 一軍・二軍の投手休養方針（0.10.0）
+
+`rest-policies/{球団名}.ts`に4球団の一軍・二軍、計8チームの休養方針を明示しています。`teamRestPolicy`の初期値はconfig/rest.tsから参照し、個別に変える場合は球団ファイルへ条件を記述します。`individualRest`は投手IDとinherit/custom。customにはrulesを指定し、未指定またはinheritはチーム既定を継承します。投手追加後も省略なら既定が有効です。
+
+設定の単位と仮定は[休養ガイド](../../REST-IMPLEMENTATION.md)。所属や登録資格とは別で、一二軍を移動しても実登板履歴は同じ選手IDへ残ります。開始後は保存内設定と指示履歴を使用します。`npm.cmd run data:check`で全チームと投手ID・範囲を検査してください。

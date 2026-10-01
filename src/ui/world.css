@@ -103,3 +103,15 @@
 .world-page .world-table select:not(.roster-player-select) {
   min-width: 4.5rem;
 }
+
+.rest-rules {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 0.5rem 1rem;
+  margin: 1rem 0;
+}
+
+.rest-rules input {
+  width: 7rem;
+}

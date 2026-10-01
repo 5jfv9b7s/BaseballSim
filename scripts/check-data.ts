@@ -1,3 +1,5 @@
+import { createRestWorld } from '../src/world/engine.ts';
+import { createRestDefinitions } from '../src/data/world/rest.ts';
 import { createPhysicalWorld } from '../src/world/engine.ts';
 import { createPhysicalDefinitions } from '../src/data/world/physical.ts';
 import { createFarmDefinitions } from '../src/data/world/farm.ts';
@@ -81,6 +83,17 @@ for (const calendar of ['short', 'annual'] as const) {
     '身体データ: ' +
       Object.keys(physical.physical.players).length +
       '選手 / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createRestWorld(undefined, undefined, createRestDefinitions(calendar));
+  console.log(
+    '休養方針: ' +
+      Object.keys(world.restControl.teamPolicies).length +
+      'チーム / ' +
       calendar +
       '（検査成功）',
   );

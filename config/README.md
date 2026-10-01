@@ -137,3 +137,7 @@ pが正なら失策の成否にかかわらず試合の管理乱数を1回進め
 `physical.ts`はphysical-load-v1の未校正係数です。活動種別ごとのworkloadUnits、1000負荷単位あたりのenergyCostMilli/fatigueCostMilli、dailyRecovery、restAdviceを分けています。各整数は0〜100000。体力・疲労は1000で1ポイント、身体能力はdata/physicalのvalueMilli/ceilingMilliです。
 
 [式・数え方・操作方法](../PHYSICAL-IMPLEMENTATION.md)を確認してください。式を変える場合はモデル版も変えます。係数だけの編集は新規世界に適用し、旧保存は開始時の設定で再現します。休養目安は表示のみで、能力倍率・自動登板禁止の設定ではありません。`npm.cmd run data:check`で全選手と設定を検査します。
+
+## 投手の休養方針（0.10.0）
+
+`rest.ts`にpitcher-rest-v1の初期既定値を分離しています。連投・直近N日球数・前日の登板イニング数・体力・疲労の閾値と、休養優先/ベンチ外希望の扱いを指定します。nullは条件無効。値域・判定順・例外は[休養ガイド](../REST-IMPLEMENTATION.md)を参照してください。身体消耗の係数はphysical.tsのままで、今回は校正していません。球団ごとの上書き・個別条件はdata/rest-policiesです。開始時の設定を保存し、編集後はdata:checkと新規日程で確認します。

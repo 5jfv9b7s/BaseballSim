@@ -1,3 +1,4 @@
+import { evaluateRest, restRank } from './rest.ts';
 import { worldSquad, allWorldSquads, isFarmSquad } from './squads.ts';
 import { id, integer } from '../engine/validation.ts';
 import type { GameRecord, Team } from '../game/types.ts';
@@ -162,6 +163,19 @@ export function resolveRegisteredRoster(
       ...squad.team.pitcherIds,
     ]),
   ];
+  const rest =
+    'restControl' in world
+      ? Object.fromEntries(
+          first
+            .filter((id) => squad.team.pitcherIds.includes(id))
+            .map((id) => [id, evaluateRest(world, squadId, id)]),
+        )
+      : null;
+  const rankedPitchers = rest
+    ? [...pitcherOrder].sort(
+        (a, b) => (rest[a] ? restRank(rest[a]) : 3) - (rest[b] ? restRank(rest[b]) : 3),
+      )
+    : pitcherOrder;
   const override = controlled ? world.registration.benchOverrides[gameId] : undefined;
   if (override) {
     ensure(new Set(override).size === override.length, 'ベンチの選手が重複しています');
@@ -176,7 +190,7 @@ export function resolveRegisteredRoster(
       available.includes(explicitStarter),
       '当日先発が登録外またはベンチ外です。先発指定を解除してください',
     );
-  const starter = explicitStarter ?? pitcherOrder.find((id) => available.includes(id));
+  const starter = explicitStarter ?? rankedPitchers.find((id) => available.includes(id));
   ensure(starter, (farm ? '二軍：' : '') + 'ベンチに登板可能な投手がいません');
   let bench: string[];
   if (override) bench = [...override];
@@ -195,6 +209,7 @@ export function resolveRegisteredRoster(
     ];
     for (const playerId of priority) {
       if (!first.includes(playerId) || bench.length >= rules.benchLimit) continue;
+      if (playerId !== starter && rest?.[playerId]?.requested === 'benchRest') continue;
       if (playerId !== starter && plan.rotationSlots.some((slot) => slot.playerId === playerId))
         continue;
       if (
@@ -235,15 +250,45 @@ export function resolveRegisteredRoster(
     for (const defense of lineup.defense)
       if (defense.playerId === old) defense.playerId = replacement.playerId;
   }
+  const relief = plan.reliefRoles
+    .map((role) => role.playerId)
+    .filter((id) => id !== starter && bench.includes(id));
+  if (rest) relief.sort((a, b) => restRank(rest[a]!) - restRank(rest[b]!));
+  for (const decision of Object.values(rest ?? {})) {
+    const playerId = decision.playerId;
+    decision.outcome =
+      playerId === starter
+        ? 'starter'
+        : !bench.includes(playerId)
+          ? decision.requested === 'benchRest'
+            ? 'benchRest'
+            : 'notSelected'
+          : relief.includes(playerId)
+            ? decision.requested === 'available'
+              ? 'relief'
+              : 'preferRest'
+            : 'notSelected';
+    if (decision.requested !== 'available') {
+      if (playerId === explicitStarter) decision.exception = '当日の手動先発指定を優先';
+      else if (playerId === starter) decision.exception = '先発を確保するため休養希望を保留';
+      else if (override?.includes(playerId) && decision.requested === 'benchRest')
+        decision.exception = '手動のベンチ指定を優先し、救援は休養優先';
+    }
+  }
   return {
     lineup,
-    pitcherIds: [
-      starter,
-      ...plan.reliefRoles
-        .map((role) => role.playerId)
-        .filter((id) => id !== starter && bench.includes(id)),
-    ],
+    pitcherIds: [starter, ...relief],
     roster: {
+      ...('restControl' in world
+        ? {
+            restSnapshot: {
+              version: 'pitcher-rest-v1' as const,
+              date: world.currentDate,
+              policyRevision: world.restControl.teamPolicies[squadId]!.policyRevision,
+              decisions: Object.values(rest!),
+            },
+          }
+        : {}),
       squadId,
       playerIds: bench,
       participants: bench.map((playerId) => {

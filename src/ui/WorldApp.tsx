@@ -1,3 +1,4 @@
+import { RestPolicyEditor } from './RestPolicyEditor.tsx';
 import { PhysicalRoster } from './PhysicalRoster.tsx';
 import { allWorldSquads } from '../world/squads.ts';
 import { FarmRoster } from './FarmRoster.tsx';
@@ -94,6 +95,7 @@ export function WorldApp() {
         lastAction.current === 'setGameLineup' ||
         lastAction.current === 'setRegistrations' ||
         lastAction.current === 'setRosterPolicy' ||
+        lastAction.current === 'setRestPolicy' ||
         lastAction.current === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');
@@ -394,6 +396,14 @@ export function WorldApp() {
         />
       )}
 
+      {view?.restPolicy && (
+        <RestPolicyEditor
+          key={JSON.stringify(['rest', view.worldId, editorEpoch])}
+          view={view}
+          disabled={disabled}
+          send={send}
+        />
+      )}
       {view?.physical && <PhysicalRoster view={view} />}
       {view?.farm && <FarmRoster view={view} />}
 
@@ -643,7 +653,7 @@ export function WorldApp() {
           短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日。一軍144試合、二軍72試合（9月15日まで）の暫定構成です。日程構成は暫定仕様です。
         </p>
         <p>
-          係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。能力・状態評価による自動昇降格、試合中の代打/交代・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
+          係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。能力・状態評価による自動昇降格、試合中の代打/交代・疲労による能力補正・成長・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復と投手の休養方針を使用します。
         </p>
       </details>
     </main>

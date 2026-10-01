@@ -1,3 +1,5 @@
+import { createRestDefinitions } from '../data/world/rest.ts';
+import { initialRest, validateRestDefinitions, recordPitchingAppearances } from './rest.ts';
 import { createPhysicalDefinitions } from '../data/world/physical.ts';
 import {
   validatePhysicalDefinitions,
@@ -75,6 +77,7 @@ export function scheduledFixture(
           'world-definitions-v5',
           'world-definitions-v6',
           'world-definitions-v7',
+          'world-definitions-v8',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -97,6 +100,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v5',
       'world-definitions-v6',
       'world-definitions-v7',
+      'world-definitions-v8',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -139,6 +143,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v5',
         'world-definitions-v6',
         'world-definitions-v7',
+        'world-definitions-v8',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -161,6 +166,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v5',
           'world-definitions-v6',
           'world-definitions-v7',
+          'world-definitions-v8',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -199,7 +205,11 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       }),
     );
   }
-  if (['world-definitions-v6', 'world-definitions-v7'].includes(definitions.version))
+  if (
+    ['world-definitions-v6', 'world-definitions-v7', 'world-definitions-v8'].includes(
+      definitions.version,
+    )
+  )
     validateFarmDefinitions(definitions);
   else ensure(definitions.farm === undefined, '旧定義に二軍大会を追加できません');
   const gameIds = new Set<string>();
@@ -234,6 +244,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v5',
       'world-definitions-v6',
       'world-definitions-v7',
+      'world-definitions-v8',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -244,9 +255,12 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       '旧版へ登録データを追加できません',
     );
   if (
-    ['world-definitions-v5', 'world-definitions-v6', 'world-definitions-v7'].includes(
-      definitions.version,
-    )
+    [
+      'world-definitions-v5',
+      'world-definitions-v6',
+      'world-definitions-v7',
+      'world-definitions-v8',
+    ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
   else
@@ -254,12 +268,19 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       definitions.squads.every((squad) => squad.rosterPolicyInput === undefined),
       '旧版へ固定希望を追加できません',
     );
-  if (definitions.version === 'world-definitions-v7') validatePhysicalDefinitions(definitions);
+  if (['world-definitions-v7', 'world-definitions-v8'].includes(definitions.version))
+    validatePhysicalDefinitions(definitions);
   else
     ensure(
       definitions.physicalConfig === undefined &&
         definitions.squads.every((s) => s.physicalInputs === undefined),
       '旧定義へ身体状態を追加できません',
+    );
+  if (definitions.version === 'world-definitions-v8') validateRestDefinitions(definitions);
+  else
+    ensure(
+      definitions.restModelVersion === undefined && definitions.restPolicyInputs === undefined,
+      '旧定義へ休養方針を追加できません',
     );
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
@@ -363,8 +384,15 @@ export function acceptGame(world: WorldRecord, gameId: string, game: GameRecord)
     contributions: { ...world.contributions },
     statApplicationMarkers: { ...world.statApplicationMarkers },
   };
+  // 休養判定は初球より前の状態で固定する。当日の負荷でベンチを変えない。
+  if ('registration' in next)
+    next.registration = updateGameRosters(
+      'restControl' in next ? (world as typeof next) : next,
+      gameId,
+      game,
+    );
   if ('physical' in next) next.physical = applyPhysicalGame(next, gameId, game);
-  if ('registration' in next) next.registration = updateGameRosters(next, gameId, game);
+  if ('restControl' in next) next.restControl = recordPitchingAppearances(next, gameId, game);
   if (game.result) {
     const scheduled = world.definitions.schedule.find((item) => item.gameId === gameId)!;
     applyContribution(next, gameContribution(world.definitions, scheduled, game));
@@ -510,6 +538,28 @@ export function createPhysicalWorld(
     registration: initialRegistration(definitions),
     rosterControl: initialRosterControl(definitions),
     physical: initialPhysical(definitions),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
+}
+
+/** 休養希望と実配置を分離する新規世界。旧保存は元の運用で続行する。 */
+export function createRestWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createRestDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v9' }> {
+  ensure(definitions.version === 'world-definitions-v8', '休養対応の初期定義が必要です');
+  const world: Extract<WorldRecord, { version: 'world-prototype-v9' }> = {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v9',
+    seasonSummary: null,
+    farmSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(definitions),
+    rosterControl: initialRosterControl(definitions),
+    physical: initialPhysical(definitions),
+    restControl: initialRest(definitions),
   };
   validateTodayRosters(world);
   return reconcileRosterPolicies(world);

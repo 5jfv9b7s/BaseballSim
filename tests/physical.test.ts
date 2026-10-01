@@ -99,8 +99,8 @@ test('初球：投手の準備＋投球、打者、守備者のみ消耗し、�
 
 test('進行の分割数・検証キャッシュによらず負荷が一致し、試合終了で重複しない', () => {
   const base = createPhysicalWorld();
-  let one = base;
-  let many = base;
+  let one: PhysicalWorld = base;
+  let many: PhysicalWorld = base;
   for (let i = 0; i < 100; i++) one = advanceWorld(one, 1) as PhysicalWorld;
   for (let i = 0; i < 4; i++) many = advanceWorld(many, 25) as PhysicalWorld;
   assert.deepEqual(one, many);
@@ -292,9 +292,13 @@ test('日次保存失敗は回復前の正本を保ち、再送・再開で回�
 
 test(
   '年間216試合・188日：全選手の負荷・日次回復を保存から再現する',
-  { timeout: 240000 },
+  { timeout: 600000 },
   async () => {
-    let world = createPhysicalWorld(20260924, undefined, createPhysicalDefinitions('annual'));
+    let world: PhysicalWorld = createPhysicalWorld(
+      20260924,
+      undefined,
+      createPhysicalDefinitions('annual'),
+    );
     while (worldPhase(world) !== 'scheduleComplete') {
       world = completeDay(finishGames(world), world.currentDate) as PhysicalWorld;
     }

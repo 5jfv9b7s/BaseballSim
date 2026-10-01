@@ -1,3 +1,4 @@
+import { applyRestPolicy } from './rest.ts';
 import { allWorldSquads, worldSquad } from './squads.ts';
 import { applyRosterPolicyAction } from './roster-policy.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
@@ -272,7 +273,10 @@ export function applyManagement(
   const management = structuredClone(world.management);
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
-  if (action.kind === 'setRosterPolicy') {
+  if (action.kind === 'setRestPolicy') {
+    ensure('restControl' in world, '休養方針は新規プレイで利用できます');
+    updated = applyRestPolicy(world, action);
+  } else if (action.kind === 'setRosterPolicy') {
     ensure('rosterControl' in world, '固定希望は新規プレイで利用できます');
     updated = applyRosterPolicyAction(world, action, commandId);
   } else if (action.kind === 'setRegistrations' || action.kind === 'setGameBench') {

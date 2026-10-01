@@ -4,7 +4,10 @@ import type { PerformanceSnapshot } from '../game/performance-types.ts';
 import { performanceDetails } from '../game/performance.ts';
 import { createScheduledGame } from './engine.ts';
 import type { WorldRecord } from './types.ts';
-export type PerformanceWorld = Extract<WorldRecord, { version: 'world-prototype-v11' }>;
+export type PerformanceWorld = Extract<
+  WorldRecord,
+  { version: 'world-prototype-v11' | 'world-prototype-v12' }
+>;
 
 export function performanceSnapshot(
   world: PerformanceWorld,

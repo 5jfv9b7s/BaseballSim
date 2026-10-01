@@ -42,6 +42,7 @@ export interface PlayerRegistration {
 }
 
 export interface GameRoster {
+  fielderRestSnapshot?: import('./fielder-rest-types.ts').FielderRestSnapshot;
   restSnapshot?: import('./rest-types.ts').RestSnapshot;
   squadId: string;
   playerIds: string[];

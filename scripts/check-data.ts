@@ -1,3 +1,5 @@
+import { createFielderRestWorld } from '../src/world/engine.ts';
+import { createFielderRestDefinitions } from '../src/data/world/fielder-rest.ts';
 import { createPerformanceWorld } from '../src/world/engine.ts';
 import { createPerformanceDefinitions } from '../src/data/world/performance.ts';
 import { createConditionWorld } from '../src/world/engine.ts';
@@ -124,6 +126,21 @@ for (const calendar of ['short', 'annual'] as const) {
     '試合前補正: ' +
       world.definitions.performanceConfig!.version +
       ' / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createFielderRestWorld(
+    undefined,
+    undefined,
+    createFielderRestDefinitions(calendar),
+  );
+  console.log(
+    '野手休養: ' +
+      Object.keys(world.fielderRest.teamPolicies).length +
+      'チーム / ' +
       calendar +
       '（検査成功）',
   );

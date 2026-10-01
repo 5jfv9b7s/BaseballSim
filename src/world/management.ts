@@ -1,3 +1,4 @@
+import { applyFielderRestPolicy } from './fielder-rest.ts';
 import { applyRestPolicy } from './rest.ts';
 import { allWorldSquads, worldSquad } from './squads.ts';
 import { applyRosterPolicyAction } from './roster-policy.ts';
@@ -273,7 +274,10 @@ export function applyManagement(
   const management = structuredClone(world.management);
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
-  if (action.kind === 'setRestPolicy') {
+  if (action.kind === 'setFielderRestPolicy') {
+    ensure('fielderRest' in world, '野手休養は新規プレイで利用できます');
+    updated = applyFielderRestPolicy(world, action);
+  } else if (action.kind === 'setRestPolicy') {
     ensure('restControl' in world, '休養方針は新規プレイで利用できます');
     updated = applyRestPolicy(world, action);
   } else if (action.kind === 'setRosterPolicy') {

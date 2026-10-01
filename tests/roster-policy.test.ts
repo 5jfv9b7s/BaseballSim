@@ -358,7 +358,7 @@ test('保存失敗では方針・実登録とも未公開。同一指示の再�
     );
     assert.deepEqual(await controller.dispatch(command), after);
     assert.equal(after.rosterPolicy!.preferences.length, before.rosterPolicy!.preferences.length);
-    assert.deepEqual((await storage.load('auto')).world.version, 'world-prototype-v11');
+    assert.deepEqual((await storage.load('auto')).world.version, 'world-prototype-v12');
   } finally {
     await db.delete();
   }

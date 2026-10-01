@@ -206,8 +206,8 @@ test('中立設定：全係数0なら旧v10の全短期試合・乱数・成績�
       energyPenaltyPermille: 0,
       fatiguePenaltyPermille: 0,
     });
-  let world = createPerformanceWorld(42, undefined, defs),
-    old = createConditionWorld(42);
+  let world: PerformanceWorld = createPerformanceWorld(42, undefined, defs);
+  let old = createConditionWorld(42);
   while (worldPhase(world) !== 'scheduleComplete') {
     world = finishDay(world);
     old = completeDay(finishGames(old), old.currentDate) as typeof old;
@@ -349,7 +349,11 @@ test(
   '年間補正：216試合・188日を完走し、全試合の固定入力と保存復元を照合',
   { timeout: 600000 },
   async () => {
-    let world = createPerformanceWorld(20260924, undefined, createPerformanceDefinitions('annual'));
+    let world: PerformanceWorld = createPerformanceWorld(
+      20260924,
+      undefined,
+      createPerformanceDefinitions('annual'),
+    );
     while (worldPhase(world) !== 'scheduleComplete') world = finishDay(world);
     assert.equal(world.completedDates.length, 188);
     assert.equal(Object.keys(world.games).length, 216);

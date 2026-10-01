@@ -132,3 +132,5 @@ condition/{球団名}.tsに全120人の初期調子・最初の終点・区間�
 ## 試合前の実効能力（0.12.0）
 
 原能力はplayers/repertoires、調子はcondition、身体状態はphysicalの入力を使用し、補正済み能力をdataへ書き戻しません。共通の項目別係数はconfig/performance.ts、新規世界はworld/performance.ts。球団や一二軍だけを理由に異なる倍率を設けません。[補正の操作・保存](../../PERFORMANCE-IMPLEMENTATION.md)を参照してください。
+
+野手の休養設定はfielder-rest/の4球団別ファイルに、一軍・二軍を別々に持たせています。共通既定はconfig/fielder-rest.ts。選手の体力・疲労はphysical/を入力源とし、当日の代替起用を選手dataや理想オーダーへ書き戻しません。編集後は新規日程で確認してください。

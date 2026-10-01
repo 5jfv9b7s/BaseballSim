@@ -43,7 +43,10 @@ export interface WorldDefinitions {
     | 'world-definitions-v7'
     | 'world-definitions-v8'
     | 'world-definitions-v9'
-    | 'world-definitions-v10';
+    | 'world-definitions-v10'
+    | 'world-definitions-v11';
+  fielderRestModelVersion?: 'fielder-rest-v1';
+  fielderRestInputs?: import('./fielder-rest-types.ts').FielderRestInput[];
   performanceConfig?: import('../game/performance-types.ts').PerformanceConfig;
   conditionConfig?: import('./condition-types.ts').ConditionConfig;
   restModelVersion?: 'pitcher-rest-v1';
@@ -147,6 +150,7 @@ export interface PitcherUsagePlan {
 }
 
 export type ManagementAction =
+  | import('./fielder-rest-types.ts').FielderRestAction
   | import('./rest-types.ts').RestPolicyAction
   | import('./roster-policy-types.ts').RosterPolicyAction
   | import('./registration-types.ts').RegistrationAction
@@ -168,6 +172,19 @@ export type WorldRecord = WorldState &
   (
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
+    | {
+        version: 'world-prototype-v12';
+        fielderRest: import('./fielder-rest-types.ts').FielderRestControl;
+        condition: import('./condition-types.ts').ConditionWorldState;
+        restControl: import('./rest-types.ts').RestControl;
+        physical: import('./physical-types.ts').PhysicalWorldState;
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+        farmSummary: SeasonSummary | null;
+        gameLineups: Record<string, IdealLineup>;
+        registration: import('./registration-types.ts').RegistrationState;
+        rosterControl: import('./roster-policy-types.ts').RosterControl;
+      }
     | {
         version: 'world-prototype-v11';
         condition: import('./condition-types.ts').ConditionWorldState;

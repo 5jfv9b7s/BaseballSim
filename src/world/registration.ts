@@ -1,3 +1,4 @@
+import { resolveFielderRest } from './fielder-rest.ts';
 import { evaluateRest, restRank } from './rest.ts';
 import { worldSquad, allWorldSquads, isFarmSquad } from './squads.ts';
 import { id, integer } from '../engine/validation.ts';
@@ -250,6 +251,10 @@ export function resolveRegisteredRoster(
     for (const defense of lineup.defense)
       if (defense.playerId === old) defense.playerId = replacement.playerId;
   }
+  const fielderRest =
+    'fielderRest' in world
+      ? resolveFielderRest(world, squadId, first, bench, lineup, !!explicitLineup)
+      : null;
   const relief = plan.reliefRoles
     .map((role) => role.playerId)
     .filter((id) => id !== starter && bench.includes(id));
@@ -276,9 +281,10 @@ export function resolveRegisteredRoster(
     }
   }
   return {
-    lineup,
+    lineup: fielderRest?.lineup ?? lineup,
     pitcherIds: [starter, ...relief],
     roster: {
+      ...(fielderRest ? { fielderRestSnapshot: fielderRest.snapshot } : {}),
       ...('restControl' in world
         ? {
             restSnapshot: {

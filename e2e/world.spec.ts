@@ -7,7 +7,7 @@ async function openWorld(page: Page) {
 }
 
 for (const width of [1280, 390]) {
-  test(`v0.2：全試合・順位・累計・翌日保存・試合なしの日 (${width}px)`, async ({ page }) => {
+  test(`v0.2：全試合・順位・累計・翌日保存・一軍休養日 (${width}px)`, async ({ page }) => {
     test.setTimeout(60000);
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
@@ -45,7 +45,7 @@ for (const width of [1280, 390]) {
     const secondStandings = await table.innerText();
     expect(secondStandings).not.toBe(firstStandings);
     await expect(page.getByRole('region', { name: '日次進行', exact: true })).toContainText(
-      '今日は試合がありません',
+      '一軍は今日は試合がありません',
     );
     await run.click();
     await expect(date).toHaveText('2026-09-27', { timeout: 20000 });

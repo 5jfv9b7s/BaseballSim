@@ -7,6 +7,7 @@ import {
   advanceWorld,
   completeDay,
   createManagedWorld,
+  createFarmWorld,
   createWorld,
   worldPhase,
 } from '../src/world/engine.ts';
@@ -228,7 +229,7 @@ test('球団運営Controller：編成保存失敗は正本と履歴を保ち、�
   const controller = new WorldController(storage);
   try {
     const before = await controller.initialize();
-    const initial = createManagedWorld();
+    const initial = createFarmWorld();
     const action = planAction(initial);
     const command = {
       ...action,

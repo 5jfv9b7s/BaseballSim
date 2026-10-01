@@ -8,6 +8,7 @@ import { createRosterPolicyDefinitions } from '../src/data/world/roster-policies
 import { rosterPolicy as initialPolicy } from '../src/data/roster-policies/hoshihara.ts';
 import {
   createRosterPolicyWorld,
+  createFarmWorld,
   createRegistrationWorld,
   completeDay,
   advanceWorld,
@@ -340,7 +341,7 @@ test('保存失敗では方針・実登録とも未公開。同一指示の再�
   try {
     const before = await controller.initialize();
     const command = {
-      ...action(createRosterPolicyWorld(), 'auto', { [batter]: 'farmFixed' }),
+      ...action(createFarmWorld(), 'auto', { [batter]: 'farmFixed' }),
       commandId: 'retry-policy',
       expectedStateRevision: before.revision,
       localWorldId: 'v02-local' as const,
@@ -356,8 +357,8 @@ test('保存失敗では方針・実登録とも未公開。同一指示の再�
       'farm',
     );
     assert.deepEqual(await controller.dispatch(command), after);
-    assert.equal(after.rosterPolicy!.preferences.length, 15);
-    assert.deepEqual((await storage.load('auto')).world.version, 'world-prototype-v6');
+    assert.equal(after.rosterPolicy!.preferences.length, before.rosterPolicy!.preferences.length);
+    assert.deepEqual((await storage.load('auto')).world.version, 'world-prototype-v7');
   } finally {
     await db.delete();
   }

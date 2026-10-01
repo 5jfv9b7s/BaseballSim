@@ -1,9 +1,11 @@
+import { createFarmDefinitions } from '../src/data/world/farm.ts';
 import {
   createWorld,
   createAnnualWorld,
   createRosterWorld,
   createRegistrationWorld,
   createRosterPolicyWorld,
+  createFarmWorld,
 } from '../src/world/engine.ts';
 import { createGame } from '../src/game/engine.ts';
 import { PITCH_TYPES } from '../src/data/pitch-types/index.ts';
@@ -58,3 +60,15 @@ console.log('登録・資格データ: ' + registered.registration.registrations
 
 const policies = createRosterPolicyWorld();
 console.log('固定希望データ: ' + policies.rosterControl.preferences.length + '人（検査成功）');
+
+const farm = createFarmWorld();
+console.log(
+  '一軍・二軍: ' +
+    farm.registration.memberships.length +
+    '選手 / ' +
+    farm.definitions.schedule.length +
+    '試合（検査成功）',
+);
+
+const farmAnnual = createFarmWorld(undefined, undefined, createFarmDefinitions('annual'));
+console.log('一軍・二軍の年間日程: ' + farmAnnual.definitions.schedule.length + '試合（検査成功）');

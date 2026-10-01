@@ -54,7 +54,10 @@ export function RegistrationEditor({
       </p>
       <p className="hint">
         手動で登録・抹消します。抹消後は{rules.reentryDays}
-        日後から再登録できます。二軍の試合は未対応です。
+        日後から再登録できます。
+        {view.farm
+          ? '二軍も同じ日次進行で試合を行います。両チームに野手9人・投手1人以上を残してください。'
+          : 'この保存版は二軍の試合に未対応です。'}
       </p>
       {view.rosterPolicy && <RosterPolicyEditor view={view} disabled={disabled} send={send} />}
       {automatic && (

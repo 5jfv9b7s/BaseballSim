@@ -341,7 +341,10 @@ test('保存失敗：登録と表示を公開せず同じ指示の再試行で�
     assert.deepEqual(controller.query().registration, view.registration);
     fail = false;
     const applied = await controller.dispatch(command);
-    assert.equal(applied.registration!.registrations.length, 15);
+    assert.equal(
+      applied.registration!.registrations.length,
+      view.registration!.registrations.length,
+    );
     assert.equal(
       applied.registration!.registrations.find((row) => row.playerId === batter)!.category,
       'farm',
@@ -349,7 +352,10 @@ test('保存失敗：登録と表示を公開せず同じ指示の再試行で�
     assert.equal('gameRosters' in applied.registration!, false);
     assert.deepEqual(await controller.dispatch(command), applied);
     const saved = (await storage.load('auto')).world as RegisteredWorld;
-    assert.equal(saved.registration.registrations.length, 61);
+    assert.equal(
+      saved.registration.registrations.length,
+      view.definitions.squads.reduce((sum, squad) => sum + squad.players.length, 0) + 1,
+    );
   } finally {
     await db.delete();
   }

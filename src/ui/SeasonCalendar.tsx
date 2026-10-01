@@ -1,11 +1,14 @@
+import { allWorldSquads } from '../world/squads.ts';
 import { useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 
 export function SeasonCalendar({
   view,
+  scope = 'firstRegular',
   onSelect,
 }: {
   view: WorldView;
+  scope?: 'firstRegular' | 'farmRegular';
   onSelect: (date: string) => void;
 }) {
   const [chosenMonth, setChosenMonth] = useState('');
@@ -18,7 +21,9 @@ export function SeasonCalendar({
   const count = new Date(
     Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0),
   ).getUTCDate();
-  const names = new Map(view.definitions.squads.map((squad) => [squad.squadId, squad.team.name]));
+  const names = new Map(
+    allWorldSquads(view.definitions).map((squad) => [squad.squadId, squad.team.name]),
+  );
   function move(delta: number) {
     const date = new Date(month + '-01T00:00:00Z');
     date.setUTCMonth(date.getUTCMonth() + delta);
@@ -67,7 +72,7 @@ export function SeasonCalendar({
         {Array.from({ length: count }, (_, index) => {
           const date = month + '-' + String(index + 1).padStart(2, '0');
           if (date < view.definitions.startDate || date > view.definitions.endDate) return null;
-          const games = view.games.filter((game) => game.date === date);
+          const games = view.games.filter((game) => game.date === date && game.statScope === scope);
           return (
             <button
               key={date}

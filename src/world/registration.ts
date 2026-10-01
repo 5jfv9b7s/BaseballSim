@@ -1,3 +1,4 @@
+import { worldSquad, allWorldSquads, isFarmSquad } from './squads.ts';
 import { id, integer } from '../engine/validation.ts';
 import type { GameRecord, Team } from '../game/types.ts';
 import type { WorldDefinitions, WorldRecord, WorldSquad, IdealLineup } from './types.ts';
@@ -97,11 +98,13 @@ function subject(squad: WorldSquad, playerId: string): boolean {
 }
 
 export function registeredIds(world: RegisteredWorld, squadId: string): string[] {
-  const squad = world.definitions.squads.find((item) => item.squadId === squadId)!;
+  const squad = worldSquad(world.definitions, squadId)!;
   return world.registration.registrations
     .filter(
       (entry) =>
-        entry.clubId === squad.team.clubId && entry.until === null && entry.category === 'first',
+        entry.clubId === squad.team.clubId &&
+        entry.until === null &&
+        entry.category === (isFarmSquad(world.definitions, squadId) ? 'farm' : 'first'),
     )
     .map((entry) => entry.playerId);
 }
@@ -113,7 +116,7 @@ function validateFirst(definitions: WorldDefinitions, squad: WorldSquad, ids: st
     ids.filter((id) => subject(squad, id)).length <= rules.foreignFirstLimit,
     `外国人の一軍登録は${rules.foreignFirstLimit}人までです`,
   );
-  // 二軍の試合は未実装。現在の試合エンジンが開始できる最低人数を維持する。
+  // 現在のDH制エンジンが開始できる最低人数を維持する。
   ensure(
     ids.filter((id) => !squad.team.pitcherIds.includes(id)).length >= 9,
     '一軍には野手9人以上が必要です',
@@ -135,8 +138,16 @@ export function resolveRegisteredRoster(
   pitcherIds: string[];
   roster: GameRoster;
 } {
-  const squad = world.definitions.squads.find((item) => item.squadId === squadId)!;
-  const rules = world.definitions.registrationRules!;
+  const squad = worldSquad(world.definitions, squadId)!;
+  const farm = isFarmSquad(world.definitions, squadId);
+  const baseRules = world.definitions.registrationRules!;
+  const rules = farm
+    ? {
+        ...baseRules,
+        benchLimit: world.definitions.farm!.benchLimit,
+        foreignBenchLimit: world.definitions.farm!.benchLimit,
+      }
+    : baseRules;
   const first = registeredIds(world, squadId);
   const controlled = !ignoreOverrides && squadId === world.management.controlledSquadId;
   const explicitLineup = controlled ? world.gameLineups[gameId] : undefined;
@@ -166,7 +177,7 @@ export function resolveRegisteredRoster(
       '当日先発が登録外またはベンチ外です。先発指定を解除してください',
     );
   const starter = explicitStarter ?? pitcherOrder.find((id) => available.includes(id));
-  ensure(starter, 'ベンチに登板可能な投手がいません');
+  ensure(starter, (farm ? '二軍：' : '') + 'ベンチに登板可能な投手がいません');
   let bench: string[];
   if (override) bench = [...override];
   else {
@@ -201,7 +212,7 @@ export function resolveRegisteredRoster(
   );
   ensure(bench.includes(starter), '先発投手をベンチへ入れてください');
   const batters = bench.filter((id) => !squad.team.pitcherIds.includes(id));
-  ensure(batters.length >= 9, 'ベンチには野手9人以上が必要です');
+  ensure(batters.length >= 9, (farm ? '二軍：' : '') + 'ベンチには野手9人以上が必要です');
   const lineup = structuredClone(desired);
   const used = new Set(
     lineup.battingOrder
@@ -323,7 +334,7 @@ export function applyRegistrationAction(
       current.until = { ...moment };
       next.registration.registrations.push({
         registrationId:
-          world.version === 'world-prototype-v6'
+          'rosterControl' in world
             ? JSON.stringify(['registration', sourceId, change.playerId])
             : `registration-${moment.order}-${change.playerId}`,
         playerId: change.playerId,
@@ -362,7 +373,7 @@ export function applyRegistrationAction(
 
 export function validateTodayRosters(world: RegisteredWorld): void {
   // 休養日にも次の試合を組める資格人数を検査する。当日の上書きは別途検査。
-  for (const squad of world.definitions.squads)
+  for (const squad of allWorldSquads(world.definitions))
     resolveRegisteredRoster(world, squad.squadId, '', true);
   for (const game of world.definitions.schedule.filter((game) => game.date === world.currentDate)) {
     resolveRegisteredRoster(world, game.awaySquadId, game.gameId);
@@ -371,13 +382,15 @@ export function validateTodayRosters(world: RegisteredWorld): void {
 }
 
 /** 表示も計算と同じ予定名簿を使う。開始後は固定した名簿を返す。 */
-export function registrationPreview(world: RegisteredWorld): {
+export function registrationPreview(
+  world: RegisteredWorld,
+  squadId = world.management.controlledSquadId,
+): {
   roster: GameRoster;
   lineup: Team['lineup'];
   starterId: string;
   gameId: string;
 } | null {
-  const squadId = world.management.controlledSquadId;
   const scheduled = world.definitions.schedule.find(
     (game) =>
       game.date === world.currentDate && [game.awaySquadId, game.homeSquadId].includes(squadId),

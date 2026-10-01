@@ -1,3 +1,5 @@
+import { allWorldSquads } from '../world/squads.ts';
+import { FarmRoster } from './FarmRoster.tsx';
 import { SeasonCalendar } from './SeasonCalendar.tsx';
 import { RegistrationEditor } from './RegistrationEditor.tsx';
 import { ClubEditor } from './ClubEditor.tsx';
@@ -21,6 +23,7 @@ export function WorldApp() {
   const [message, setMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedGame, setSelectedGame] = useState('');
+  const [scope, setScope] = useState<'firstRegular' | 'farmRegular'>('firstRegular');
   const worker = useRef<Worker | null>(null);
   const latest = useRef<WorldView | null>(null);
   const pending = useRef(false);
@@ -95,6 +98,7 @@ export function WorldApp() {
         setMessage('編成を確定し、自動保存しました。');
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
       if (lastAction.current === 'load') {
+        setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setControlledSquadId(data.view.management?.controlledSquadId ?? '');
         auto.current = false;
@@ -106,6 +110,7 @@ export function WorldApp() {
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
       if (lastAction.current === 'new') {
+        setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setSelectedDate('');
         setSelectedGame('');
@@ -158,11 +163,18 @@ export function WorldApp() {
   }
 
   const squadName = (squadId: string) =>
-    view?.definitions.squads.find((squad) => squad.squadId === squadId)?.team.name ?? squadId;
+    (view
+      ? allWorldSquads(view.definitions).find((squad) => squad.squadId === squadId)?.team.name
+      : null) ?? squadId;
   const disabled = !view || busy || running;
   const canRun = view?.phase === 'playing' || view?.phase === 'readyToComplete';
   const resultDate = selectedDate || view?.lastCompletedDate || view?.currentDate || '';
-  const games = view?.games.filter((game) => game.date === resultDate) ?? [];
+  const displayScope = view?.farm ? scope : 'firstRegular';
+  const displayStats = displayScope === 'farmRegular' ? view?.farm?.stats : view?.stats;
+  const displayStandings = displayScope === 'farmRegular' ? view?.farm?.standings : view?.standings;
+  const displaySummary = displayScope === 'farmRegular' ? view?.farm?.summary : view?.seasonSummary;
+  const games =
+    view?.games.filter((game) => game.date === resultDate && game.statScope === displayScope) ?? [];
   const completedGames = games.filter((game) => game.result);
   const pickedGame =
     completedGames.find((game) => game.gameId === selectedGame) ?? completedGames[0];
@@ -196,6 +208,10 @@ export function WorldApp() {
             ? '試作日程をすべて完了しました。'
             : `本日の試合：${view?.dayPlan.cursor ?? 0} / ${view?.dayPlan.gameIds.length ?? 0} 完了`}
         </p>
+        {view?.farm &&
+          !view.games.some(
+            (game) => game.date === view.currentDate && game.statScope === 'firstRegular',
+          ) && <p>一軍は今日は試合がありません。二軍の予定も含めて日次確定します。</p>}
         {view?.dayPlan.gameIds.map((gameId) => {
           const game = view.games.find((item) => item.gameId === gameId)!;
           return (
@@ -297,10 +313,31 @@ export function WorldApp() {
         {view?.storageError && <p className="error">{view.storageError}</p>}
       </section>
 
+      {view?.farm && (
+        <section className="panel" aria-label="大会の表示">
+          <label>
+            表示する大会{' '}
+            <select
+              value={scope}
+              onChange={(event) => {
+                setScope(event.target.value as typeof scope);
+                setSelectedGame('');
+              }}
+            >
+              <option value="firstRegular">一軍公式戦</option>
+              <option value="farmRegular">二軍公式戦</option>
+            </select>
+          </label>
+          <p className="hint">
+            カレンダー・順位・結果・累計成績を切り替えます。日次進行は両方の全試合を処理します。
+          </p>
+        </section>
+      )}
       {view && (
         <SeasonCalendar
           key={view.worldId + view.definitions.seasonId + editorEpoch}
           view={view}
+          scope={displayScope}
           onSelect={(date) => {
             setSelectedDate(date);
             setSelectedGame('');
@@ -308,16 +345,16 @@ export function WorldApp() {
         />
       )}
 
-      {view?.seasonSummary && (
+      {displaySummary && (
         <section className="panel" aria-label="シーズン終了要約">
-          <h2>シーズン終了</h2>
+          <h2>{displayScope === 'farmRegular' ? '二軍シーズン終了' : 'シーズン終了'}</h2>
           <p>
-            {view.seasonSummary.completedOn}までの全{view.seasonSummary.games}
+            {displaySummary.completedOn}までの全{displaySummary.games}
             試合を確定し、年度要約を保存しました。
           </p>
           <p>
-            {view.seasonSummary.title.status === 'decided'
-              ? '試作リーグ優勝：' + squadName(view.seasonSummary.title.squadId)
+            {displaySummary.title.status === 'decided'
+              ? '試作リーグ優勝：' + squadName(displaySummary.title.squadId)
               : '同率首位の決着規則が未定のため、優勝は未確定です。'}
           </p>
           <p>下の順位表・累計個人成績が今季の確定記録です。翌年度への更新と表彰は未対応です。</p>
@@ -356,6 +393,8 @@ export function WorldApp() {
         />
       )}
 
+      {view?.farm && <FarmRoster view={view} />}
+
       <section className="panel" aria-label="順位表">
         <h2>順位表</h2>
         <p className="hint">
@@ -377,7 +416,7 @@ export function WorldApp() {
               </tr>
             </thead>
             <tbody>
-              {view?.standings.map((row) => (
+              {displayStandings?.map((row) => (
                 <tr key={row.squadId}>
                   <td>{row.rank ?? '-'}</td>
                   <th>{squadName(row.squadId)}</th>
@@ -484,7 +523,9 @@ export function WorldApp() {
         <h2>累計個人成績</h2>
         <details>
           <summary>打撃・投手・守備の累計を開く</summary>
-          {view && <WorldStats lines={view.stats} definitions={view.definitions} />}
+          {view && displayStats && (
+            <WorldStats lines={displayStats} definitions={view.definitions} />
+          )}
         </details>
       </section>
 
@@ -539,8 +580,8 @@ export function WorldApp() {
             disabled={disabled}
             onChange={(event) => setCalendar(event.target.value as 'short' | 'annual')}
           >
-            <option value="short">短期確認（4日・6試合）</option>
-            <option value="annual">年間リーグ（各球団72試合）</option>
+            <option value="short">短期確認（4日・一軍6試合＋二軍4試合）</option>
+            <option value="annual">年間リーグ（一軍72試合・二軍36試合／球団）</option>
           </select>
         </label>
         <label>
@@ -597,10 +638,10 @@ export function WorldApp() {
           新しい日程を準備
         </button>
         <p>
-          短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日・全144試合の暫定構成です。日程構成は暫定仕様です。
+          短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日。一軍144試合、二軍72試合（9月15日まで）の暫定構成です。日程構成は暫定仕様です。
         </p>
         <p>
-          係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍の試合・自動昇降格・試合中の代打/交代・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
+          係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。能力・状態評価による自動昇降格、試合中の代打/交代・疲労回復・成長・怪我・契約・翌年度更新は未対応です。
         </p>
       </details>
     </main>

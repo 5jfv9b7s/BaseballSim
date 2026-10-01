@@ -32,3 +32,7 @@ world-v4-save.json.gzは登録管理追加前のa329c70で固定した途中世�
 ## 固定希望追加前の登録対応保存
 
 world-v5-save.json.gzはf3e89ecの実装で、固定希望機能を編集する前に凍結したWorldRecordです。汐見航の抹消指示と17イベントを含みます。IndexedDB全ストアのダンプではありません。gzipファイル自体のSHA-256は6e75fa5f7ea4f1a7015fdb667502368d95662178bfd7ac68c588fe872c73092b。tests/roster-policy.test.tsで照合・保存読込・途中再開を検査し、新モデルから期待値を生成し直しません。
+
+## 二軍追加前の固定希望対応保存
+
+world-v6-save.json.gzはa62e804の実装で二軍対応を編集する前に凍結したWorldRecordです。固定希望による抹消と17イベントを含みます。gzipファイル自体のSHA-256は8edc2ece17637e68c1e7bbda50ee4a4529c33083987b6e9384b01629f6abb573。tests/farm.test.tsで保存読込・途中継続を照合します。IndexedDB全ストアのダンプとは区別し、期待値は再生成しません。

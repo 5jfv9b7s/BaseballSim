@@ -1,11 +1,12 @@
+import { gameScope } from './squads.ts';
 import { rosterPolicyView } from './roster-policy.ts';
 import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createRosterPolicyWorld, worldPhase } from './engine.ts';
-import { createRosterPolicyDefinitions } from '../data/world/roster-policies.ts';
-import { standings } from './stats.ts';
+import { advanceWorld, completeDay, createFarmWorld, worldPhase } from './engine.ts';
+import { createFarmDefinitions } from '../data/world/farm.ts';
+import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
   type WorldSlots,
@@ -39,6 +40,12 @@ export interface WorldView {
   rosterPolicy: ReturnType<typeof rosterPolicyView> | null;
   registration: ReturnType<typeof registrationView> | null;
   registrationPreview: ReturnType<typeof registrationPreview>;
+  farm: {
+    stats: WorldRecord['stats'];
+    standings: ReturnType<typeof standings>;
+    summary: import('./types.ts').SeasonSummary | null;
+    preview: ReturnType<typeof registrationPreview>;
+  } | null;
   canEditManagement: boolean;
   seed: number;
   definitions: WorldRecord['definitions'];
@@ -49,6 +56,7 @@ export interface WorldView {
   phase: WorldPhase;
   games: {
     gameId: string;
+    statScope: import('./types.ts').StatKey['statScope'];
     date: string;
     awaySquadId: string;
     homeSquadId: string;
@@ -68,7 +76,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createRosterPolicyWorld();
+  private world: WorldRecord = createFarmWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -93,6 +101,15 @@ export class WorldController {
 
   query(): WorldView {
     const world = this.world;
+    const controlledClub =
+      world.version !== 'world-prototype-v1'
+        ? world.definitions.squads.find(
+            (squad) => squad.squadId === world.management.controlledSquadId,
+          )?.team.clubId
+        : undefined;
+    const controlledFarm = world.definitions.farm?.squads.find(
+      (squad) => squad.team.clubId === controlledClub,
+    );
     return structuredClone({
       revision: this.revision,
       worldId: world.worldId,
@@ -100,9 +117,18 @@ export class WorldController {
       management: world.version !== 'world-prototype-v1' ? world.management : null,
       seasonSummary: 'seasonSummary' in world ? world.seasonSummary : null,
       gameLineups: 'gameLineups' in world ? world.gameLineups : null,
-      rosterPolicy: world.version === 'world-prototype-v6' ? rosterPolicyView(world) : null,
+      rosterPolicy: 'rosterControl' in world ? rosterPolicyView(world) : null,
       registration: 'registration' in world ? registrationView(world) : null,
       registrationPreview: 'registration' in world ? registrationPreview(world) : null,
+      farm:
+        world.version === 'world-prototype-v7'
+          ? {
+              stats: statsForScope(world.stats, 'farmRegular'),
+              standings: standings(world.stats, 'farmRegular'),
+              summary: world.farmSummary,
+              preview: controlledFarm ? registrationPreview(world, controlledFarm.squadId) : null,
+            }
+          : null,
       canEditManagement: canEditManagement(world),
       seed: world.seed,
       definitions: world.definitions,
@@ -115,6 +141,7 @@ export class WorldController {
         const game = world.games[scheduled.gameId];
         return {
           ...scheduled,
+          statScope: gameScope(world.definitions, scheduled),
           status: !game
             ? 'scheduled'
             : game.result
@@ -136,7 +163,7 @@ export class WorldController {
             : null,
         };
       }),
-      stats: world.stats,
+      stats: statsForScope(world.stats, 'firstRegular'),
       standings: standings(world.stats),
       slots: this.slots,
       storageError: this.storageError,
@@ -186,10 +213,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createRosterPolicyWorld(
+      this.world = createFarmWorld(
         command.seed,
         command.controlledSquadId,
-        createRosterPolicyDefinitions(command.calendar),
+        createFarmDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;

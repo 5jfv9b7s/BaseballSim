@@ -1,3 +1,6 @@
+import { createFarmDefinitions } from '../data/world/farm.ts';
+import { worldSquad, isFarmSquad } from './squads.ts';
+import { validateFarmDefinitions } from './farm-validation.ts';
 import { createRosterPolicyDefinitions } from '../data/world/roster-policies.ts';
 import {
   initialRosterControl,
@@ -44,8 +47,8 @@ export function scheduledFixture(
   definitions: WorldDefinitions,
   scheduled: ScheduledGame,
 ): GameFixture {
-  const away = definitions.squads.find((squad) => squad.squadId === scheduled.awaySquadId);
-  const home = definitions.squads.find((squad) => squad.squadId === scheduled.homeSquadId);
+  const away = worldSquad(definitions, scheduled.awaySquadId);
+  const home = worldSquad(definitions, scheduled.homeSquadId);
   ensure(away && home && away !== home, '対戦球団が不正です');
   const teams = {
     away: { ...away.team, side: 'away' as const },
@@ -59,9 +62,12 @@ export function scheduledFixture(
     initialDatasetVersion: 'game-fixture-v2',
     players: [...away.players, ...home.players].filter(
       (player) =>
-        !['world-definitions-v3', 'world-definitions-v4', 'world-definitions-v5'].includes(
-          definitions.version,
-        ) || activeIds.includes(player.playerId),
+        ![
+          'world-definitions-v3',
+          'world-definitions-v4',
+          'world-definitions-v5',
+          'world-definitions-v6',
+        ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
     teams,
@@ -81,6 +87,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v3',
       'world-definitions-v4',
       'world-definitions-v5',
+      'world-definitions-v6',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -117,9 +124,12 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       seen.add(value);
     }
     if (
-      ['world-definitions-v3', 'world-definitions-v4', 'world-definitions-v5'].includes(
-        definitions.version,
-      )
+      [
+        'world-definitions-v3',
+        'world-definitions-v4',
+        'world-definitions-v5',
+        'world-definitions-v6',
+      ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
       const listed = [
@@ -136,7 +146,11 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       integer(
         squad.reserveBatterIds.length,
         0,
-        ['world-definitions-v4', 'world-definitions-v5'].includes(definitions.version) ? 58 : 17,
+        ['world-definitions-v4', 'world-definitions-v5', 'world-definitions-v6'].includes(
+          definitions.version,
+        )
+          ? 58
+          : 17,
         '試作の控え野手数',
       );
       // 未出場選手にも能力検査を適用する。DHへ仮配置した検証用名簿は保存しない。
@@ -172,6 +186,8 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       }),
     );
   }
+  if (definitions.version === 'world-definitions-v6') validateFarmDefinitions(definitions);
+  else ensure(definitions.farm === undefined, '旧定義に二軍大会を追加できません');
   const gameIds = new Set<string>();
   const appearances = new Set<string>();
   for (const game of definitions.schedule) {
@@ -184,6 +200,13 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       game.date >= definitions.startDate && game.date <= definitions.endDate,
       '日程期間外の試合です',
     );
+    const farm = isFarmSquad(definitions, game.awaySquadId);
+    ensure(farm === isFarmSquad(definitions, game.homeSquadId), '一軍と二軍は別の大会です');
+    if (farm)
+      ensure(
+        game.date >= definitions.farm!.startDate && game.date <= definitions.farm!.endDate,
+        '二軍の開催期限外です',
+      );
     validateGameFixture(scheduledFixture(definitions, game));
     for (const squadId of [game.awaySquadId, game.homeSquadId]) {
       const appearance = game.date + ':' + squadId;
@@ -191,7 +214,11 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       appearances.add(appearance);
     }
   }
-  if (['world-definitions-v4', 'world-definitions-v5'].includes(definitions.version))
+  if (
+    ['world-definitions-v4', 'world-definitions-v5', 'world-definitions-v6'].includes(
+      definitions.version,
+    )
+  )
     validateRegistrationDefinitions(definitions);
   else
     ensure(
@@ -199,7 +226,8 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         definitions.squads.every((squad) => squad.registrationInputs === undefined),
       '旧版へ登録データを追加できません',
     );
-  if (definitions.version === 'world-definitions-v5') validateRosterPolicyDefinitions(definitions);
+  if (['world-definitions-v5', 'world-definitions-v6'].includes(definitions.version))
+    validateRosterPolicyDefinitions(definitions);
   else
     ensure(
       definitions.squads.every((squad) => squad.rosterPolicyInput === undefined),
@@ -336,10 +364,17 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
     completedDates: [...world.completedDates, expectedDate],
     lastCompletedDate: expectedDate,
   };
+  if (
+    next.version === 'world-prototype-v7' &&
+    next.farmSummary === null &&
+    currentDate > next.definitions.farm!.endDate
+  ) {
+    next.farmSummary = summarizeSeason(next, 'farmRegular');
+  }
   if ('seasonSummary' in next && currentDate > next.definitions.endDate) {
     next.seasonSummary = summarizeSeason(next);
   }
-  return next.version === 'world-prototype-v6' && currentDate <= next.definitions.endDate
+  return 'rosterControl' in next && currentDate <= next.definitions.endDate
     ? reconcileRosterPolicies(next)
     : next;
 }
@@ -400,6 +435,26 @@ export function createRosterPolicyWorld(
     ...createManagedWorld(seed, definitions, controlledSquadId),
     version: 'world-prototype-v6',
     seasonSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(definitions),
+    rosterControl: initialRosterControl(definitions),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
+}
+
+/** 一軍と二軍を同じ日次正本で処理し、選手は球団名簿を共有する。 */
+export function createFarmWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createFarmDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v7' }> {
+  ensure(definitions.version === 'world-definitions-v6', '二軍対応の初期定義が必要です');
+  const world: Extract<WorldRecord, { version: 'world-prototype-v7' }> = {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v7',
+    seasonSummary: null,
+    farmSummary: null,
     gameLineups: {},
     registration: initialRegistration(definitions),
     rosterControl: initialRosterControl(definitions),

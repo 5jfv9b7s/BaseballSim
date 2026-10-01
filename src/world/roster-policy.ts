@@ -7,7 +7,7 @@ import type {
   RosterPolicyInput,
 } from './roster-policy-types.ts';
 
-export type RosterPolicyWorld = Extract<WorldRecord, { version: 'world-prototype-v6' }>;
+export type RosterPolicyWorld = Extract<WorldRecord, { rosterControl: RosterControl }>;
 
 function validateInput(squad: WorldSquad, input: RosterPolicyInput): void {
   ensure(input && ['manual', 'auto'].includes(input.changeMode), '入れ替えモードが不正です');
@@ -107,8 +107,8 @@ function attemptPreferences(
 }
 
 /** 翌日の開始時（休養日を含む）に実行。順序0は当日の手動指示より前。 */
-export function reconcileRosterPolicies(world: RosterPolicyWorld): RosterPolicyWorld {
-  let next = world;
+export function reconcileRosterPolicies<T extends RosterPolicyWorld>(world: T): T {
+  let next: RosterPolicyWorld = world;
   for (const squad of world.definitions.squads) {
     if (next.rosterControl.policies[squad.team.clubId]!.changeMode !== 'auto') continue;
     next = attemptPreferences(
@@ -118,7 +118,7 @@ export function reconcileRosterPolicies(world: RosterPolicyWorld): RosterPolicyW
       true,
     ).world;
   }
-  return next;
+  return next as T;
 }
 
 export function applyRosterPolicyAction(

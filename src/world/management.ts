@@ -1,3 +1,4 @@
+import { allWorldSquads, worldSquad } from './squads.ts';
 import { applyRosterPolicyAction } from './roster-policy.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { validateGameFixture } from '../game/engine.ts';
@@ -50,10 +51,10 @@ export function initialManagement(
     version: 'club-management-v1',
     controlledSquadId,
     idealLineups: Object.fromEntries(
-      definitions.squads.map((squad) => [squad.squadId, idealLineup(squad.team)]),
+      allWorldSquads(definitions).map((squad) => [squad.squadId, idealLineup(squad.team)]),
     ),
     pitcherUsagePlans: Object.fromEntries(
-      definitions.squads.map((squad) => [
+      allWorldSquads(definitions).map((squad) => [
         squad.squadId,
         {
           rotationSlots: [{ slotNo: 1, playerId: squad.team.pitcherIds[0]! }],
@@ -66,7 +67,9 @@ export function initialManagement(
         },
       ]),
     ),
-    policyRevisions: Object.fromEntries(definitions.squads.map((squad) => [squad.squadId, 0])),
+    policyRevisions: Object.fromEntries(
+      allWorldSquads(definitions).map((squad) => [squad.squadId, 0]),
+    ),
     starterOverrides: {},
     actions: [],
   };
@@ -87,7 +90,7 @@ export function validateClubPlan(
   lineup: IdealLineup,
   pitchers: PitcherUsagePlan,
 ): void {
-  const squad = world.definitions.squads.find((squad) => squad.squadId === squadId);
+  const squad = worldSquad(world.definitions, squadId);
   ensure(squad, '対象球団がありません');
   ensure(lineup.dhEnabled === true, '今回の試作はDH制のみです');
   ensure(
@@ -182,9 +185,9 @@ export function managementFixture(
   const fixture = structuredClone(base);
   const scheduled = world.definitions.schedule.find((game) => game.gameId === gameId)!;
   if ('gameLineups' in world) {
-    fixture.players = world.definitions.squads
-      .filter((squad) => [scheduled.awaySquadId, scheduled.homeSquadId].includes(squad.squadId))
-      .flatMap((squad) => structuredClone(squad.players));
+    fixture.players = [scheduled.awaySquadId, scheduled.homeSquadId].flatMap((squadId) =>
+      structuredClone(worldSquad(world.definitions, squadId)!.players),
+    );
   }
   for (const side of ['away', 'home'] as const) {
     const squadId = side === 'away' ? scheduled.awaySquadId : scheduled.homeSquadId;
@@ -270,11 +273,11 @@ export function applyManagement(
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
   if (action.kind === 'setRosterPolicy') {
-    ensure(world.version === 'world-prototype-v6', '固定希望は新規プレイで利用できます');
+    ensure('rosterControl' in world, '固定希望は新規プレイで利用できます');
     updated = applyRosterPolicyAction(world, action, commandId);
   } else if (action.kind === 'setRegistrations' || action.kind === 'setGameBench') {
     ensure('registration' in world, '登録・ベンチ管理は新規プレイで利用できます');
-    if (action.kind === 'setRegistrations' && world.version === 'world-prototype-v6') {
+    if (action.kind === 'setRegistrations' && 'rosterControl' in world) {
       const clubId = world.definitions.squads.find((squad) => squad.squadId === action.squadId)!
         .team.clubId;
       ensure(

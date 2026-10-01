@@ -1,3 +1,4 @@
+import { allWorldSquads, isFarmSquad } from './squads.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import type { GameRecord, TeamSide } from '../game/types.ts';
 import { canonicalJson } from '../storage/codec.ts';
@@ -16,8 +17,10 @@ import type {
 function key(definitions: WorldDefinitions, squadId: string): StatKey {
   return {
     seasonId: definitions.seasonId,
-    competitionId: definitions.competitionId,
-    statScope: definitions.statScope,
+    competitionId: isFarmSquad(definitions, squadId)
+      ? definitions.farm!.competitionId
+      : definitions.competitionId,
+    statScope: isFarmSquad(definitions, squadId) ? 'farmRegular' : definitions.statScope,
     squadId,
   };
 }
@@ -33,7 +36,7 @@ const emptyCounters = (): TeamCounters => ({
 
 export function emptyStats(definitions: WorldDefinitions): SeasonStats {
   return {
-    teams: definitions.squads.map((squad) => ({
+    teams: allWorldSquads(definitions).map((squad) => ({
       ...key(definitions, squad.squadId),
       ...emptyCounters(),
     })),
@@ -152,6 +155,7 @@ export function applyContribution(world: WorldRecord, contribution: GameContribu
 /** 引分を分母に入れない試作規則。同率は同順位。未観測は順位・率ともnull。 */
 export function standings(
   stats: SeasonStats,
+  scope: StatKey['statScope'] = 'firstRegular',
 ): (TeamStats & { rank: number | null; winPercentage: number | null })[] {
   const compare = (a: TeamStats, b: TeamStats): number => {
     const da = a.wins + a.losses;
@@ -160,9 +164,9 @@ export function standings(
     const difference = BigInt(b.wins) * BigInt(da) - BigInt(a.wins) * BigInt(db);
     return difference < 0n ? -1 : difference > 0n ? 1 : 0;
   };
-  const ordered = [...stats.teams].sort(
-    (a, b) => compare(a, b) || (a.squadId < b.squadId ? -1 : a.squadId > b.squadId ? 1 : 0),
-  );
+  const ordered = stats.teams
+    .filter((row) => row.statScope === scope)
+    .sort((a, b) => compare(a, b) || (a.squadId < b.squadId ? -1 : a.squadId > b.squadId ? 1 : 0));
   let rank: number | null = null;
   return ordered.map((row, index) => {
     const denominator = row.wins + row.losses;
@@ -170,4 +174,15 @@ export function standings(
     else if (index === 0 || compare(row, ordered[index - 1]!) !== 0) rank = index + 1;
     return { ...row, rank, winPercentage: denominator ? row.wins / denominator : null };
   });
+}
+
+/** 分母・分子を含むカウンタを区分ごとに抽出する。両区分の率は合算しない。 */
+export function statsForScope(stats: SeasonStats, scope: StatKey['statScope']): SeasonStats {
+  return {
+    teams: stats.teams.filter((row) => row.statScope === scope),
+    matchups: stats.matchups.filter((row) => row.statScope === scope),
+    batting: stats.batting.filter((row) => row.statScope === scope),
+    pitching: stats.pitching.filter((row) => row.statScope === scope),
+    fielding: stats.fielding.filter((row) => row.statScope === scope),
+  };
 }

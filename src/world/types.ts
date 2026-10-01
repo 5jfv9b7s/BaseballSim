@@ -36,7 +36,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v2'
     | 'world-definitions-v3'
     | 'world-definitions-v4'
-    | 'world-definitions-v5';
+    | 'world-definitions-v5'
+    | 'world-definitions-v6';
+  farm?: import('./farm-types.ts').FarmCompetition;
   registrationRules?: import('./registration-types.ts').RegistrationRules;
   seasonId: string;
   competitionId: string;
@@ -55,7 +57,7 @@ export interface WorldDefinitions {
 export interface StatKey {
   seasonId: string;
   competitionId: string;
-  statScope: 'firstRegular';
+  statScope: 'firstRegular' | 'farmRegular';
   squadId: string;
 }
 
@@ -155,6 +157,15 @@ export type WorldRecord = WorldState &
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
     | {
+        version: 'world-prototype-v7';
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+        farmSummary: SeasonSummary | null;
+        gameLineups: Record<string, IdealLineup>;
+        registration: import('./registration-types.ts').RegistrationState;
+        rosterControl: import('./roster-policy-types.ts').RosterControl;
+      }
+    | {
         version: 'world-prototype-v6';
         management: ClubManagement;
         seasonSummary: SeasonSummary | null;
@@ -187,7 +198,7 @@ export interface SeasonSummary {
   version: 'season-summary-v1';
   seasonId: string;
   competitionId: string;
-  statScope: 'firstRegular';
+  statScope: StatKey['statScope'];
   completedOn: string;
   games: number;
   standingsRule: WorldDefinitions['standingsRule'];

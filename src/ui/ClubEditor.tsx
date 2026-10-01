@@ -418,11 +418,19 @@ export function ClubEditor({
                 onChange={(event) => setStarter(event.target.value)}
               >
                 <option value="">ローテーションに従う</option>
-                {squad.team.pitcherIds.map((id) => (
-                  <option key={id} value={id}>
-                    {playerName(id)}
-                  </option>
-                ))}
+                {squad.team.pitcherIds
+                  .filter(
+                    (id) =>
+                      !view.registration ||
+                      view.registration.registrations.some(
+                        (row) => row.playerId === id && row.category === 'first',
+                      ),
+                  )
+                  .map((id) => (
+                    <option key={id} value={id}>
+                      {playerName(id)}
+                    </option>
+                  ))}
               </select>
             </label>
             <div className="world-controls">

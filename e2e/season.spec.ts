@@ -112,9 +112,9 @@ test('期間進行：日次確定のエラーで停止し、再試行後も勝�
   ).toBeDisabled();
 });
 
-test('年間実機：188日・144試合の毎日保存、年度要約と再読込', async ({ page }) => {
+test('年間実機：188日・一軍144＋二軍72試合の毎日保存、年度要約と再読込', async ({ page }) => {
   // 正しさの長時間試験。性能の合格基準は別途実測から決める。
-  test.setTimeout(1000000);
+  test.setTimeout(1500000);
   await page.goto('/');
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
@@ -138,7 +138,7 @@ test('年間実機：188日・144試合の毎日保存、年度要約と再読�
         }
         return date;
       },
-      { timeout: 900000, intervals: [1000] },
+      { timeout: 1400000, intervals: [1000] },
     )
     .toBe('2026-10-01');
   const summary = page.getByRole('region', { name: 'シーズン終了要約', exact: true });
@@ -158,4 +158,10 @@ test('年間実機：188日・144試合の毎日保存、年度要約と再読�
   await expect(
     page.getByRole('button', { name: '日次進行を一時停止', exact: true }),
   ).toBeDisabled();
+  await page
+    .getByRole('combobox', { name: '表示する大会', exact: true })
+    .selectOption('farmRegular');
+  await expect(page.getByRole('region', { name: 'シーズン終了要約', exact: true })).toContainText(
+    '全72試合',
+  );
 });

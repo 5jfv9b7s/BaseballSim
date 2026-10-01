@@ -1,3 +1,10 @@
+import { createConditionDefinitions } from '../data/world/condition.ts';
+import {
+  initialCondition,
+  validateConditionDefinitions,
+  sampleConditions,
+  advanceConditionDay,
+} from './condition.ts';
 import { createRestDefinitions } from '../data/world/rest.ts';
 import { initialRest, validateRestDefinitions, recordPitchingAppearances } from './rest.ts';
 import { createPhysicalDefinitions } from '../data/world/physical.ts';
@@ -78,6 +85,7 @@ export function scheduledFixture(
           'world-definitions-v6',
           'world-definitions-v7',
           'world-definitions-v8',
+          'world-definitions-v9',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -101,6 +109,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v6',
       'world-definitions-v7',
       'world-definitions-v8',
+      'world-definitions-v9',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -144,6 +153,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v6',
         'world-definitions-v7',
         'world-definitions-v8',
+        'world-definitions-v9',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -167,6 +177,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v6',
           'world-definitions-v7',
           'world-definitions-v8',
+          'world-definitions-v9',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -206,9 +217,12 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
     );
   }
   if (
-    ['world-definitions-v6', 'world-definitions-v7', 'world-definitions-v8'].includes(
-      definitions.version,
-    )
+    [
+      'world-definitions-v6',
+      'world-definitions-v7',
+      'world-definitions-v8',
+      'world-definitions-v9',
+    ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
   else ensure(definitions.farm === undefined, '旧定義に二軍大会を追加できません');
@@ -245,6 +259,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v6',
       'world-definitions-v7',
       'world-definitions-v8',
+      'world-definitions-v9',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -260,6 +275,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v6',
       'world-definitions-v7',
       'world-definitions-v8',
+      'world-definitions-v9',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -268,7 +284,11 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       definitions.squads.every((squad) => squad.rosterPolicyInput === undefined),
       '旧版へ固定希望を追加できません',
     );
-  if (['world-definitions-v7', 'world-definitions-v8'].includes(definitions.version))
+  if (
+    ['world-definitions-v7', 'world-definitions-v8', 'world-definitions-v9'].includes(
+      definitions.version,
+    )
+  )
     validatePhysicalDefinitions(definitions);
   else
     ensure(
@@ -276,11 +296,19 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         definitions.squads.every((s) => s.physicalInputs === undefined),
       '旧定義へ身体状態を追加できません',
     );
-  if (definitions.version === 'world-definitions-v8') validateRestDefinitions(definitions);
+  if (['world-definitions-v8', 'world-definitions-v9'].includes(definitions.version))
+    validateRestDefinitions(definitions);
   else
     ensure(
       definitions.restModelVersion === undefined && definitions.restPolicyInputs === undefined,
       '旧定義へ休養方針を追加できません',
+    );
+  if (definitions.version === 'world-definitions-v9') validateConditionDefinitions(definitions);
+  else
+    ensure(
+      definitions.conditionConfig === undefined &&
+        definitions.squads.every((s) => s.conditionInputs === undefined),
+      '旧定義へ調子を追加できません',
     );
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
@@ -391,6 +419,7 @@ export function acceptGame(world: WorldRecord, gameId: string, game: GameRecord)
       gameId,
       game,
     );
+  if ('condition' in next) next.condition = sampleConditions(next, gameId);
   if ('physical' in next) next.physical = applyPhysicalGame(next, gameId, game);
   if ('restControl' in next) next.restControl = recordPitchingAppearances(next, gameId, game);
   if (game.result) {
@@ -428,6 +457,8 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
   ) {
     next.farmSummary = summarizeSeason(next, 'farmRegular');
   }
+  if ('condition' in next && 'condition' in world)
+    next.condition = advanceConditionDay(world, currentDate);
   if ('physical' in next && 'physical' in world)
     next.physical = recoverPhysicalDay(world, currentDate);
   if ('seasonSummary' in next && currentDate > next.definitions.endDate) {
@@ -560,6 +591,29 @@ export function createRestWorld(
     rosterControl: initialRosterControl(definitions),
     physical: initialPhysical(definitions),
     restControl: initialRest(definitions),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
+}
+
+/** 調子は能力・身体状態と別に保存する。旧世界には追加しない。 */
+export function createConditionWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createConditionDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v10' }> {
+  ensure(definitions.version === 'world-definitions-v9', '調子対応の初期定義が必要です');
+  const world: Extract<WorldRecord, { version: 'world-prototype-v10' }> = {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v10',
+    seasonSummary: null,
+    farmSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(definitions),
+    rosterControl: initialRosterControl(definitions),
+    physical: initialPhysical(definitions),
+    restControl: initialRest(definitions),
+    condition: initialCondition(definitions, seed),
   };
   validateTodayRosters(world);
   return reconcileRosterPolicies(world);

@@ -4,6 +4,8 @@
 
 データ設計書v1.0・6.2、要件FR-REG-08/10、FR-PUSE-06、AC-08に基づく限定試作です。閾値と候補選択順は`pitcher-rest-v1`の未校正の運用仮定で、最終的なCPU判断式ではありません。
 
+0.11.0では[調子の状態と比較](CONDITION-IMPLEMENTATION.md)を追加し、新規世界の版を更新しています。本書の休養規則は引き続き使用します。
+
 ## 確認方法
 
 1. `npm.cmd run dev`で起動し、「日程・球団運営」で新しい日程を準備します。旧保存は元の版で続行します。
@@ -49,7 +51,7 @@
 | `src/world/rest.ts`                  | 条件評価と実登板の記録                                        |
 | `src/world/registration.ts`          | 先発・救援・ベンチへの反映と判断理由の固定                    |
 
-新規世界は`world-prototype-v9`／定義`world-definitions-v8`／保存`v010-world-snapshot-v9`です。世界の`restControl`は資料6.2の休養関連部分をまとめた射影で、`teamPolicies`と`pitcherUsagePlans.individualRest`を保持します。指示履歴と方針版を残し、開始時の入力から再現します。データに個別設定がない投手も既定を継承します。
+0.10.0で作成した世界は`world-prototype-v9`／定義`world-definitions-v8`／保存`v010-world-snapshot-v9`です。世界の`restControl`は資料6.2の休養関連部分をまとめた射影で、`teamPolicies`と`pitcherUsagePlans.individualRest`を保持します。指示履歴と方針版を残し、開始時の入力から再現します。データに個別設定がない投手も既定を継承します。
 
 実績のキーは`[gameId,playerId]`。現在の試合attemptNoは1のみで、試合イベントの反映済み位置を記録し、途中保存・完了時の二重計上を防ぎます。登板日・球数・イニングは実際の投球から追加し、ベンチ入りしただけの投手へ登板実績を作りません。
 

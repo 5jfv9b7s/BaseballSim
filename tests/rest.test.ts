@@ -277,8 +277,8 @@ test('AC-08：初球前の判定・ベンチを固定し、当日負荷は翌日
 
 test('登板実績は実投球と一致し、分割・再適用・検証キャッシュで重複しない', () => {
   const base = createRestWorld();
-  let one = base;
-  let many = base;
+  let one: RestWorld = base;
+  let many: RestWorld = base;
   for (let i = 0; i < 50; i++) one = advanceWorld(one, 1) as RestWorld;
   for (let i = 0; i < 2; i++) many = advanceWorld(many, 25) as RestWorld;
   assert.deepEqual(one, many);
@@ -322,7 +322,7 @@ test('休養なしの試作は旧v8の試合・乱数・身体状態を維持す
 });
 
 test('登板後の昇降格：日付・球数を同じ選手IDで引き継ぎ二軍の休養判定へ使う', () => {
-  let world = finishGames(createRestWorld());
+  let world: RestWorld = finishGames(createRestWorld());
   world = completeDay(world, world.currentDate) as RestWorld;
   const appearances = structuredClone(world.restControl.appearances);
   world = applyManagement(world, 'demote', {
@@ -424,7 +424,7 @@ test(
   '年間：休養方針を使う一軍・二軍216試合と188日を完走し保存復元',
   { timeout: 600000 },
   async () => {
-    let world = createRestWorld(20260924, undefined, createRestDefinitions('annual'));
+    let world: RestWorld = createRestWorld(20260924, undefined, createRestDefinitions('annual'));
     while (worldPhase(world) !== 'scheduleComplete')
       world = completeDay(finishGames(world), world.currentDate) as RestWorld;
     assert.equal(Object.keys(world.games).length, 216);

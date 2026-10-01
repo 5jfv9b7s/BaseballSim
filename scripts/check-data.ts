@@ -1,3 +1,5 @@
+import { createConditionWorld } from '../src/world/engine.ts';
+import { createConditionDefinitions } from '../src/data/world/condition.ts';
 import { createRestWorld } from '../src/world/engine.ts';
 import { createRestDefinitions } from '../src/data/world/rest.ts';
 import { createPhysicalWorld } from '../src/world/engine.ts';
@@ -94,6 +96,17 @@ for (const calendar of ['short', 'annual'] as const) {
     '休養方針: ' +
       Object.keys(world.restControl.teamPolicies).length +
       'チーム / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createConditionWorld(undefined, undefined, createConditionDefinitions(calendar));
+  console.log(
+    '調子データ: ' +
+      Object.keys(world.condition.players).length +
+      '選手 / ' +
       calendar +
       '（検査成功）',
   );

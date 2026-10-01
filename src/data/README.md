@@ -124,3 +124,7 @@ npm.cmd run dev
 `rest-policies/{球団名}.ts`に4球団の一軍・二軍、計8チームの休養方針を明示しています。`teamRestPolicy`の初期値はconfig/rest.tsから参照し、個別に変える場合は球団ファイルへ条件を記述します。`individualRest`は投手IDとinherit/custom。customにはrulesを指定し、未指定またはinheritはチーム既定を継承します。投手追加後も省略なら既定が有効です。
 
 設定の単位と仮定は[休養ガイド](../../REST-IMPLEMENTATION.md)。所属や登録資格とは別で、一二軍を移動しても実登板履歴は同じ選手IDへ残ります。開始後は保存内設定と指示履歴を使用します。`npm.cmd run data:check`で全チームと投手ID・範囲を検査してください。
+
+## 調子の初期値（0.11.0）
+
+condition/{球団名}.tsに全120人の初期調子・最初の終点・区間日数を明記しています。playerIdは名簿正本と一致させ、一二軍移動でも同じ状態を使用します。共通の次区間生成と表示境界はconfig/condition.ts。旧保存の途中状態へ編集値を注入せず、新規日程から適用します。単位と試作仮定は[調子ガイド](../../CONDITION-IMPLEMENTATION.md)、入力検査はnpm.cmd run data:checkです。

@@ -1,3 +1,4 @@
+import { ConditionRoster } from './ConditionRoster.tsx';
 import { RestPolicyEditor } from './RestPolicyEditor.tsx';
 import { PhysicalRoster } from './PhysicalRoster.tsx';
 import { allWorldSquads } from '../world/squads.ts';
@@ -404,6 +405,7 @@ export function WorldApp() {
           send={send}
         />
       )}
+      {view?.condition && <ConditionRoster view={view} />}
       {view?.physical && <PhysicalRoster view={view} />}
       {view?.farm && <FarmRoster view={view} />}
 

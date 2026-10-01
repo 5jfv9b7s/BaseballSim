@@ -1,3 +1,4 @@
+import { conditionView } from './condition.ts';
 import { physicalView } from './physical.ts';
 import { gameScope } from './squads.ts';
 import { rosterPolicyView } from './roster-policy.ts';
@@ -5,8 +6,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createRestWorld, worldPhase } from './engine.ts';
-import { createRestDefinitions } from '../data/world/rest.ts';
+import { advanceWorld, completeDay, createConditionWorld, worldPhase } from './engine.ts';
+import { createConditionDefinitions } from '../data/world/condition.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -32,6 +33,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  condition: ReturnType<typeof conditionView> | null;
   restPolicy: {
     teamRestPolicy: import('./rest-types.ts').RestRules;
     policyRevision: number;
@@ -83,7 +85,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createRestWorld();
+  private world: WorldRecord = createConditionWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -118,6 +120,7 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      condition: 'condition' in world ? conditionView(world) : null,
       restPolicy:
         'restControl' in world
           ? {
@@ -229,10 +232,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createRestWorld(
+      this.world = createConditionWorld(
         command.seed,
         command.controlledSquadId,
-        createRestDefinitions(command.calendar),
+        createConditionDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;

@@ -29,6 +29,8 @@ for (const width of [1280, 390]) {
       .getByRole('combobox')
       .selectOption('none');
     await save.click();
+    // 押下直後の無効化は保存中でも起こるため、確定した版を待つ。
+    await expect(panel).toContainText('保存済み方針版：2');
     await expect(save).toBeDisabled();
     await panel
       .getByRole('combobox', { name: '個別設定する投手', exact: true })

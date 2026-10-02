@@ -326,7 +326,8 @@ export function updateGameRosters(
   for (const side of ['away', 'home'] as const) {
     const appeared = new Set([
       ...game.fixture.teams[side].lineup.map((slot) => slot.playerId),
-      ...game.fixture.teams[side].pitcherIds.slice(0, game.state.pitcherIndex[side] + 1),
+      ...(game.state.usedPitcherIds?.[side] ??
+        game.fixture.teams[side].pitcherIds.slice(0, game.state.pitcherIndex[side] + 1)),
     ]);
     for (const participant of rosters[side].participants)
       participant.appeared = appeared.has(participant.playerId);

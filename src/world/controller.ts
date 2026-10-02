@@ -1,3 +1,4 @@
+import { reliefView } from './relief.ts';
 import { performanceView } from './performance.ts';
 import { conditionView } from './condition.ts';
 import { physicalView } from './physical.ts';
@@ -7,8 +8,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createFielderRestWorld, worldPhase } from './engine.ts';
-import { createFielderRestDefinitions } from '../data/world/fielder-rest.ts';
+import { advanceWorld, completeDay, createReliefWorld, worldPhase } from './engine.ts';
+import { createReliefDefinitions } from '../data/world/relief.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -34,6 +35,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  relief: ReturnType<typeof reliefView> | null;
   fielderRestPolicy: {
     rules: import('./fielder-rest-types.ts').FielderRestRules;
     policyRevision: number;
@@ -91,7 +93,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createFielderRestWorld();
+  private world: WorldRecord = createReliefWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -126,12 +128,15 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      relief: 'reliefControl' in world ? reliefView(world) : null,
       fielderRestPolicy:
         'fielderRest' in world
           ? world.fielderRest.teamPolicies[world.management.controlledSquadId]!
           : null,
       performance:
-        world.version === 'world-prototype-v11' || world.version === 'world-prototype-v12'
+        world.version === 'world-prototype-v11' ||
+        world.version === 'world-prototype-v12' ||
+        world.version === 'world-prototype-v13'
           ? performanceView(world)
           : null,
       condition: 'condition' in world ? conditionView(world) : null,
@@ -222,6 +227,7 @@ export class WorldController {
         'setRosterPolicy',
         'setRestPolicy',
         'setFielderRestPolicy',
+        'setReliefPolicy',
       ].includes(command.kind),
       '未対応の世界指示です',
     );
@@ -247,10 +253,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createFielderRestWorld(
+      this.world = createReliefWorld(
         command.seed,
         command.controlledSquadId,
-        createFielderRestDefinitions(command.calendar),
+        createReliefDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;
@@ -263,7 +269,8 @@ export class WorldController {
       command.kind === 'setGameBench' ||
       command.kind === 'setRosterPolicy' ||
       command.kind === 'setRestPolicy' ||
-      command.kind === 'setFielderRestPolicy'
+      command.kind === 'setFielderRestPolicy' ||
+      command.kind === 'setReliefPolicy'
     ) {
       const {
         commandId,

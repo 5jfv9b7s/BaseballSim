@@ -151,3 +151,7 @@ condition.tsに未校正のcondition-smooth-v1を分離しています。中立�
 performance.tsに8区分の調子幅・体力/疲労減衰と倍率上下限を分離しました。1000が等倍、原能力は0〜120000。全て未校正です。式・値域・適用外項目は[補正ガイド](../PERFORMANCE-IMPLEMENTATION.md)。編集は新規日程へ適用します。
 
 野手の自動休養はfielder-rest.ts。enabledと体力以下・疲労以上の閾値を指定します。nullは条件なしです。初期のチーム別設定はsrc/data/fielder-rest/、仕様は[FIELDER-REST-IMPLEMENTATION.md](../FIELDER-REST-IMPLEMENTATION.md)を参照してください。
+
+## 救援の役割・登板条件（0.14.0）
+
+relief.tsに条件が重なる役割の優先順と、役割を追加する際の登板条件のひな形を分離しました。回・得点状況・符号付き点差・同役割内の優先順位を使います。点差は自チーム得点−相手得点、nullは制限なし。実際の投手別条件はsrc/data/relief-policies/です。式・境界・保存・適用外は[救援ガイド](../RELIEF-IMPLEMENTATION.md)を参照してください。ひな形や役割順は未校正の試作規則です。変更は新規日程へ適用し、既存保存は開始時設定を使います。

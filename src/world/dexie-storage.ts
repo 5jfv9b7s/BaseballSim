@@ -27,7 +27,8 @@ type SaveFormat =
   | 'v010-world-snapshot-v9'
   | 'v011-world-snapshot-v10'
   | 'v012-world-snapshot-v11'
-  | 'v013-world-snapshot-v12';
+  | 'v013-world-snapshot-v12'
+  | 'v014-world-snapshot-v13';
 const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
@@ -51,7 +52,9 @@ const formatFor = (version: WorldRecord['version']): SaveFormat =>
                       ? 'v011-world-snapshot-v10'
                       : version === 'world-prototype-v11'
                         ? 'v012-world-snapshot-v11'
-                        : 'v013-world-snapshot-v12';
+                        : version === 'world-prototype-v12'
+                          ? 'v013-world-snapshot-v12'
+                          : 'v014-world-snapshot-v13';
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 
@@ -328,6 +331,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
                 'world-prototype-v10',
                 'world-prototype-v11',
                 'world-prototype-v12',
+                'world-prototype-v13',
               ].includes(snapshot.versions.simulationVersion)
                 ? 259
                 : 35),
@@ -358,6 +362,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         'world-prototype-v10',
         'world-prototype-v11',
         'world-prototype-v12',
+        'world-prototype-v13',
       ].includes(snapshot.versions.simulationVersion) &&
         format === formatFor(snapshot.versions.simulationVersion),
       '未対応の世界保存形式です',
@@ -382,6 +387,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v011-world-snapshot-v10',
               'v012-world-snapshot-v11',
               'v013-world-snapshot-v12',
+              'v014-world-snapshot-v13',
             ].includes(format)
               ? 'gzip'
               : 'none') &&
@@ -408,6 +414,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v011-world-snapshot-v10',
               'v012-world-snapshot-v11',
               'v013-world-snapshot-v12',
+              'v014-world-snapshot-v13',
             ].includes(format)
               ? MAX_ANNUAL_RAW_BYTES
               : MAX_BYTES) &&

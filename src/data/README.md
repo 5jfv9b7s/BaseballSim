@@ -134,3 +134,9 @@ condition/{球団名}.tsに全120人の初期調子・最初の終点・区間�
 原能力はplayers/repertoires、調子はcondition、身体状態はphysicalの入力を使用し、補正済み能力をdataへ書き戻しません。共通の項目別係数はconfig/performance.ts、新規世界はworld/performance.ts。球団や一二軍だけを理由に異なる倍率を設けません。[補正の操作・保存](../../PERFORMANCE-IMPLEMENTATION.md)を参照してください。
 
 野手の休養設定はfielder-rest/の4球団別ファイルに、一軍・二軍を別々に持たせています。共通既定はconfig/fielder-rest.ts。選手の体力・疲労はphysical/を入力源とし、当日の代替起用を選手dataや理想オーダーへ書き戻しません。編集後は新規日程で確認してください。
+
+## 救援の役割・条件（0.14.0）
+
+relief-policies/{hoshihara,aonagi,kohaku,asagiri}.tsに4球団・一軍二軍の計8チームの設定があります。playerId・role・priority・conditionsを明示します。初期は全所属投手に通常救援・優先順位1を設定し、試合での候補資格は従来の編成・登録・ベンチから決めます。同投手へ異なる役割を追加でき、いずれかの条件に合えば候補になります。未設定投手は役割なしです。
+
+役割追加時の共通ひな形と役割順はconfig/relief.ts、新規世界の結合はworld/relief.ts。投手ごとに条件を変えるときは球団ファイルのconditionsを編集してください。型・範囲・例と未対応は[救援ガイド](../../RELIEF-IMPLEMENTATION.md)。編集後はnpm.cmd run data:checkで検査し、新規日程で確認します。保存内の入力へ変更を後付けしません。

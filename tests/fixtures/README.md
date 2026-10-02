@@ -54,3 +54,7 @@ world-v6-save.json.gzはa62e804の実装で二軍対応を編集する前に凍�
 0.11.0（3636447）の変更前実装で、初日4試合と日次後、翌日17イベントを進めたcanonicalJsonのgzip。調子あり・試合前補正なし。gzip SHA-256は660a11e6809d3443e582069d600ae29bf82c8aa004fdb2574bf98a8e30a36941。tests/performance.test.tsで固定ハッシュ・旧版保存読込・続行を確認します。期待値を再生成しないでください。
 
 world-v11-save.json.gzは変更前d97a486のcreatePerformanceWorldで1日完了後、翌日17イベント進めた固定保存です。gzip SHA-256: 08858107d90fbd6f6f5e3e36e93e3c7dda1cb49db5bb096042301e5667cc0a1c。野手休養を後付けせず元の結果で続行する検証用で、通常は再生成しません。
+
+## world-v12-save.json.gz
+
+0.13.0（39069eeee34ed281fdef171d563c93271a827599）の変更前実装で初日完了・日次処理後、翌日17イベントを進めたcanonicalJsonのgzipです。野手休養あり・条件付き救援なし。gzip SHA-256はdfec43f80cd8b67cfe3f78f67115211d6500ea57c4525ac1a82d23e8146441dc。tests/relief.test.tsでハッシュ・旧版の保存読込・途中続行を照合します。IndexedDB全ストアのダンプとは区別し、期待値を再生成しません。

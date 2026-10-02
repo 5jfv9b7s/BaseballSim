@@ -1,3 +1,4 @@
+import { attachReliefPolicy, applyReliefPolicy } from './relief.ts';
 import { applyFielderRestPolicy } from './fielder-rest.ts';
 import { applyRestPolicy } from './rest.ts';
 import { allWorldSquads, worldSquad } from './squads.ts';
@@ -229,6 +230,7 @@ export function managementFixture(
   const activeIds = fixture.clubs.flatMap((club) => club.playerIds);
   fixture.players = fixture.players.filter((player) => activeIds.includes(player.playerId));
   fixture.pitches = fixture.pitches.filter((pitch) => activeIds.includes(pitch.playerId));
+  if ('reliefControl' in world) attachReliefPolicy(world, gameId, fixture);
   validateGameFixture(fixture);
   return fixture;
 }
@@ -274,7 +276,10 @@ export function applyManagement(
   const management = structuredClone(world.management);
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
-  if (action.kind === 'setFielderRestPolicy') {
+  if (action.kind === 'setReliefPolicy') {
+    ensure('reliefControl' in world, '条件付き救援は新規プレイで利用できます');
+    updated = applyReliefPolicy(world, action);
+  } else if (action.kind === 'setFielderRestPolicy') {
     ensure('fielderRest' in world, '野手休養は新規プレイで利用できます');
     updated = applyFielderRestPolicy(world, action);
   } else if (action.kind === 'setRestPolicy') {

@@ -1,3 +1,5 @@
+import { createReliefWorld } from '../src/world/engine.ts';
+import { createReliefDefinitions } from '../src/data/world/relief.ts';
 import { createFielderRestWorld } from '../src/world/engine.ts';
 import { createFielderRestDefinitions } from '../src/data/world/fielder-rest.ts';
 import { createPerformanceWorld } from '../src/world/engine.ts';
@@ -140,6 +142,17 @@ for (const calendar of ['short', 'annual'] as const) {
   console.log(
     '野手休養: ' +
       Object.keys(world.fielderRest.teamPolicies).length +
+      'チーム / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createReliefWorld(undefined, undefined, createReliefDefinitions(calendar));
+  console.log(
+    '条件付き救援: ' +
+      Object.keys(world.reliefControl.teamPolicies).length +
       'チーム / ' +
       calendar +
       '（検査成功）',

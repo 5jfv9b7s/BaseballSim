@@ -123,7 +123,7 @@ test('代替起用：打順・守備を引継ぎ、他の理想枠と登録・�
 });
 
 test('起用優先：手動当日指定・ベンチ外・代役不足・全員休養でも合法な9人を維持', () => {
-  let world = tired();
+  let world: FielderRestWorld = tired();
   const gameId = preview(world).gameId;
   const lineup = structuredClone(world.management.idealLineups[squadId]!);
   world = applyManagement(world, 'manual', {

@@ -1,3 +1,4 @@
+import { ReliefPolicyEditor } from './ReliefPolicyEditor.tsx';
 import { FielderRestEditor } from './FielderRestEditor.tsx';
 import { PerformanceRoster } from './PerformanceRoster.tsx';
 import { ConditionRoster } from './ConditionRoster.tsx';
@@ -100,6 +101,7 @@ export function WorldApp() {
         lastAction.current === 'setRosterPolicy' ||
         lastAction.current === 'setRestPolicy' ||
         lastAction.current === 'setFielderRestPolicy' ||
+        lastAction.current === 'setReliefPolicy' ||
         lastAction.current === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');
@@ -400,6 +402,14 @@ export function WorldApp() {
         />
       )}
 
+      {view?.relief && (
+        <ReliefPolicyEditor
+          key={JSON.stringify(['relief', view.worldId, editorEpoch])}
+          view={view}
+          disabled={disabled}
+          send={send}
+        />
+      )}
       {view?.fielderRestPolicy && (
         <FielderRestEditor
           key={JSON.stringify(['fielder-rest', view.worldId, editorEpoch])}

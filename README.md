@@ -1,6 +1,8 @@
 # 野球シミュレーションゲーム（v1.0開発中）
 
-実装版0.13.0では、野手の体力・疲労に応じた休養と当日だけの代替起用を追加しました。[操作と試作仕様](FIELDER-REST-IMPLEMENTATION.md)を参照してください。
+実装版0.14.0では、救援投手の役割・優先順位・回や点差による登板条件を追加しました。[操作と試作仕様](RELIEF-IMPLEMENTATION.md)を参照してください。
+
+[野手の自動休養と当日代替](FIELDER-REST-IMPLEMENTATION.md)にも対応しています。
 
 [試合前の能力補正](PERFORMANCE-IMPLEMENTATION.md)、[調子と直近比較](CONDITION-IMPLEMENTATION.md)、[投手の休養方針](REST-IMPLEMENTATION.md)にも対応しています。いずれも係数未校正の試作です。
 
@@ -56,7 +58,7 @@ v10では内野ゴロの捕球失策による出塁・強制進塁・失策数�
 
 打率は安打÷打数、防御率は27×自責点÷投球アウトから表示します。投球回の小数部分はアウト数です（5.2＝5回2/3）。未観測の率は「-」、投球アウト0で自責点が正なら「上限」と表示し、非有限数は保存しません。
 
-モデルの仮定は [設定の説明](config/README.md) とローカルの [試作モデル](Docs/knowledge/prototype-model.md) に記録しています。新モデルの計算は `pitch-configured.ts`、`batted-ball-configured.ts`、`in-play.ts`・`in-play-v2.ts`、守備記録は`fielding.ts`、モデル選択は `src/game/model-registry.ts` です。旧v1〜v9の定義と計算は保持します。**実装版は0.3.0（ゲームv1.0の開発途中）**、v10は共通の試合計算アルゴリズムの版です。
+モデルの仮定は [設定の説明](config/README.md) とローカルの [試作モデル](Docs/knowledge/prototype-model.md) に記録しています。新モデルの計算は `pitch-configured.ts`、`batted-ball-configured.ts`、`in-play.ts`・`in-play-v2.ts`、守備記録は`fielding.ts`、モデル選択は `src/game/model-registry.ts` です。旧v1〜v9の定義と計算は保持します。**実装版は0.14.0（ゲームv1.0の開発途中）**、v10は共通の試合計算アルゴリズムの版です。
 
 ## 選手・持ち球・編成の編集
 

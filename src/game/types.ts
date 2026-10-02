@@ -37,6 +37,7 @@ export interface Team {
 }
 
 export interface GameFixture extends Omit<Fixture, 'players' | 'matchup'> {
+  reliefPolicy?: import('./relief-types.ts').ReliefPolicySnapshot;
   players: GamePlayer[];
   teams: { home: Team; away: Team };
 }
@@ -73,6 +74,8 @@ export interface GameState extends Situation {
   paPitches: number;
   totalPitches: number;
   lineupIndex: Record<TeamSide, number>;
+  /** 条件付き救援で候補順を飛ばしても、未登板と再登板を区別する。 */
+  usedPitcherIds?: Record<TeamSide, string[]>;
   pitcherIndex: Record<TeamSide, number>;
   pitcherPitchCounts: Record<string, number>;
   innings: { away: number[]; home: (number | null)[] };
@@ -159,6 +162,7 @@ export interface PitchDecision {
   hitByPitch: boolean;
 }
 export interface GameEvent {
+  reliefDecision?: import('./relief-types.ts').ReliefDecision;
   /** v3以降の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
   pitchDecision?: PitchDecision;
   fieldingEvaluation?: FieldingEvaluation;

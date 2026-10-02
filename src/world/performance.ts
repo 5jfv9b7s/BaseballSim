@@ -6,7 +6,7 @@ import { createScheduledGame } from './engine.ts';
 import type { WorldRecord } from './types.ts';
 export type PerformanceWorld = Extract<
   WorldRecord,
-  { version: 'world-prototype-v11' | 'world-prototype-v12' }
+  { version: 'world-prototype-v11' | 'world-prototype-v12' | 'world-prototype-v13' }
 >;
 
 export function performanceSnapshot(

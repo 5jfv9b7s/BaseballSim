@@ -1,3 +1,4 @@
+import { selectReliever, validateReliefFixture } from './relief.ts';
 import { performanceFixture } from './performance.ts';
 import { createErrorConfig, validateErrorConfig, type ErrorConfig } from './error-config.ts';
 import { createErrorFixture } from './fixture-v2.ts';
@@ -52,6 +53,7 @@ export function situation(state: GameState): Situation {
 }
 
 export function validateGameFixture(fixture: GameFixture): void {
+  validateReliefFixture(fixture);
   ensure(
     [m.datasetVersion, 'game-fixture-v2'].includes(fixture.initialDatasetVersion),
     '未対応の試合データ版です',
@@ -133,6 +135,10 @@ export function createGame(
     config ??= createMatchConfig();
     validateMatchConfig(config);
   } else ensure(config === undefined, '旧モデルに設定を指定することはできません');
+  ensure(
+    !fixture.reliefPolicy || version === 'game-prototype-v10',
+    '条件付き救援は対応する試合モデルで使用してください',
+  );
   integer(seed, 1, 0xffffffff, 'seed');
   validateGameFixture(fixture);
   const gameId = `game-${seed}`;
@@ -154,6 +160,14 @@ export function createGame(
     paPitches: 0,
     totalPitches: 0,
     lineupIndex: { home: 0, away: 0 },
+    ...(fixture.reliefPolicy
+      ? {
+          usedPitcherIds: {
+            home: [fixture.teams.home.pitcherIds[0]!],
+            away: [fixture.teams.away.pitcherIds[0]!],
+          },
+        }
+      : {}),
     pitcherIndex: { home: 0, away: 0 },
     pitcherPitchCounts: Object.fromEntries(
       [...fixture.teams.home.pitcherIds, ...fixture.teams.away.pitcherIds].map((id) => [id, 0]),
@@ -493,13 +507,24 @@ export function advanceGameEvent(
     const pitchCount = state.pitcherPitchCounts[pitcherId]!;
     const threshold =
       state.pitcherIndex[defense] === 0 ? m.starterPitchLimit : m.relieverPitchLimit;
+    const reliefDecision =
+      fixture.reliefPolicy && state.paPitches === 0 && pitchCount >= threshold
+        ? selectReliever(state, fixture, defense)
+        : undefined;
+    const nextIndex = fixture.reliefPolicy
+      ? reliefDecision?.selectedId
+        ? team.pitcherIds.indexOf(reliefDecision.selectedId)
+        : -1
+      : state.pitcherIndex[defense] + 1;
     if (
       state.paPitches === 0 &&
       pitchCount >= threshold &&
-      state.pitcherIndex[defense] < team.pitcherIds.length - 1
+      nextIndex >= 0 &&
+      nextIndex < team.pitcherIds.length
     ) {
       event = emptyEvent(state, 'substitution');
-      state.pitcherIndex[defense]++;
+      state.pitcherIndex[defense] = nextIndex;
+      state.usedPitcherIds?.[defense].push(team.pitcherIds[nextIndex]!);
       event.substitution = {
         side: defense,
         outPlayerId: pitcherId,
@@ -609,6 +634,7 @@ export function advanceGameEvent(
         resolveAppearance(state, event, fixture, outcome, batterId, pitcherId);
       } else state.count = step.state.count;
     }
+    if (reliefDecision) event.reliefDecision = reliefDecision;
   }
 
   if (usesFielding(state.simulationVersion) && event.pitch) recordFielding(event, fixture);

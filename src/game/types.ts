@@ -37,6 +37,7 @@ export interface Team {
 }
 
 export interface GameFixture extends Omit<Fixture, 'players' | 'matchup'> {
+  bullpenPolicy?: import('./bullpen-types.ts').BullpenPolicySnapshot;
   reliefPolicy?: import('./relief-types.ts').ReliefPolicySnapshot;
   players: GamePlayer[];
   teams: { home: Team; away: Team };
@@ -61,6 +62,7 @@ export interface Situation {
 }
 
 export interface GameState extends Situation {
+  bullpen?: import('./bullpen-types.ts').BullpenState;
   /** v1保存では省略。存在する場合は対応する版を厳密に使用する。 */
   simulationVersion?: GameModelVersion;
   /** v7以降。開始時の設定全体を固定し、保存・再実行にも使用する。 */
@@ -162,6 +164,7 @@ export interface PitchDecision {
   hitByPitch: boolean;
 }
 export interface GameEvent {
+  bullpenActions?: import('./bullpen-types.ts').BullpenAction[];
   reliefDecision?: import('./relief-types.ts').ReliefDecision;
   /** v3以降の投球だけ。判断過程を保存し、調査・再現で確認できる。 */
   pitchDecision?: PitchDecision;

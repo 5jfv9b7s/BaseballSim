@@ -11,7 +11,7 @@ export interface PhysicalInput {
 export type ActivityKind = 'pitching' | 'batting' | 'fielding' | 'running' | 'preparation';
 
 export interface PhysicalConfig {
-  version: 'physical-load-v1';
+  version: 'physical-load-v1' | 'physical-load-v2';
   /** 1単位あたりの負荷。各実績の数え方はPHYSICAL-IMPLEMENTATION.md。 */
   workloadUnits: Record<ActivityKind, number>;
   /** 負荷1000単位あたりのPercentMilli変化。 */
@@ -48,7 +48,7 @@ export interface ActivityLoad {
 }
 
 export interface PhysicalWorldState {
-  version: 'physical-load-v1';
+  version: 'physical-load-v1' | 'physical-load-v2';
   players: Record<string, PhysicalState>;
   /** playerId＋date。一二軍共通の選手状態へ合算する。 */
   activityLoads: Record<string, ActivityLoad>;

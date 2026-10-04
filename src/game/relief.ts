@@ -104,6 +104,7 @@ export function selectReliever(
   state: GameState,
   fixture: GameFixture,
   side: TeamSide,
+  requireReady = true,
 ): ReliefDecision {
   const policy = fixture.reliefPolicy!;
   const settings = policy.teams[side];
@@ -120,7 +121,11 @@ export function selectReliever(
           policy.roleOrder.indexOf(a.role) - policy.roleOrder.indexOf(b.role) ||
           a.priority - b.priority,
       )[0];
-    const eligible = !used.includes(playerId) && !!matched;
+    const ready =
+      !requireReady ||
+      !fixture.bullpenPolicy?.teams[side].enabled ||
+      state.bullpen?.teams[side].players[playerId]?.phase === 'ready';
+    const eligible = !used.includes(playerId) && !!matched && ready;
     return {
       playerId,
       role: matched?.role ?? null,
@@ -133,7 +138,9 @@ export function selectReliever(
           ? '役割未設定'
           : !matched
             ? '回・得点状況・点差が条件外'
-            : '条件一致',
+            : !ready
+              ? 'ブルペン準備が未完了'
+              : '条件一致',
     };
   });
   const best = candidates

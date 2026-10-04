@@ -8,7 +8,11 @@ export const activityKey = (playerId: string, date: string) => JSON.stringify([p
 
 export function validatePhysicalDefinitions(definitions: WorldDefinitions): void {
   const config = definitions.physicalConfig;
-  ensure(config?.version === 'physical-load-v1', '身体モデルの設定が必要です');
+  ensure(
+    config?.version ===
+      (definitions.version === 'world-definitions-v13' ? 'physical-load-v2' : 'physical-load-v1'),
+    '身体モデルの設定が必要です',
+  );
   for (const kind of ['pitching', 'batting', 'fielding', 'running', 'preparation'] as const)
     integer(config.workloadUnits[kind], 0, 100000, '活動の負荷単位');
   for (const value of [config.energyCostMilli, config.fatigueCostMilli])
@@ -50,7 +54,7 @@ export function validatePhysicalDefinitions(definitions: WorldDefinitions): void
 
 export function initialPhysical(definitions: WorldDefinitions): PhysicalWorldState {
   return {
-    version: 'physical-load-v1',
+    version: definitions.physicalConfig!.version,
     players: Object.fromEntries(
       definitions.squads.flatMap((squad) =>
         squad.physicalInputs!.map((input) => [
@@ -133,12 +137,23 @@ export function applyPhysicalGame(
   }
 
   for (const event of game.events.slice(applied)) {
+    if (previous.version === 'physical-load-v2')
+      for (const preparation of event.bullpenActions ?? [])
+        if (preparation.kind === 'started') load(preparation.playerId, 'preparation', 1);
     if (!event.pitch) continue;
     const pitch = event.pitch;
     const sources =
       next.activityLoads[activityKey(pitch.pitcherId, world.currentDate)]?.sourceLoads;
-    // 実際に登板した投手だけ、初球直前の準備を1試合1回。未登板準備は未対応。
-    if (!sources?.some((s) => s.sourceKey === JSON.stringify([gameId, 1, 'preparation'])))
+    // v2の自動準備救援は開始イベントで負荷済み。先発・無効チーム・旧版は初球で1回。
+    const side = event.before.half === 'top' ? 'home' : 'away';
+    const automaticReliever =
+      previous.version === 'physical-load-v2' &&
+      game.fixture.bullpenPolicy?.teams[side].enabled &&
+      pitch.pitcherId !== game.fixture.teams[side].pitcherIds[0];
+    if (
+      !automaticReliever &&
+      !sources?.some((s) => s.sourceKey === JSON.stringify([gameId, 1, 'preparation']))
+    )
       load(pitch.pitcherId, 'preparation', 1);
     load(pitch.pitcherId, 'pitching', 1);
     load(pitch.batterId, 'batting', 1);

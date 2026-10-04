@@ -1,3 +1,5 @@
+import { createBullpenWorld } from '../src/world/engine.ts';
+import { createBullpenDefinitions } from '../src/data/world/bullpen.ts';
 import { createReliefWorld } from '../src/world/engine.ts';
 import { createReliefDefinitions } from '../src/data/world/relief.ts';
 import { createFielderRestWorld } from '../src/world/engine.ts';
@@ -153,6 +155,17 @@ for (const calendar of ['short', 'annual'] as const) {
   console.log(
     '条件付き救援: ' +
       Object.keys(world.reliefControl.teamPolicies).length +
+      'チーム / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createBullpenWorld(undefined, undefined, createBullpenDefinitions(calendar));
+  console.log(
+    '自動ブルペン: ' +
+      world.definitions.bullpenInputs!.length +
       'チーム / ' +
       calendar +
       '（検査成功）',

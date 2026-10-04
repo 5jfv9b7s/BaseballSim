@@ -58,3 +58,7 @@ world-v11-save.json.gzは変更前d97a486のcreatePerformanceWorldで1日完了�
 ## world-v12-save.json.gz
 
 0.13.0（39069eeee34ed281fdef171d563c93271a827599）の変更前実装で初日完了・日次処理後、翌日17イベントを進めたcanonicalJsonのgzipです。野手休養あり・条件付き救援なし。gzip SHA-256はdfec43f80cd8b67cfe3f78f67115211d6500ea57c4525ac1a82d23e8146441dc。tests/relief.test.tsでハッシュ・旧版の保存読込・途中続行を照合します。IndexedDB全ストアのダンプとは区別し、期待値を再生成しません。
+
+## world-v13-save.json.gz
+
+0.14.0（1059d1f6690c14aad5c977c44c0e7cd1012ad4b0）の変更前実装で、初日完了・日次確定後、翌日17イベントを進めたWorldRecordをJSON.stringifyしてgzip化した固定保存です。条件付き救援あり・ブルペン準備なし。gzip SHA-256はb8f271a06e4d405369fdca370efd59561b5896b111e62cf21e0976e1d6c37c99。tests/bullpen.test.tsでハッシュ・旧版保存読込・途中続行を照合します。IndexedDB全ストアのダンプとは区別し、期待値は再生成しません。

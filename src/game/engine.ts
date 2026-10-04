@@ -1,3 +1,10 @@
+import {
+  validateBullpenFixture,
+  initialBullpen,
+  prepareBullpen,
+  finishBullpenEvent,
+} from './bullpen.ts';
+import type { BullpenAction } from './bullpen-types.ts';
 import { selectReliever, validateReliefFixture } from './relief.ts';
 import { performanceFixture } from './performance.ts';
 import { createErrorConfig, validateErrorConfig, type ErrorConfig } from './error-config.ts';
@@ -54,6 +61,7 @@ export function situation(state: GameState): Situation {
 
 export function validateGameFixture(fixture: GameFixture): void {
   validateReliefFixture(fixture);
+  validateBullpenFixture(fixture);
   ensure(
     [m.datasetVersion, 'game-fixture-v2'].includes(fixture.initialDatasetVersion),
     '未対応の試合データ版です',
@@ -168,6 +176,7 @@ export function createGame(
           },
         }
       : {}),
+    ...(fixture.bullpenPolicy ? { bullpen: initialBullpen(fixture) } : {}),
     pitcherIndex: { home: 0, away: 0 },
     pitcherPitchCounts: Object.fromEntries(
       [...fixture.teams.home.pitcherIds, ...fixture.teams.away.pitcherIds].map((id) => [id, 0]),
@@ -469,6 +478,7 @@ export function advanceGameEvent(
   const offense = offenseSide(state);
   const defense = defenseSide(state);
   let event: GameEvent;
+  let bullpenActions: BullpenAction[] = [];
 
   if (state.phase === 'halfComplete') {
     event = emptyEvent(state, 'halfEnd');
@@ -507,6 +517,7 @@ export function advanceGameEvent(
     const pitchCount = state.pitcherPitchCounts[pitcherId]!;
     const threshold =
       state.pitcherIndex[defense] === 0 ? m.starterPitchLimit : m.relieverPitchLimit;
+    bullpenActions = prepareBullpen(state, fixture, defense, threshold);
     const reliefDecision =
       fixture.reliefPolicy && state.paPitches === 0 && pitchCount >= threshold
         ? selectReliever(state, fixture, defense)
@@ -636,6 +647,8 @@ export function advanceGameEvent(
     }
     if (reliefDecision) event.reliefDecision = reliefDecision;
   }
+
+  finishBullpenEvent(state, fixture, event, defense, bullpenActions);
 
   if (usesFielding(state.simulationVersion) && event.pitch) recordFielding(event, fixture);
 

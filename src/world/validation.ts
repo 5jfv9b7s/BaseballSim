@@ -17,6 +17,7 @@ import {
   createPerformanceWorld,
   createFielderRestWorld,
   createReliefWorld,
+  createBullpenWorld,
   createScheduledGame,
   acceptGame,
 } from './engine.ts';
@@ -68,6 +69,7 @@ function validateWithCache(
       'world-prototype-v11',
       'world-prototype-v12',
       'world-prototype-v13',
+      'world-prototype-v14',
     ].includes(candidate.version),
     '未対応の世界モデルです',
   );
@@ -84,106 +86,114 @@ function validateWithCache(
   integer(actions.length, 0, 'seasonSummary' in candidate ? 2048 : 256, '編成履歴の件数');
   ensure(
     candidate.definitions.version ===
-      (candidate.version === 'world-prototype-v13'
-        ? 'world-definitions-v12'
-        : candidate.version === 'world-prototype-v12'
-          ? 'world-definitions-v11'
-          : candidate.version === 'world-prototype-v11'
-            ? 'world-definitions-v10'
-            : candidate.version === 'world-prototype-v10'
-              ? 'world-definitions-v9'
-              : candidate.version === 'world-prototype-v9'
-                ? 'world-definitions-v8'
-                : candidate.version === 'world-prototype-v8'
-                  ? 'world-definitions-v7'
-                  : candidate.version === 'world-prototype-v7'
-                    ? 'world-definitions-v6'
-                    : candidate.version === 'world-prototype-v6'
-                      ? 'world-definitions-v5'
-                      : candidate.version === 'world-prototype-v5'
-                        ? 'world-definitions-v4'
-                        : candidate.version === 'world-prototype-v4'
-                          ? 'world-definitions-v3'
-                          : candidate.version === 'world-prototype-v3'
-                            ? 'world-definitions-v2'
-                            : 'world-definitions-v1'),
+      (candidate.version === 'world-prototype-v14'
+        ? 'world-definitions-v13'
+        : candidate.version === 'world-prototype-v13'
+          ? 'world-definitions-v12'
+          : candidate.version === 'world-prototype-v12'
+            ? 'world-definitions-v11'
+            : candidate.version === 'world-prototype-v11'
+              ? 'world-definitions-v10'
+              : candidate.version === 'world-prototype-v10'
+                ? 'world-definitions-v9'
+                : candidate.version === 'world-prototype-v9'
+                  ? 'world-definitions-v8'
+                  : candidate.version === 'world-prototype-v8'
+                    ? 'world-definitions-v7'
+                    : candidate.version === 'world-prototype-v7'
+                      ? 'world-definitions-v6'
+                      : candidate.version === 'world-prototype-v6'
+                        ? 'world-definitions-v5'
+                        : candidate.version === 'world-prototype-v5'
+                          ? 'world-definitions-v4'
+                          : candidate.version === 'world-prototype-v4'
+                            ? 'world-definitions-v3'
+                            : candidate.version === 'world-prototype-v3'
+                              ? 'world-definitions-v2'
+                              : 'world-definitions-v1'),
     '世界モデルと日程定義の版が異なります',
   );
   let actionIndex = 0;
   let replay: WorldRecord =
-    candidate.version === 'world-prototype-v13'
-      ? createReliefWorld(
+    candidate.version === 'world-prototype-v14'
+      ? createBullpenWorld(
           candidate.seed,
           candidate.management.controlledSquadId,
           candidate.definitions,
         )
-      : candidate.version === 'world-prototype-v12'
-        ? createFielderRestWorld(
+      : candidate.version === 'world-prototype-v13'
+        ? createReliefWorld(
             candidate.seed,
             candidate.management.controlledSquadId,
             candidate.definitions,
           )
-        : candidate.version === 'world-prototype-v11'
-          ? createPerformanceWorld(
+        : candidate.version === 'world-prototype-v12'
+          ? createFielderRestWorld(
               candidate.seed,
               candidate.management.controlledSquadId,
               candidate.definitions,
             )
-          : candidate.version === 'world-prototype-v10'
-            ? createConditionWorld(
+          : candidate.version === 'world-prototype-v11'
+            ? createPerformanceWorld(
                 candidate.seed,
                 candidate.management.controlledSquadId,
                 candidate.definitions,
               )
-            : candidate.version === 'world-prototype-v9'
-              ? createRestWorld(
+            : candidate.version === 'world-prototype-v10'
+              ? createConditionWorld(
                   candidate.seed,
                   candidate.management.controlledSquadId,
                   candidate.definitions,
                 )
-              : candidate.version === 'world-prototype-v8'
-                ? createPhysicalWorld(
+              : candidate.version === 'world-prototype-v9'
+                ? createRestWorld(
                     candidate.seed,
                     candidate.management.controlledSquadId,
                     candidate.definitions,
                   )
-                : candidate.version === 'world-prototype-v7'
-                  ? createFarmWorld(
+                : candidate.version === 'world-prototype-v8'
+                  ? createPhysicalWorld(
                       candidate.seed,
                       candidate.management.controlledSquadId,
                       candidate.definitions,
                     )
-                  : candidate.version === 'world-prototype-v6'
-                    ? createRosterPolicyWorld(
+                  : candidate.version === 'world-prototype-v7'
+                    ? createFarmWorld(
                         candidate.seed,
                         candidate.management.controlledSquadId,
                         candidate.definitions,
                       )
-                    : candidate.version === 'world-prototype-v5'
-                      ? createRegistrationWorld(
+                    : candidate.version === 'world-prototype-v6'
+                      ? createRosterPolicyWorld(
                           candidate.seed,
                           candidate.management.controlledSquadId,
                           candidate.definitions,
                         )
-                      : candidate.version === 'world-prototype-v4'
-                        ? createRosterWorld(
+                      : candidate.version === 'world-prototype-v5'
+                        ? createRegistrationWorld(
                             candidate.seed,
                             candidate.management.controlledSquadId,
                             candidate.definitions,
                           )
-                        : candidate.version === 'world-prototype-v3'
-                          ? createAnnualWorld(
+                        : candidate.version === 'world-prototype-v4'
+                          ? createRosterWorld(
                               candidate.seed,
                               candidate.management.controlledSquadId,
                               candidate.definitions,
                             )
-                          : candidate.version === 'world-prototype-v2'
-                            ? createManagedWorld(
+                          : candidate.version === 'world-prototype-v3'
+                            ? createAnnualWorld(
                                 candidate.seed,
-                                candidate.definitions,
                                 candidate.management.controlledSquadId,
+                                candidate.definitions,
                               )
-                            : createWorld(candidate.seed, candidate.definitions);
+                            : candidate.version === 'world-prototype-v2'
+                              ? createManagedWorld(
+                                  candidate.seed,
+                                  candidate.definitions,
+                                  candidate.management.controlledSquadId,
+                                )
+                              : createWorld(candidate.seed, candidate.definitions);
 
   const replayDate = (requireComplete: boolean) => {
     while (actions[actionIndex]?.date === replay.currentDate) {

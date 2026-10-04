@@ -28,7 +28,8 @@ type SaveFormat =
   | 'v011-world-snapshot-v10'
   | 'v012-world-snapshot-v11'
   | 'v013-world-snapshot-v12'
-  | 'v014-world-snapshot-v13';
+  | 'v014-world-snapshot-v13'
+  | 'v015-world-snapshot-v14';
 const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
@@ -54,7 +55,9 @@ const formatFor = (version: WorldRecord['version']): SaveFormat =>
                         ? 'v012-world-snapshot-v11'
                         : version === 'world-prototype-v12'
                           ? 'v013-world-snapshot-v12'
-                          : 'v014-world-snapshot-v13';
+                          : version === 'world-prototype-v13'
+                            ? 'v014-world-snapshot-v13'
+                            : 'v015-world-snapshot-v14';
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 
@@ -332,6 +335,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
                 'world-prototype-v11',
                 'world-prototype-v12',
                 'world-prototype-v13',
+                'world-prototype-v14',
               ].includes(snapshot.versions.simulationVersion)
                 ? 259
                 : 35),
@@ -363,6 +367,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         'world-prototype-v11',
         'world-prototype-v12',
         'world-prototype-v13',
+        'world-prototype-v14',
       ].includes(snapshot.versions.simulationVersion) &&
         format === formatFor(snapshot.versions.simulationVersion),
       '未対応の世界保存形式です',
@@ -388,6 +393,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v012-world-snapshot-v11',
               'v013-world-snapshot-v12',
               'v014-world-snapshot-v13',
+              'v015-world-snapshot-v14',
             ].includes(format)
               ? 'gzip'
               : 'none') &&
@@ -415,6 +421,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               'v012-world-snapshot-v11',
               'v013-world-snapshot-v12',
               'v014-world-snapshot-v13',
+              'v015-world-snapshot-v14',
             ].includes(format)
               ? MAX_ANNUAL_RAW_BYTES
               : MAX_BYTES) &&

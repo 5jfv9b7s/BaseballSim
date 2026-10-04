@@ -1,3 +1,4 @@
+import { BullpenPanel } from './BullpenPanel.tsx';
 import { ReliefPolicyEditor } from './ReliefPolicyEditor.tsx';
 import { FielderRestEditor } from './FielderRestEditor.tsx';
 import { PerformanceRoster } from './PerformanceRoster.tsx';
@@ -401,6 +402,8 @@ export function WorldApp() {
           send={send}
         />
       )}
+
+      {view?.bullpen && <BullpenPanel view={view} />}
 
       {view?.relief && (
         <ReliefPolicyEditor

@@ -140,3 +140,11 @@ condition/{球団名}.tsに全120人の初期調子・最初の終点・区間�
 relief-policies/{hoshihara,aonagi,kohaku,asagiri}.tsに4球団・一軍二軍の計8チームの設定があります。playerId・role・priority・conditionsを明示します。初期は全所属投手に通常救援・優先順位1を設定し、試合での候補資格は従来の編成・登録・ベンチから決めます。同投手へ異なる役割を追加でき、いずれかの条件に合えば候補になります。未設定投手は役割なしです。
 
 役割追加時の共通ひな形と役割順はconfig/relief.ts、新規世界の結合はworld/relief.ts。投手ごとに条件を変えるときは球団ファイルのconditionsを編集してください。型・範囲・例と未対応は[救援ガイド](../../RELIEF-IMPLEMENTATION.md)。編集後はnpm.cmd run data:checkで検査し、新規日程で確認します。保存内の入力へ変更を後付けしません。
+
+## 自動ブルペン準備（0.15.0）
+
+新規世界の結合入口は[world/bullpen.ts](world/bullpen.ts)です。従来のworld/relief.tsやworld/performance.tsを継承して準備設定を追加します。
+
+bullpen/の球団別ファイルに、一軍・二軍それぞれのenabledを明示しています。全4球団8チームを必須入力として検査します。新しいチームには対応する設定を追加してください。選手ごとの状態は試合開始時の救援候補から生成し、選手プロフィールへ混在させません。
+
+共通の球数設定はconfig/bullpen.ts、準備負荷はconfig/physical.tsです。data:check後、新しい日程で適用を確認してください。旧保存は変更しません。詳細は[BULLPEN-IMPLEMENTATION.md](../../BULLPEN-IMPLEMENTATION.md)。

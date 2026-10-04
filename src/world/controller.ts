@@ -1,3 +1,4 @@
+import { bullpenView } from './bullpen.ts';
 import { reliefView } from './relief.ts';
 import { performanceView } from './performance.ts';
 import { conditionView } from './condition.ts';
@@ -8,8 +9,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createReliefWorld, worldPhase } from './engine.ts';
-import { createReliefDefinitions } from '../data/world/relief.ts';
+import { advanceWorld, completeDay, createBullpenWorld, worldPhase } from './engine.ts';
+import { createBullpenDefinitions } from '../data/world/bullpen.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -35,6 +36,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  bullpen: ReturnType<typeof bullpenView> | null;
   relief: ReturnType<typeof reliefView> | null;
   fielderRestPolicy: {
     rules: import('./fielder-rest-types.ts').FielderRestRules;
@@ -93,7 +95,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createReliefWorld();
+  private world: WorldRecord = createBullpenWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -128,6 +130,7 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      bullpen: world.version === 'world-prototype-v14' ? bullpenView(world) : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
       fielderRestPolicy:
         'fielderRest' in world
@@ -136,7 +139,8 @@ export class WorldController {
       performance:
         world.version === 'world-prototype-v11' ||
         world.version === 'world-prototype-v12' ||
-        world.version === 'world-prototype-v13'
+        world.version === 'world-prototype-v13' ||
+        world.version === 'world-prototype-v14'
           ? performanceView(world)
           : null,
       condition: 'condition' in world ? conditionView(world) : null,
@@ -253,10 +257,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createReliefWorld(
+      this.world = createBullpenWorld(
         command.seed,
         command.controlledSquadId,
-        createReliefDefinitions(command.calendar),
+        createBullpenDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;

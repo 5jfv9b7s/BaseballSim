@@ -1,3 +1,4 @@
+import { attachBullpen } from './bullpen.ts';
 import { attachReliefPolicy, applyReliefPolicy } from './relief.ts';
 import { applyFielderRestPolicy } from './fielder-rest.ts';
 import { applyRestPolicy } from './rest.ts';
@@ -231,6 +232,7 @@ export function managementFixture(
   fixture.players = fixture.players.filter((player) => activeIds.includes(player.playerId));
   fixture.pitches = fixture.pitches.filter((pitch) => activeIds.includes(pitch.playerId));
   if ('reliefControl' in world) attachReliefPolicy(world, gameId, fixture);
+  if (world.version === 'world-prototype-v14') attachBullpen(world, gameId, fixture);
   validateGameFixture(fixture);
   return fixture;
 }

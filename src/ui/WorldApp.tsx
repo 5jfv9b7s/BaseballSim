@@ -1,3 +1,5 @@
+import { StorageInspectionPanel } from './StorageInspectionPanel.tsx';
+import type { StorageInspection } from '../world/storage-inspection.ts';
 import { BullpenPanel } from './BullpenPanel.tsx';
 import { ReliefPolicyEditor } from './ReliefPolicyEditor.tsx';
 import { FielderRestEditor } from './FielderRestEditor.tsx';
@@ -18,6 +20,7 @@ import './world.css';
 
 export function WorldApp() {
   const [view, setView] = useState<WorldView | null>(null);
+  const [inspection, setInspection] = useState<StorageInspection | null>(null);
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState(false);
   const [calendar, setCalendar] = useState<'short' | 'annual'>('short');
@@ -35,12 +38,13 @@ export function WorldApp() {
   const latest = useRef<WorldView | null>(null);
   const pending = useRef(false);
   const auto = useRef(false);
-  const lastAction = useRef<WorldAction['kind'] | null>(null);
+  const lastAction = useRef<WorldAction['kind'] | 'inspectStorage' | null>(null);
 
   function send(action: WorldAction) {
     if (!worker.current || !latest.current || pending.current) return;
     pending.current = true;
     lastAction.current = action.kind;
+    setInspection(null);
     setBusy(true);
     setError('');
     setMessage('');
@@ -50,6 +54,17 @@ export function WorldApp() {
       localWorldId: 'v02-local',
       expectedStateRevision: latest.current.revision,
     } satisfies WorldCommand);
+  }
+
+  function inspectStorage() {
+    if (!worker.current || pending.current || auto.current) return;
+    pending.current = true;
+    lastAction.current = 'inspectStorage';
+    setBusy(true);
+    setError('');
+    setMessage('');
+    setInspection(null);
+    worker.current.postMessage({ kind: 'inspectStorage' });
   }
 
   function continueDay() {
@@ -82,6 +97,10 @@ export function WorldApp() {
         setRunning(false);
         setError(data.error);
         return;
+      }
+      if (data.inspection) {
+        setInspection(data.inspection);
+        setMessage('保存容量を確認しました。データは削除していません。');
       }
       if (lastAction.current === 'completeDay') {
         if (data.view.currentDate > autoThrough.current) {
@@ -570,6 +589,7 @@ export function WorldApp() {
 
       <section className="panel" aria-label="世界の保存">
         <h2>世界の保存</h2>
+        <StorageInspectionPanel report={inspection} disabled={disabled} inspect={inspectStorage} />
         <p>
           {view?.unsavedChanges
             ? '作業状態には未保存の変更があります。'

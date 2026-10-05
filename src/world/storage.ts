@@ -15,6 +15,7 @@ export interface WorldSlots {
 
 export interface WorldStorageAdapter {
   listSlots(): Promise<WorldSlots>;
+  inspectStorage?(): Promise<import('./storage-inspection.ts').StorageInspection>;
   save(
     world: WorldRecord,
     stateRevision: number,

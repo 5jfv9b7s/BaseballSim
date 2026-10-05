@@ -1,3 +1,4 @@
+import { inspectWorldStorage } from './storage-inspection.ts';
 import { canEditManagement } from './management.ts';
 import { Dexie, type Table } from 'dexie';
 import { ensure, integer } from '../engine/validation.ts';
@@ -149,6 +150,10 @@ export class DexieWorldStorage implements WorldStorageAdapter {
   async listSlots(): Promise<WorldSlots> {
     const db = this.database;
     return db.transaction('r', db.local_worlds, db.save_slots, () => this.readSlots());
+  }
+
+  async inspectStorage() {
+    return inspectWorldStorage(this.database);
   }
 
   async save(

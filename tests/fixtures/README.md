@@ -62,3 +62,7 @@ world-v11-save.json.gzは変更前d97a486のcreatePerformanceWorldで1日完了�
 ## world-v13-save.json.gz
 
 0.14.0（1059d1f6690c14aad5c977c44c0e7cd1012ad4b0）の変更前実装で、初日完了・日次確定後、翌日17イベントを進めたWorldRecordをJSON.stringifyしてgzip化した固定保存です。条件付き救援あり・ブルペン準備なし。gzip SHA-256はb8f271a06e4d405369fdca370efd59561b5896b111e62cf21e0976e1d6c37c99。tests/bullpen.test.tsでハッシュ・旧版保存読込・途中続行を照合します。IndexedDB全ストアのダンプとは区別し、期待値は再生成しません。
+
+## backup-store.zip
+
+Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。manifest.jsonの内容は{}と改行だけで、ゲーム保存ではありません。tests/backup.test.tsでZIP読取の互換性を確認します。ZIP日時は2020-01-01 00:00:00に固定。自動試験の実行にPythonは不要です。

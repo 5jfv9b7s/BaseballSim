@@ -13,7 +13,17 @@ export interface WorldSlots {
   manual: WorldSlot | null;
 }
 
+export interface StoredPlay {
+  localWorldId: string;
+  label: string;
+  gameDate: string | null;
+  slots: WorldSlotKind[];
+}
+
 export interface WorldStorageAdapter {
+  exportSnapshot?(kind: WorldSlotKind): Promise<Uint8Array>;
+  importSnapshot?(bytes: Uint8Array, requestId: string): Promise<string>;
+  listPlays?(): Promise<StoredPlay[]>;
   listSlots(): Promise<WorldSlots>;
   inspectStorage?(): Promise<import('./storage-inspection.ts').StorageInspection>;
   save(

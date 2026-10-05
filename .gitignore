@@ -22,3 +22,6 @@ playwright/.auth/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local game backups
+*.bssave

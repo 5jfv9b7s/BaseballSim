@@ -1,3 +1,5 @@
+import { verifySharedBlocks, putSharedBlocks } from './shared-blocks.ts';
+import { exportStoredPlay, importStoredPlay, listStoredPlays } from './backup-storage.ts';
 import { collectUnusedInTransaction } from './storage-gc.ts';
 import { inspectWorldStorage } from './storage-inspection.ts';
 import { canEditManagement } from './management.ts';
@@ -5,7 +7,17 @@ import { Dexie, type Table } from 'dexie';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson, definitionsFor, sha256 } from '../storage/codec.ts';
 import { WorldValidator } from './validation.ts';
-import { compress, decompress } from './compression.ts';
+import { compress } from './compression.ts';
+import { decodeWorldSnapshot, validateSnapshot } from './snapshot-codec.ts';
+import {
+  formatFor,
+  MAX_BYTES,
+  MAX_ANNUAL_RAW_BYTES,
+  type LocalWorld,
+  type Slot,
+  type Block,
+  type Snapshot,
+} from './save-format.ts';
 import type { GameRecord } from '../game/types.ts';
 import {
   emptyWorldSlots,
@@ -16,93 +28,7 @@ import {
 import type { WorldRecord } from './types.ts';
 
 export const WORLD_DATABASE_NAME = 'BaseballSim-v02-worlds';
-const LOCAL_WORLD = 'v02-local';
-type SaveFormat =
-  | 'v02-world-snapshot-v1'
-  | 'v03-world-snapshot-v2'
-  | 'v04-world-snapshot-v3'
-  | 'v05-world-snapshot-v4'
-  | 'v06-world-snapshot-v5'
-  | 'v07-world-snapshot-v6'
-  | 'v08-world-snapshot-v7'
-  | 'v09-world-snapshot-v8'
-  | 'v010-world-snapshot-v9'
-  | 'v011-world-snapshot-v10'
-  | 'v012-world-snapshot-v11'
-  | 'v013-world-snapshot-v12'
-  | 'v014-world-snapshot-v13'
-  | 'v015-world-snapshot-v14';
-const formatFor = (version: WorldRecord['version']): SaveFormat =>
-  version === 'world-prototype-v1'
-    ? 'v02-world-snapshot-v1'
-    : version === 'world-prototype-v2'
-      ? 'v03-world-snapshot-v2'
-      : version === 'world-prototype-v3'
-        ? 'v04-world-snapshot-v3'
-        : version === 'world-prototype-v4'
-          ? 'v05-world-snapshot-v4'
-          : version === 'world-prototype-v5'
-            ? 'v06-world-snapshot-v5'
-            : version === 'world-prototype-v6'
-              ? 'v07-world-snapshot-v6'
-              : version === 'world-prototype-v7'
-                ? 'v08-world-snapshot-v7'
-                : version === 'world-prototype-v8'
-                  ? 'v09-world-snapshot-v8'
-                  : version === 'world-prototype-v9'
-                    ? 'v010-world-snapshot-v9'
-                    : version === 'world-prototype-v10'
-                      ? 'v011-world-snapshot-v10'
-                      : version === 'world-prototype-v11'
-                        ? 'v012-world-snapshot-v11'
-                        : version === 'world-prototype-v12'
-                          ? 'v013-world-snapshot-v12'
-                          : version === 'world-prototype-v13'
-                            ? 'v014-world-snapshot-v13'
-                            : 'v015-world-snapshot-v14';
-const MAX_BYTES = 64 * 1024 * 1024;
-const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
-
-interface LocalWorld {
-  localWorldId: string;
-  worldId: string;
-  storageRevision: number;
-  selectedSnapshotId: string;
-  updatedAt: string;
-}
-interface Slot {
-  localWorldId: string;
-  slotKind: WorldSlotKind;
-  slotNo: number;
-  snapshotId: string;
-  gameDate: string;
-  updatedAt: string;
-}
-interface BlockRef {
-  logicalKey: string;
-  blockId: string;
-  kind: string;
-  schemaVersion: SaveFormat;
-  contentHash: string;
-  rawBytes: number;
-}
-interface Block extends BlockRef {
-  codec: 'none' | 'gzip';
-  payloadBytes: Uint8Array;
-}
-interface Snapshot {
-  snapshotId: string;
-  worldId: string;
-  parentSnapshotId: string | null;
-  createdAt: string;
-  gameDate: string;
-  stateRevision: number;
-  saveKind: 'dailyAuto' | 'manual' | 'actionAuto';
-  versions: { saveFormatVersion: SaveFormat; simulationVersion: WorldRecord['version'] };
-  blockRefs: BlockRef[];
-  manifestHash: string;
-}
-
+export const DEFAULT_LOCAL_WORLD = 'v02-local';
 export class WorldDatabase extends Dexie {
   local_worlds!: Table<LocalWorld, string>;
   save_slots!: Table<Slot, [string, string, number]>;
@@ -120,24 +46,29 @@ export class WorldDatabase extends Dexie {
   }
 }
 
-const slotKey = (kind: WorldSlotKind): [string, string, number] => [LOCAL_WORLD, kind, 1];
-
 /** v0.1の終了試合保存とは別名前空間。4ストアの一括確定を継承する。 */
 export class DexieWorldStorage implements WorldStorageAdapter {
   readonly database: WorldDatabase;
   private validator: WorldValidator = new WorldValidator();
   private gameBlocks = new WeakMap<GameRecord, Block>();
 
-  constructor(database = new WorldDatabase()) {
+  readonly localWorldId: string;
+
+  constructor(database = new WorldDatabase(), localWorldId = DEFAULT_LOCAL_WORLD) {
     this.database = database;
+    this.localWorldId = localWorldId;
+  }
+
+  private slotKey(kind: WorldSlotKind): [string, string, number] {
+    return [this.localWorldId, kind, 1];
   }
 
   private async readSlots(): Promise<WorldSlots> {
     const slots = emptyWorldSlots();
     slots.storageRevision =
-      (await this.database.local_worlds.get(LOCAL_WORLD))?.storageRevision ?? 0;
+      (await this.database.local_worlds.get(this.localWorldId))?.storageRevision ?? 0;
     for (const kind of ['auto', 'previousAuto', 'manual'] as const) {
-      const row = await this.database.save_slots.get(slotKey(kind));
+      const row = await this.database.save_slots.get(this.slotKey(kind));
       if (row)
         slots[kind] = {
           snapshotId: row.snapshotId,
@@ -151,6 +82,18 @@ export class DexieWorldStorage implements WorldStorageAdapter {
   async listSlots(): Promise<WorldSlots> {
     const db = this.database;
     return db.transaction('r', db.local_worlds, db.save_slots, () => this.readSlots());
+  }
+
+  async exportSnapshot(kind: WorldSlotKind) {
+    return exportStoredPlay(this.database, this.localWorldId, kind);
+  }
+
+  async importSnapshot(bytes: Uint8Array, requestId: string) {
+    return importStoredPlay(this.database, bytes, requestId);
+  }
+
+  async listPlays() {
+    return listStoredPlays(this.database);
   }
 
   async inspectStorage() {
@@ -245,6 +188,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         this.gameBlocks.set(value as GameRecord, block);
     }
 
+    const verified = await verifySharedBlocks(this.database, blocks);
     const previous = await this.listSlots();
     const manifest: Omit<Snapshot, 'manifestHash'> = {
       snapshotId: crypto.randomUUID(),
@@ -273,26 +217,14 @@ export class DexieWorldStorage implements WorldStorageAdapter {
             current.storageRevision === previous.storageRevision,
           '別タブで保存が更新されました。保存を読み込み直してください',
         );
-        for (const block of blocks) {
-          const existing = await db.save_blocks.get(block.blockId);
-          if (existing) {
-            const { payloadBytes: savedBytes, ...savedMetadata } = existing;
-            const { payloadBytes: newBytes, ...newMetadata } = block;
-            ensure(
-              canonicalJson(savedMetadata) === canonicalJson(newMetadata) &&
-                savedBytes.length === newBytes.length &&
-                savedBytes.every((byte, index) => byte === newBytes[index]),
-              '既存の保存ブロックが破損しています',
-            );
-          } else await db.save_blocks.add(block);
-        }
+        await putSharedBlocks(db, blocks, verified);
         await db.save_snapshots.add(snapshot);
         if (kind !== 'manual' && current.auto) {
-          const oldAuto = await db.save_slots.get(slotKey('auto'));
+          const oldAuto = await db.save_slots.get(this.slotKey('auto'));
           await db.save_slots.put({ ...oldAuto!, slotKind: 'previousAuto' });
         }
         await db.save_slots.put({
-          localWorldId: LOCAL_WORLD,
+          localWorldId: this.localWorldId,
           slotKind,
           slotNo: 1,
           snapshotId: snapshot.snapshotId,
@@ -300,7 +232,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
           updatedAt: snapshot.createdAt,
         });
         await db.local_worlds.put({
-          localWorldId: LOCAL_WORLD,
+          ...(await db.local_worlds.get(this.localWorldId)),
+          localWorldId: this.localWorldId,
           worldId: world.worldId,
           selectedSnapshotId: snapshot.snapshotId,
           storageRevision: current.storageRevision + 1,
@@ -327,6 +260,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ensure(slot, 'この枠には保存がありません');
         const snapshot = await db.save_snapshots.get(slot.snapshotId);
         ensure(snapshot, '保存の目録がありません');
+        validateSnapshot(snapshot);
         ensure(
           snapshot.blockRefs.length >= 3 &&
             snapshot.blockRefs.length <=
@@ -353,138 +287,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       },
     );
     const { snapshot, blocks, slots } = captured;
-    const format = snapshot.versions.saveFormatVersion;
-    const { manifestHash, ...manifest } = snapshot;
-    ensure(
-      (await sha256(canonicalJson(manifest))) === manifestHash,
-      '保存目録のハッシュが一致しません',
-    );
-    ensure(
-      [
-        'world-prototype-v1',
-        'world-prototype-v2',
-        'world-prototype-v3',
-        'world-prototype-v4',
-        'world-prototype-v5',
-        'world-prototype-v6',
-        'world-prototype-v7',
-        'world-prototype-v8',
-        'world-prototype-v9',
-        'world-prototype-v10',
-        'world-prototype-v11',
-        'world-prototype-v12',
-        'world-prototype-v13',
-        'world-prototype-v14',
-      ].includes(snapshot.versions.simulationVersion) &&
-        format === formatFor(snapshot.versions.simulationVersion),
-      '未対応の世界保存形式です',
-    );
-    const values = new Map<string, unknown>();
-    let bytes = 0;
-    let storedBytes = 0;
-    for (let index = 0; index < blocks.length; index++) {
-      const block = blocks[index];
-      const ref = snapshot.blockRefs[index]!;
-      ensure(
-        block &&
-          block.codec ===
-            ([
-              'v04-world-snapshot-v3',
-              'v05-world-snapshot-v4',
-              'v06-world-snapshot-v5',
-              'v07-world-snapshot-v6',
-              'v08-world-snapshot-v7',
-              'v09-world-snapshot-v8',
-              'v010-world-snapshot-v9',
-              'v011-world-snapshot-v10',
-              'v012-world-snapshot-v11',
-              'v013-world-snapshot-v12',
-              'v014-world-snapshot-v13',
-              'v015-world-snapshot-v14',
-            ].includes(format)
-              ? 'gzip'
-              : 'none') &&
-          block.schemaVersion === format,
-        '保存ブロックがありません、または未対応です',
-      );
-      ensure(!values.has(ref.logicalKey), '保存ブロックの役割が重複しています');
-      const { payloadBytes, codec: _codec, ...metadata } = block;
-      ensure(canonicalJson(metadata) === canonicalJson(ref), '保存ブロックの参照が一致しません');
-      bytes += ref.rawBytes;
-      storedBytes += payloadBytes.length;
-      ensure(
-        Number.isSafeInteger(bytes) &&
-          bytes >= 0 &&
-          bytes <=
-            ([
-              'v04-world-snapshot-v3',
-              'v05-world-snapshot-v4',
-              'v06-world-snapshot-v5',
-              'v07-world-snapshot-v6',
-              'v08-world-snapshot-v7',
-              'v09-world-snapshot-v8',
-              'v010-world-snapshot-v9',
-              'v011-world-snapshot-v10',
-              'v012-world-snapshot-v11',
-              'v013-world-snapshot-v12',
-              'v014-world-snapshot-v13',
-              'v015-world-snapshot-v14',
-            ].includes(format)
-              ? MAX_ANNUAL_RAW_BYTES
-              : MAX_BYTES) &&
-          storedBytes <= MAX_BYTES,
-        '保存容量が不正です',
-      );
-      const raw =
-        block.codec === 'gzip' ? await decompress(payloadBytes, ref.rawBytes) : payloadBytes;
-      ensure(ref.rawBytes === raw.length, '保存容量が不正です');
-      const text = new TextDecoder('utf-8', { fatal: true }).decode(raw);
-      ensure(
-        (await sha256(block.kind + ':' + format + ':' + text)) === ref.contentHash &&
-          ref.blockId === 'block-' + ref.contentHash,
-        '保存ブロックのハッシュが一致しません',
-      );
-      values.set(ref.logicalKey, JSON.parse(text));
-    }
-    const definitions = values.get('definitions') as {
-      world: WorldRecord['definitions'];
-      engine: unknown;
-    };
-    ensure(
-      definitions && values.has('world') && values.has('stats'),
-      '世界保存の必須ブロックが不足しています',
-    );
-    const games: WorldRecord['games'] = {};
-    for (const [key, value] of values) {
-      if (key.startsWith('game/')) games[key.slice(5)] = value as WorldRecord['games'][string];
-      else ensure(['world', 'stats', 'definitions'].includes(key), '未対応の保存ブロックです');
-    }
-    const world = {
-      ...(values.get('world') as object),
-      ...(values.get('stats') as object),
-      definitions: definitions.world,
-      games,
-    };
-    this.validator.validate(world);
-    ensure(
-      world.version === snapshot.versions.simulationVersion,
-      '保存目録と世界モデルが一致しません',
-    );
-    ensure(
-      canonicalJson(definitions.engine) ===
-        canonicalJson(
-          definitionsFor(
-            'game-prototype-v10',
-            world.definitions.matchConfig,
-            world.definitions.errorConfig,
-          ),
-        ),
-      '試合の計算定義が一致しません',
-    );
-    ensure(
-      snapshot.worldId === world.worldId && snapshot.gameDate === world.currentDate,
-      '保存目録と世界が一致しません',
-    );
+    const world = await decodeWorldSnapshot(snapshot, blocks, this.validator);
     const latest = await this.listSlots();
     ensure(
       latest.storageRevision === slots.storageRevision,

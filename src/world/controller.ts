@@ -31,11 +31,12 @@ export type WorldAction =
 
 export type WorldCommand = WorldAction & {
   commandId: string;
-  localWorldId: 'v02-local';
+  localWorldId: string;
   expectedStateRevision: number;
 };
 
 export interface WorldView {
+  localWorldId: string;
   bullpen: ReturnType<typeof bullpenView> | null;
   relief: ReturnType<typeof reliefView> | null;
   fielderRestPolicy: {
@@ -105,8 +106,13 @@ export class WorldController {
   private recentResponses = new Map<string, WorldView>();
   private storage: WorldStorageAdapter;
 
-  constructor(storage: WorldStorageAdapter) {
+  private readonly localWorldId: string;
+
+  constructor(storage: WorldStorageAdapter, localWorldId = 'v02-local', initialRevision = 0) {
+    integer(initialRevision, 0, Number.MAX_SAFE_INTEGER - 2, '開始状態版');
+    this.revision = initialRevision;
     this.storage = storage;
+    this.localWorldId = localWorldId;
   }
 
   async initialize(): Promise<WorldView> {
@@ -130,6 +136,7 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      localWorldId: this.localWorldId,
       bullpen: world.version === 'world-prototype-v14' ? bullpenView(world) : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
       fielderRestPolicy:
@@ -214,7 +221,7 @@ export class WorldController {
 
   async dispatch(command: WorldCommand): Promise<WorldView> {
     id(command.commandId);
-    ensure(command.localWorldId === 'v02-local', '対象のローカル世界が異なります');
+    ensure(command.localWorldId === this.localWorldId, '対象のローカル世界が異なります');
     integer(command.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER - 1, '状態版');
     ensure(
       [

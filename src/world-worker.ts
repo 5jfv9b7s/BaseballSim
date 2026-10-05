@@ -1,40 +1,19 @@
-import type { StorageInspection } from './world/storage-inspection.ts';
-import { WorldController, type WorldCommand, type WorldView } from './world/controller.ts';
-import { DexieWorldStorage } from './world/dexie-storage.ts';
+import {
+  WorldWorkspace,
+  type WorkspaceRequest,
+  type WorkspaceResponse,
+} from './world/workspace.ts';
 
-export type WorldWorkerResponse = (
-  { ok: true; view: WorldView } | { ok: false; error: string; view: WorldView }
-) & { inspection?: StorageInspection };
+export type WorldWorkerResponse = WorkspaceResponse;
+const workspace = new WorldWorkspace();
+let queue = workspace.initialize();
 
-const storage = new DexieWorldStorage();
-const controller = new WorldController(storage);
-let queue = controller.initialize();
-
-self.onmessage = (
-  message: MessageEvent<WorldCommand | { kind: 'query' } | { kind: 'inspectStorage' }>,
-) => {
+self.onmessage = (message: MessageEvent<WorkspaceRequest>) => {
   queue = queue.then(async () => {
-    try {
-      const inspection =
-        message.data.kind === 'inspectStorage' ? await storage.inspectStorage() : undefined;
-      const view =
-        message.data.kind === 'query' || message.data.kind === 'inspectStorage'
-          ? controller.query()
-          : await controller.dispatch(message.data);
-      self.postMessage({
-        ok: true,
-        view,
-        ...(inspection ? { inspection } : {}),
-      } satisfies WorldWorkerResponse);
-      return view;
-    } catch (error) {
-      const view = controller.query();
-      self.postMessage({
-        ok: false,
-        error: error instanceof Error ? error.message : '日次処理に失敗しました',
-        view,
-      } satisfies WorldWorkerResponse);
-      return view;
-    }
+    const response = await workspace.handle(message.data);
+    // 書き出したファイルだけ所有権をUIへ渡す。世界の正本はWorkerに保持する。
+    self.postMessage(response, {
+      transfer: response.backup ? [response.backup.bytes.buffer as ArrayBuffer] : [],
+    });
   });
 };

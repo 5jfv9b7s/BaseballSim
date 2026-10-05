@@ -1,3 +1,6 @@
+import { BackupPanel } from './BackupPanel.tsx';
+import { MAX_PACKAGE_BYTES } from '../world/backup-zip.ts';
+import type { StoredPlay, WorldSlotKind } from '../world/storage.ts';
 import { StorageInspectionPanel } from './StorageInspectionPanel.tsx';
 import type { StorageInspection } from '../world/storage-inspection.ts';
 import { BullpenPanel } from './BullpenPanel.tsx';
@@ -19,6 +22,8 @@ import { WorldStats } from './WorldStats.tsx';
 import './world.css';
 
 export function WorldApp() {
+  const [plays, setPlays] = useState<StoredPlay[]>([]);
+  const [importedId, setImportedId] = useState('');
   const [view, setView] = useState<WorldView | null>(null);
   const [inspection, setInspection] = useState<StorageInspection | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,7 +43,15 @@ export function WorldApp() {
   const latest = useRef<WorldView | null>(null);
   const pending = useRef(false);
   const auto = useRef(false);
-  const lastAction = useRef<WorldAction['kind'] | 'inspectStorage' | null>(null);
+  const lastAction = useRef<
+    | WorldAction['kind']
+    | 'inspectStorage'
+    | 'exportSnapshot'
+    | 'importSnapshot'
+    | 'openPlay'
+    | 'query'
+    | null
+  >(null);
 
   function send(action: WorldAction) {
     if (!worker.current || !latest.current || pending.current) return;
@@ -51,7 +64,7 @@ export function WorldApp() {
     worker.current.postMessage({
       ...action,
       commandId: crypto.randomUUID(),
-      localWorldId: 'v02-local',
+      localWorldId: latest.current.localWorldId,
       expectedStateRevision: latest.current.revision,
     } satisfies WorldCommand);
   }
@@ -65,6 +78,53 @@ export function WorldApp() {
     setMessage('');
     setInspection(null);
     worker.current.postMessage({ kind: 'inspectStorage' });
+  }
+
+  function beginFileAction(kind: 'exportSnapshot' | 'importSnapshot' | 'openPlay' | 'query') {
+    if (!worker.current || !latest.current || pending.current || auto.current) return null;
+    pending.current = true;
+    lastAction.current = kind;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    setInspection(null);
+    return {
+      localWorldId: latest.current.localWorldId,
+      expectedStateRevision: latest.current.revision,
+    };
+  }
+
+  function exportFile(slot: WorldSlotKind) {
+    const context = beginFileAction('exportSnapshot');
+    if (context) worker.current!.postMessage({ kind: 'exportSnapshot', slot, ...context });
+  }
+
+  async function importFile(file: File) {
+    const context = beginFileAction('importSnapshot');
+    if (!context) return;
+    try {
+      if (file.size > MAX_PACKAGE_BYTES)
+        throw new Error('保存ファイルが容量上限（66MiB）を超えています');
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      worker.current!.postMessage(
+        { kind: 'importSnapshot', bytes, requestId: crypto.randomUUID(), ...context },
+        [bytes.buffer],
+      );
+    } catch (error) {
+      pending.current = false;
+      setBusy(false);
+      setError(error instanceof Error ? error.message : '保存ファイルを読み取れませんでした');
+    }
+  }
+
+  function openPlay(targetLocalWorldId: string, slot: WorldSlotKind) {
+    const context = beginFileAction('openPlay');
+    if (context)
+      worker.current!.postMessage({ kind: 'openPlay', targetLocalWorldId, slot, ...context });
+  }
+
+  function refreshPlays() {
+    if (beginFileAction('query')) worker.current!.postMessage({ kind: 'query' });
   }
 
   function continueDay() {
@@ -92,11 +152,36 @@ export function WorldApp() {
       setBusy(false);
       latest.current = data.view;
       setView(data.view);
+      setPlays(data.plays ?? []);
       if (!data.ok) {
         auto.current = false;
         setRunning(false);
         setError(data.error);
         return;
+      }
+      if (data.playListError) setError(data.playListError);
+      if (data.backup) {
+        try {
+          const url = URL.createObjectURL(
+            new Blob([new Uint8Array(data.backup.bytes)], { type: 'application/zip' }),
+          );
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = data.backup.name;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setMessage('保存済みの時点をファイルへ書き出しました。');
+        } catch {
+          setError('保存ファイルをダウンロードできませんでした。');
+        }
+      }
+      if (data.importedLocalWorldId) {
+        setImportedId(data.importedLocalWorldId);
+        setMessage(
+          '別プレイとして取り込みました。現在の作業は保持しています。下の一覧から開けます。',
+        );
       }
       if (data.inspection) {
         setInspection(data.inspection);
@@ -126,7 +211,7 @@ export function WorldApp() {
       )
         setMessage('編成を確定し、自動保存しました。');
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
-      if (lastAction.current === 'load') {
+      if (lastAction.current === 'load' || lastAction.current === 'openPlay') {
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setControlledSquadId(data.view.management?.controlledSquadId ?? '');
@@ -589,6 +674,18 @@ export function WorldApp() {
 
       <section className="panel" aria-label="世界の保存">
         <h2>世界の保存</h2>
+        {view && (
+          <BackupPanel
+            view={view}
+            plays={plays}
+            importedId={importedId}
+            disabled={disabled}
+            exportFile={exportFile}
+            importFile={importFile}
+            openPlay={openPlay}
+            refresh={refreshPlays}
+          />
+        )}
         <StorageInspectionPanel report={inspection} disabled={disabled} inspect={inspectStorage} />
         <p>
           {view?.unsavedChanges

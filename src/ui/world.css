@@ -115,3 +115,19 @@
 .rest-rules input {
   width: 7rem;
 }
+
+.backup-panel {
+  margin-bottom: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.backup-panel label {
+  display: block;
+  margin: 1rem 0 0.5rem;
+}
+.backup-panel input,
+.backup-panel select {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}

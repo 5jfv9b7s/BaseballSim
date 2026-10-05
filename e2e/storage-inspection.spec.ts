@@ -17,7 +17,9 @@ for (const width of [1280, 390]) {
     await expect(panel).toContainText('未保存の変更');
     for (let i = 0; i < 3; i++) {
       await panel.getByRole('button', { name: '世界を手動保存', exact: true }).click();
-      await expect(page.getByRole('status')).toContainText('世界全体を手動保存');
+      await expect(page.getByRole('status')).toContainText('世界全体を手動保存', {
+        timeout: 30000,
+      });
     }
     const records = () =>
       page.evaluate(async () => {
@@ -49,12 +51,12 @@ for (const width of [1280, 390]) {
       });
     const before = await records();
     await inspect.click();
-    await expect(report).toContainText('保存履歴：3件（保護対象：1件）');
-    await expect(report).toContainText('未参照の履歴：2件');
+    await expect(report).toContainText('保存履歴：1件（保護対象：1件）');
+    await expect(report).toContainText('未参照の履歴：0件');
     await expect(panel).toContainText('現在の作業状態は保存済み');
     expect(await records()).toEqual(before);
     await inspect.click();
-    await expect(report).toContainText('保存履歴：3件');
+    await expect(report).toContainText('保存履歴：1件');
     expect(await records()).toEqual(before);
     await panel.screenshot({ path: 'test-results/storage-inspection-' + width + '.png' });
     await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
@@ -67,8 +69,18 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('status')).toContainText('読み込みました', { timeout: 30000 });
     await panel.getByText('保存容量と履歴を確認', { exact: true }).click();
     await inspect.click();
-    await expect(report).toContainText('保存履歴：4件（保護対象：2件）');
+    await expect(report).toContainText('保存履歴：2件（保護対象：2件）');
     await expect(page.getByTestId('world-date')).toHaveText('2026-09-25');
+    // 日次保存をさらに進めても、自動・直前自動・手動の3枠は読み戻せる。
+    await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
+    await expect(page.getByTestId('world-date')).toHaveText('2026-09-26', { timeout: 60000 });
+    await inspect.click();
+    await expect(report).toContainText('保存履歴：3件（保護対象：3件）');
+    await expect(report).toContainText('未参照の共有データ：0件');
+    await panel.getByRole('button', { name: '直前の自動保存を読み込む', exact: true }).click();
+    await expect(page.getByTestId('world-date')).toHaveText('2026-09-25', { timeout: 30000 });
+    await panel.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
+    await expect(page.getByTestId('world-date')).toHaveText('2026-09-24', { timeout: 30000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

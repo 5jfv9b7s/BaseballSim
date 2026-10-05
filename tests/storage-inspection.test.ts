@@ -27,14 +27,30 @@ async function database(run: (db: WorldDatabase, storage: DexieWorldStorage) => 
   }
 }
 
+/** 0.16以前の履歴蓄積を独立テストDBに再現する。製品の回収を無効化しない。 */
+async function saveKeepingHistory(
+  storage: DexieWorldStorage,
+  ...args: Parameters<DexieWorldStorage['save']>
+) {
+  const db = storage.database;
+  const snapshots = await db.save_snapshots.toArray();
+  const blocks = await db.save_blocks.toArray();
+  const slots = await storage.save(...args);
+  await db.transaction('rw', db.save_snapshots, db.save_blocks, async () => {
+    await db.save_snapshots.bulkPut(snapshots);
+    await db.save_blocks.bulkPut(blocks);
+  });
+  return slots;
+}
+
 test('容量診断：空の保存領域・共有データの実バイト数を読み取り、4ストアを変更しない', async () => {
   await database(async (db, storage) => {
     const empty = await storage.inspectStorage();
     assert.equal(empty.payloadBytes, 0);
     assert.equal(empty.snapshots, 0);
     assert.deepEqual(empty.issues, []);
-    await storage.save(createWorld(), 0, 'manual', 0);
-    await storage.save(createWorld(), 1, 'manual', 1);
+    await saveKeepingHistory(storage, createWorld(), 0, 'manual', 0);
+    await saveKeepingHistory(storage, createWorld(), 1, 'manual', 1);
     const before = await dump(db);
     const report = await storage.inspectStorage();
     const blocks = await db.save_blocks.toArray();
@@ -54,10 +70,10 @@ test('容量診断：空の保存領域・共有データの実バイト数を�
 test('保持境界：最新自動・直前自動・手動と共有ブロックを保護し、祖先IDだけの履歴を区別', async () => {
   await database(async (db, storage) => {
     let world: WorldRecord = createWorld();
-    const manual = await storage.save(world, 0, 'manual', 0);
+    const manual = await saveKeepingHistory(storage, world, 0, 'manual', 0);
     for (let i = 1; i <= 3; i++) {
       world = day(world);
-      await storage.save(world, i, 'auto', i);
+      await saveKeepingHistory(storage, world, i, 'auto', i);
     }
     const before = await dump(db);
     const slots = await storage.listSlots();
@@ -93,11 +109,17 @@ test('保持境界：最新自動・直前自動・手動と共有ブロック�
 
 test('保持境界：別プレイの枠と選択中保存も保護し、新規世界に切り替えても参照を失わない', async () => {
   await database(async (db, storage) => {
-    const first = await storage.save(createWorld(), 0, 'manual', 0);
+    const first = await saveKeepingHistory(storage, createWorld(), 0, 'manual', 0);
     const oldSlot = (await db.save_slots.get(['v02-local', 'manual', 1]))!;
     const oldLocal = (await db.local_worlds.get('v02-local'))!;
-    const second = await storage.save(advanceWorld(createWorld(), 1), 1, 'manual', 1);
-    await storage.save(createWorld(123), 2, 'manual', 2);
+    const second = await saveKeepingHistory(
+      storage,
+      advanceWorld(createWorld(), 1),
+      1,
+      'manual',
+      1,
+    );
+    await saveKeepingHistory(storage, createWorld(123), 2, 'manual', 2);
     await db.save_slots.put({ ...oldSlot, localWorldId: 'another-play' });
     await db.local_worlds.put({
       ...oldLocal,
@@ -115,8 +137,8 @@ test('保持境界：別プレイの枠と選択中保存も保護し、新規�
 test('不整合：保護参照・目録・ブロックが欠ける場合は整理候補を確定しない', async () => {
   for (const kind of ['slot', 'manifest', 'reference', 'block'] as const) {
     await database(async (db, storage) => {
-      const slots = await storage.save(createWorld(), 0, 'manual', 0);
-      await storage.save(advanceWorld(createWorld(), 1), 1, 'manual', 1);
+      const slots = await saveKeepingHistory(storage, createWorld(), 0, 'manual', 0);
+      await saveKeepingHistory(storage, advanceWorld(createWorld(), 1), 1, 'manual', 1);
       const current = await storage.listSlots();
       const snapshot = (await db.save_snapshots.get(current.manual!.snapshotId))!;
       if (kind === 'slot') {
@@ -173,10 +195,10 @@ test('読取境界：別接続の保存と同時に診断しても、一貫し�
         writer.save(advanceWorld(createWorld(), 1), 1, 'manual', 1),
       ]);
       assert.deepEqual(report.issues, []);
-      assert([1, 2].includes(report.snapshots));
+      assert.equal(report.snapshots, 1);
       assert.equal(report.protectedSnapshots, 1);
       const after = await storage.inspectStorage();
-      assert.equal(after.snapshots, 2);
+      assert.equal(after.snapshots, 1);
       assert.equal((await storage.listSlots()).storageRevision, 2);
     } finally {
       other.close();

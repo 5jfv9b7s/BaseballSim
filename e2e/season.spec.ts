@@ -31,7 +31,7 @@ for (const width of [1280, 390]) {
     ).toBeDisabled();
     const standings = await page.getByRole('region', { name: '順位表', exact: true }).innerText();
     await page.getByRole('button', { name: '世界を手動保存', exact: true }).click();
-    await expect(page.getByRole('status')).toContainText('世界全体を手動保存');
+    await expect(page.getByRole('status')).toContainText('世界全体を手動保存', { timeout: 30000 });
     await page.reload();
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();

@@ -1,3 +1,4 @@
+import { collectUnusedInTransaction } from './storage-gc.ts';
 import { inspectWorldStorage } from './storage-inspection.ts';
 import { canEditManagement } from './management.ts';
 import { Dexie, type Table } from 'dexie';
@@ -305,6 +306,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
           storageRevision: current.storageRevision + 1,
           updatedAt: snapshot.createdAt,
         });
+        await collectUnusedInTransaction(db);
         return this.readSlots();
       },
     );

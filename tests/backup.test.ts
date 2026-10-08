@@ -468,3 +468,25 @@ test('Worker再送：直近の同じ指示には当時の応答を返し、世�
     assert.deepEqual((await workspace.handle({ kind: 'query' })).view, second.view);
   });
 });
+
+test('ファイル取込：IndexedDBの各ブロックにZIP全体のバッファを複製しない', async () => {
+  await database(async (_source, storage) => {
+    await storage.save(createBullpenWorld(), 0, 'manual', 0);
+    const file = await storage.exportSnapshot('manual');
+    await database(async (target, receiver) => {
+      const id = await receiver.importSnapshot(file, crypto.randomUUID());
+      const blocks = await target.save_blocks.toArray();
+      assert(blocks.length > 1);
+      const payloadBytes = blocks.reduce((sum, block) => sum + block.payloadBytes.byteLength, 0);
+      const allocatedBytes = blocks.reduce(
+        (sum, block) => sum + block.payloadBytes.buffer.byteLength,
+        0,
+      );
+      assert.equal(allocatedBytes, payloadBytes, '保存時の複製は各ブロックの必要なバイトだけ');
+      assert.deepEqual(
+        (await new DexieWorldStorage(target, id).load('manual')).world,
+        createBullpenWorld(),
+      );
+    });
+  });
+});

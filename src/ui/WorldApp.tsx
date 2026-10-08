@@ -280,6 +280,38 @@ export function WorldApp() {
     (view
       ? allWorldSquads(view.definitions).find((squad) => squad.squadId === squadId)?.team.name
       : null) ?? squadId;
+  const storageAction = [
+    'save',
+    'load',
+    'openPlay',
+    'exportSnapshot',
+    'importSnapshot',
+    'inspectStorage',
+    'query',
+  ].includes(lastAction.current ?? '');
+  const processingMessages: Partial<Record<NonNullable<typeof lastAction.current>, string>> = {
+    save: '世界を手動保存しています。完了までこの画面を開いておいてください。',
+    load: '保存を読み込み、内容を確認しています。完了後は停止状態で開きます。',
+    openPlay: '選んだプレイを読み込み、内容を確認しています。',
+    exportSnapshot: '保存内容を確認し、ファイルを書き出しています。',
+    importSnapshot: '保存ファイルを確認し、別プレイへ取り込んでいます。',
+    inspectStorage: '保存容量と履歴を確認しています。',
+    query: '保存済みプレイの一覧を読み込んでいます。',
+    completeDay: '当日の結果を確定し、翌日の状態を自動保存しています。',
+  };
+  const notice = busy ? (processingMessages[lastAction.current!] ?? '') : message;
+  const notification = (running || notice) && (
+    <p role="status">
+      {running && (
+        <span>
+          {autoThrough.current}の終了まで進行中
+          <br />
+        </span>
+      )}
+      {notice}
+    </p>
+  );
+
   const disabled = !view || busy || running;
   const canRun = view?.phase === 'playing' || view?.phase === 'readyToComplete';
   const resultDate = selectedDate || view?.lastCompletedDate || view?.currentDate || '';
@@ -417,8 +449,7 @@ export function WorldApp() {
         <p className="hint">
           指定日を含めて1日ずつ進み、毎日自動保存します。保存失敗・試合の異常停止で期間進行も止まります。
         </p>
-        {running && <p role="status">{autoThrough.current}の終了まで進行中</p>}
-        {message && <p role="status">{message}</p>}
+        {!storageAction && notification}
         {error && (
           <p role="alert" className="error">
             {error}
@@ -674,6 +705,7 @@ export function WorldApp() {
 
       <section className="panel" aria-label="世界の保存">
         <h2>世界の保存</h2>
+        {storageAction && notification}
         {view && (
           <BackupPanel
             view={view}

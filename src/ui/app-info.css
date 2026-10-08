@@ -1,0 +1,42 @@
+.app-info {
+  max-width: 1040px;
+  margin: 16px auto 0;
+  padding: 0 28px;
+  font-size: 13px;
+}
+
+.app-info summary {
+  cursor: pointer;
+  color: #d5e1d8;
+  padding: 10px 0;
+}
+
+.app-info-content {
+  border: 1px solid #ffffff26;
+  border-radius: 12px;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+
+.app-info h3 {
+  font-size: 15px;
+  margin: 24px 0 8px;
+}
+
+.app-info h4 {
+  margin: 16px 0 8px;
+}
+
+.release-notes {
+  list-style: none;
+  padding-left: 0;
+}
+
+@media (max-width: 640px) {
+  .app-info {
+    padding: 0 16px;
+  }
+  .app-info-content {
+    padding: 16px;
+  }
+}

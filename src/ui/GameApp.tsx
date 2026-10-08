@@ -1,3 +1,4 @@
+import { AppInfo } from './AppInfo.tsx';
 import { WorldApp } from './WorldApp.tsx';
 import { CURRENT_GAME_MODEL, type GameModelVersion } from '../game/model-registry.ts';
 import { useEffect, useRef, useState } from 'react';
@@ -576,6 +577,7 @@ export function GameApp() {
           1球の検証
         </button>
       </nav>
+      <AppInfo />
       <div hidden={tab !== 'game'}>
         <MatchGame />
       </div>

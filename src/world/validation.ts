@@ -1,3 +1,4 @@
+import { resumeCheckpoint, makeCheckpoint, type CheckpointCache } from './validation-checkpoint.ts';
 import { applyManagement } from './management.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
@@ -35,9 +36,10 @@ export function validateWorld(value: unknown): asserts value is WorldRecord {
 /** 保存インスタンス内だけの検証キャッシュ。読込は新しいオブジェクトを必ず再検証する。 */
 export class WorldValidator {
   private verified = new WeakMap<GameRecord, string>();
+  private cache: CheckpointCache = {};
 
   validate(value: unknown): asserts value is WorldRecord {
-    validateWithCache(value, this.verified);
+    validateWithCache(value, this.verified, this.cache);
   }
 }
 
@@ -51,6 +53,7 @@ function freezeRecord(value: unknown): void {
 function validateWithCache(
   value: unknown,
   verified?: WeakMap<GameRecord, string>,
+  cache?: CheckpointCache,
 ): asserts value is WorldRecord {
   ensure(value !== null && typeof value === 'object', '世界データが不正です');
   const candidate = value as WorldRecord;
@@ -113,9 +116,11 @@ function validateWithCache(
                               : 'world-definitions-v1'),
     '世界モデルと日程定義の版が異なります',
   );
-  let actionIndex = 0;
-  let replay: WorldRecord =
-    candidate.version === 'world-prototype-v14'
+  const resumed = resumeCheckpoint(candidate, cache?.checkpoint);
+  let actionIndex = resumed?.actionIndex ?? 0;
+  let replay: WorldRecord = resumed
+    ? resumed.world
+    : candidate.version === 'world-prototype-v14'
       ? createBullpenWorld(
           candidate.seed,
           candidate.management.controlledSquadId,
@@ -244,11 +249,13 @@ function validateWithCache(
     }
   };
 
-  for (const date of candidate.completedDates) {
+  for (const date of candidate.completedDates.slice(replay.completedDates.length)) {
     ensure(date === replay.currentDate, '日次完了の順序が不正です');
     replayDate(true);
     replay = completeDay(replay, date);
   }
+  // 現在日の指示や途中試合を適用する前の、安全な日次境界を保持する。
+  const completedBoundary = cache ? makeCheckpoint(replay, actionIndex) : undefined;
   replayDate(false);
   ensure(actionIndex === actions.length, '日程と編成履歴が一致しません');
   const { games: replayGames, ...replayCore } = replay;
@@ -262,4 +269,5 @@ function validateWithCache(
     canonicalJson(replayCore) === canonicalJson(candidateCore),
     '世界の成績・日付・進行状態が一致しません',
   );
+  if (cache) cache.checkpoint = completedBoundary;
 }

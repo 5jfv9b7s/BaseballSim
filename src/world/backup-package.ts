@@ -81,7 +81,9 @@ export async function decodeBackup(input: Uint8Array) {
     ensure(total <= MAX_BYTES, 'バックアップの格納容量上限を超えました');
     const data = entries.get('blocks/' + ref.blockId + '.bin');
     ensure(data && data.length === payload.bytes, 'バックアップのブロックが欠損・容量不一致です');
-    return { ...ref, codec: payload.codec, payloadBytes: data };
+    // ZIP内のviewのままだと、IndexedDBが各レコードにZIP全体のbufferを複製する。
+    // 保存するブロックの範囲だけを所有するバイト列へ切り離す。
+    return { ...ref, codec: payload.codec, payloadBytes: new Uint8Array(data) };
   });
   const world = await decodeWorldSnapshot(snapshot, blocks);
   return { snapshot, blocks, world, packageHash };

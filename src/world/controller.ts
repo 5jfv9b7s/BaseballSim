@@ -1,3 +1,4 @@
+import { playerStatuses } from './player-status.ts';
 import { singleGameHomeRunRecord } from './memorial.ts';
 import { gameDisplay } from './game-display.ts';
 import { bullpenView } from './bullpen.ts';
@@ -38,6 +39,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  playerStatuses: ReturnType<typeof playerStatuses>;
   localWorldId: string;
   memorial: {
     firstRegular: ReturnType<typeof singleGameHomeRunRecord>;
@@ -143,6 +145,7 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      playerStatuses: playerStatuses(world),
       localWorldId: this.localWorldId,
       memorial: {
         firstRegular: singleGameHomeRunRecord(world),

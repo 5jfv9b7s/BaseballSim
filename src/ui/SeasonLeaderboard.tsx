@@ -20,6 +20,7 @@ export function SeasonLeaderboard({
   currentDate,
   completedOn,
   controlledSquadId,
+  onSelectPlayer,
 }: {
   stats: SeasonStats;
   definitions: WorldDefinitions;
@@ -27,6 +28,7 @@ export function SeasonLeaderboard({
   currentDate: string;
   completedOn?: string;
   controlledSquadId?: string;
+  onSelectPlayer?: (id: string) => void;
 }) {
   const [category, setCategory] = useState<StatCategory>('batting');
   const [metricKey, setMetricKey] = useState('average');
@@ -206,7 +208,18 @@ export function SeasonLeaderboard({
                 return (
                   <tr key={JSON.stringify([row.playerId, row.position])} data-own-club={own}>
                     <th scope="row" className="leaderboard-player">
-                      {player ? `${player.familyName} ${player.givenName}` : row.playerId}
+                      {onSelectPlayer && player ? (
+                        <button
+                          className="player-link"
+                          onClick={() => onSelectPlayer(row.playerId)}
+                        >
+                          {player.familyName} {player.givenName}
+                        </button>
+                      ) : player ? (
+                        `${player.familyName} ${player.givenName}`
+                      ) : (
+                        row.playerId
+                      )}
                       <span className="leaderboard-team">
                         {teams.map((squad) => squad.team.name).join(' ／ ') || '所属不明'}
                       </span>

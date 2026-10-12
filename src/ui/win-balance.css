@@ -1,0 +1,61 @@
+.balance-chart {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #93a78b55;
+}
+.balance-chart h3 {
+  margin-bottom: 8px;
+}
+.balance-scroll {
+  overflow-x: auto;
+}
+.balance-chart svg {
+  display: block;
+  width: 100%;
+}
+.balance-chart text {
+  font-size: 12px;
+  fill: currentColor;
+}
+.balance-grid {
+  stroke: #93a78b55;
+}
+.balance-zero {
+  stroke: #728274;
+  stroke-width: 1.5;
+}
+.balance-cursor {
+  stroke: #ba852e;
+  stroke-dasharray: 3 3;
+}
+.balance-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  font-size: 12px;
+}
+.balance-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.balance-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.balance-chart tr[data-own-club='true'] {
+  background: #4e80582a;
+}
+.balance-chart caption {
+  text-align: left;
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+@media (max-width: 600px) {
+  /* SVG全体を縮小しても、月末と目盛りを同じ画面内で確認できるようにする。 */
+  .balance-chart text {
+    font-size: 24px;
+  }
+}

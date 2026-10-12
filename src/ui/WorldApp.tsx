@@ -38,6 +38,7 @@ export function WorldApp({
   development?: boolean;
   onOpenTools: () => void;
 }) {
+  const [selectedPlayer, setSelectedPlayer] = useState('');
   const [page, setPage] = useState<MainPage>('home');
   const [plays, setPlays] = useState<StoredPlay[]>([]);
   const [importedId, setImportedId] = useState('');
@@ -235,6 +236,7 @@ export function WorldApp({
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
       if (lastAction.current === 'load' || lastAction.current === 'openPlay') {
         progressTarget.current = null;
+        setSelectedPlayer('');
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setControlledSquadId(data.view.management?.controlledSquadId ?? '');
@@ -250,6 +252,7 @@ export function WorldApp({
         progressTarget.current = null;
         auto.current = false;
         setRunning(false);
+        setSelectedPlayer('');
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setSelectedDate('');
@@ -780,6 +783,7 @@ export function WorldApp({
                   stats={displaySummary?.stats ?? displayStats}
                   definitions={view.definitions}
                   scope={displayScope}
+                  onSelectPlayer={development ? undefined : setSelectedPlayer}
                   currentDate={view.currentDate}
                   completedOn={displaySummary?.completedOn}
                   controlledSquadId={view.management?.controlledSquadId}
@@ -943,6 +947,8 @@ export function WorldApp({
     return (
       <MainScreen
         view={view}
+        selectedPlayer={selectedPlayer}
+        onSelectPlayer={setSelectedPlayer}
         page={page}
         onNavigate={(nextPage) => {
           if (nextPage === 'today') {

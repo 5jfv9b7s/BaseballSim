@@ -1,3 +1,4 @@
+import { WinBalanceChart } from './WinBalanceChart.tsx';
 import { allWorldSquads } from '../world/squads.ts';
 import { useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
@@ -116,6 +117,13 @@ export function SeasonCalendar({
       <p className="hint">
         日付を選ぶだけでは進行しません。その日の予定・結果を下の試合結果欄に表示します。
       </p>
+      <WinBalanceChart
+        view={view}
+        scope={scope}
+        month={month}
+        selectedDate={selectedDate}
+        onSelect={onSelect}
+      />
     </section>
   );
 }

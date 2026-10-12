@@ -1,3 +1,5 @@
+import { PlayerDetails } from './PlayerDetails.tsx';
+import { PlayerDirectory } from './PlayerDirectory.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import {
@@ -81,6 +83,8 @@ function Construction({ title, children }: { title: string; children?: ReactNode
 
 export function MainScreen({
   view,
+  selectedPlayer,
+  onSelectPlayer,
   page,
   onNavigate,
   panels,
@@ -94,6 +98,8 @@ export function MainScreen({
   onOpenTools,
 }: {
   view: WorldView | null;
+  selectedPlayer: string;
+  onSelectPlayer: (id: string) => void;
   page: MainPage;
   onNavigate: (page: MainPage) => void;
   panels: Record<PanelName, ReactNode>;
@@ -469,11 +475,6 @@ export function MainScreen({
                 {panels.competition}
                 {page === 'schedule' && panels.calendar}
                 {panels.results}
-                {page === 'schedule' && (
-                  <Construction title="貯金推移グラフ">
-                    日程と連動する勝敗差のグラフを準備しています。
-                  </Construction>
-                )}
               </>
             )}
           </>
@@ -497,26 +498,14 @@ export function MainScreen({
         )}
         {section === 'team' && (
           <>
-            <section className="panel">
-              <h3>選手一覧</h3>
-              <p>
-                {squad?.team.name} ／ {squad?.players.length ?? 0}名（所属選手全員）
-              </p>
-              <div className="player-grid">
-                {squad?.players.map((player) => (
-                  <div key={player.playerId}>
-                    <span>
-                      {player.familyName} {player.givenName}
-                    </span>
-                    <small>
-                      {`${player.throwingHand === 'R' ? '右' : '左'}投${player.battingHand === 'R' ? '右' : player.battingHand === 'L' ? '左' : '両'}打`}
-                    </small>
-                  </div>
-                ))}
-              </div>
-            </section>
+            {view && (
+              <PlayerDirectory
+                key={view.localWorldId + view.worldId}
+                view={view}
+                onSelect={onSelectPlayer}
+              />
+            )}
             <div className="feature-grid">
-              <Construction title="選手詳細" />
               <Construction title="トレード" />
               <Construction title="育成・練習" />
               <Construction title="自由契約・退団" />
@@ -596,6 +585,9 @@ export function MainScreen({
             シミュレーション開発ツール ↗
           </button>
         </footer>
+        {view && (
+          <PlayerDetails view={view} playerId={selectedPlayer} onClose={() => onSelectPlayer('')} />
+        )}
       </main>
     </div>
   );

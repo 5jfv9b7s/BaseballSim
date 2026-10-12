@@ -16,8 +16,11 @@
 .formation-slot {
   display: grid;
   gap: 6px;
-  padding: 8px 0;
-  border-top: 1px solid #d5decd;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #c8d6bc;
+  border-radius: 8px;
+  background: #fffef8;
 }
 .formation-editor select {
   width: 100%;
@@ -104,4 +107,75 @@
   .formation-profile .world-table {
     max-height: 260px;
   }
+}
+
+/* 配置はカードのドラッグを主操作とし、入力欄は補助操作として開く。 */
+.formation-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.formation-card-heading .player-link {
+  padding: 4px 0;
+}
+.formation-grip {
+  color: #607555;
+  font-size: 1.2rem;
+}
+.formation-editor [draggable='true'],
+.formation-editor [draggable='true'] .player-link {
+  cursor: grab;
+}
+.formation-editor [draggable='true']:active {
+  cursor: grabbing;
+}
+.formation-editor [data-dragging='true'] {
+  opacity: 0.55;
+}
+.formation-position {
+  margin-left: auto;
+  padding: 4px 6px;
+  border: 1px solid #607555;
+  border-radius: 5px;
+  background: #e4eedb;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.formation-editor [data-drop-active='true'] {
+  outline: 3px dashed #30661f;
+  outline-offset: 2px;
+  background: #e6f3dc;
+}
+.formation-drop-space {
+  padding: 12px 8px;
+  border: 2px dashed #a5b59b;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #465643;
+  text-align: center;
+}
+.formation-drag-guide {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eaf0e1;
+}
+.formation-drag-guide p {
+  flex: 1 1 360px;
+  margin: 0;
+}
+.formation-drag-guide small {
+  width: 100%;
+}
+.formation-drag-status {
+  min-height: 1.5em;
+  font-size: 0.85rem;
+}
+.formation-fallback {
+  display: grid;
+  gap: 6px;
 }

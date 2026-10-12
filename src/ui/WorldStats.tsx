@@ -1,3 +1,4 @@
+import { worldSquad } from '../world/squads.ts';
 import { battingAverage, earnedRunAverage, inningsPitched } from '../game/results.ts';
 import type { GameDisplayPlayer } from '../world/game-display.ts';
 import type { GameResult } from '../game/types.ts';
@@ -24,8 +25,10 @@ export function WorldStats({
       })),
     );
   const player = (id: string) => players.find((entry) => entry.playerId === id)?.playerName ?? id;
-  const team = (id: string) =>
-    players.find((entry) => entry.playerId === id)?.teamName ?? '所属不明';
+  const team = (row: { playerId: string; squadId?: string }) =>
+    (definitions && row.squadId ? worldSquad(definitions, row.squadId)?.team.name : undefined) ??
+    players.find((entry) => entry.playerId === row.playerId)?.teamName ??
+    '所属不明';
 
   return (
     <>
@@ -55,7 +58,7 @@ export function WorldStats({
           <tbody>
             {lines.batting.map((row) => (
               <tr key={row.playerId}>
-                <td>{team(row.playerId)}</td>
+                <td>{team(row)}</td>
                 <th>{player(row.playerId)}</th>
                 <td>{row.plateAppearances}</td>
                 <td>{row.atBats}</td>
@@ -99,7 +102,7 @@ export function WorldStats({
           <tbody>
             {lines.pitching.map((row) => (
               <tr key={row.playerId}>
-                <td>{team(row.playerId)}</td>
+                <td>{team(row)}</td>
                 <th>{player(row.playerId)}</th>
                 <td>{inningsPitched(row.outsRecorded)}</td>
                 <td>{row.pitches}</td>
@@ -136,7 +139,7 @@ export function WorldStats({
           <tbody>
             {lines.fielding?.map((row) => (
               <tr key={row.playerId + ':' + row.position}>
-                <td>{team(row.playerId)}</td>
+                <td>{team(row)}</td>
                 <th>{player(row.playerId)}</th>
                 <td>{row.position}</td>
                 <td>{row.gamesAtPosition}</td>

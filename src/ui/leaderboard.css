@@ -1,0 +1,48 @@
+.season-leaderboard .world-controls select {
+  max-width: 100%;
+}
+
+.season-leaderboard .world-controls label {
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.4rem;
+}
+
+.season-leaderboard button[aria-pressed='false'] {
+  background: #263b33;
+  color: #e8eee9;
+}
+
+.leaderboard-table .leaderboard-player {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 8rem;
+  max-width: 12rem;
+  white-space: normal;
+  background: #172a21;
+  box-shadow: 1px 0 0 #7d9588;
+}
+
+.leaderboard-table tr[data-own-club='true'] > * {
+  background: #254535;
+}
+
+.leaderboard-team {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.leaderboard-table thead button {
+  padding: 0.35rem;
+  min-width: 3rem;
+}
+
+.leaderboard-table:focus-visible {
+  outline: 2px solid #a4d6b5;
+}
+
+.season-leaderboard .world-controls[role='group'] button {
+  flex: 0 1 auto;
+}

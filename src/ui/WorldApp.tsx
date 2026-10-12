@@ -26,6 +26,7 @@ import { ClubEditor } from './ClubEditor.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { WorldAction, WorldCommand, WorldView } from '../world/controller.ts';
 import type { WorldWorkerResponse } from '../world-worker.ts';
+import { SeasonLeaderboard } from './SeasonLeaderboard.tsx';
 import { WorldStats } from './WorldStats.tsx';
 import './world.css';
 
@@ -744,7 +745,24 @@ export function WorldApp() {
         <details>
           <summary>打撃・投手・守備の累計を開く</summary>
           {view && displayStats && (
-            <WorldStats lines={displayStats} definitions={view.definitions} />
+            <>
+              <SeasonLeaderboard
+                key={view.worldId}
+                stats={displaySummary?.stats ?? displayStats}
+                definitions={view.definitions}
+                scope={displayScope}
+                currentDate={view.currentDate}
+                completedOn={displaySummary?.completedOn}
+                controlledSquadId={view.management?.controlledSquadId}
+              />
+              <details>
+                <summary>並べ替え前の全項目一覧</summary>
+                <WorldStats
+                  lines={displaySummary?.stats ?? displayStats}
+                  definitions={view.definitions}
+                />
+              </details>
+            </>
           )}
         </details>
       </section>

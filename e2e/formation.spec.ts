@@ -48,7 +48,9 @@ for (const width of [1280, 390]) {
     await expect(first).toHaveValue(originalSecond);
     await editor.getByRole('button', { name: '投手オーダー', exact: true }).click();
     await editor.getByRole('button', { name: '起用方針', exact: true }).click();
-    await expect(editor).toContainText('起用方針の本画面編集は工事中');
+    await expect(
+      editor.getByRole('combobox', { name: '入れ替えモード', exact: true }),
+    ).toBeVisible();
     await editor.getByRole('button', { name: '野手オーダー', exact: true }).click();
     await expect(first).toHaveValue(originalSecond);
     await editor.getByRole('button', { name: '選手詳細を開く', exact: true }).click();
@@ -163,6 +165,8 @@ test('編成登録：最終差分だけを確定し、抹消した選手の再�
     bench.getByRole('button', { name: promoteLabel.replace('一軍', '二軍'), exact: true }),
   ).toBeEnabled();
   await bench.locator('.player-link').first().click();
+  await expect(page.getByRole('complementary', { name: '選択選手情報' })).toBeVisible();
+  await editor.getByRole('button', { name: '選手詳細を開く', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(editor).toContainText('変更はありません');
@@ -194,4 +198,129 @@ test('進行中の編成は閲覧のみで、翌日から新しい編集案を�
   await expect(page.getByRole('region', { name: '編成の編集', exact: true })).toContainText(
     '2026-09-25の登録案',
   );
+});
+
+for (const width of [1280, 390]) {
+  test(`編成仕様：役割ドラッグ・共有起用方針・情報タブの維持 (${width}px)`, async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width, height: 960 });
+    await page.goto('/');
+    await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+    const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
+    await nav.getByRole('button', { name: '編成', exact: true }).click();
+    const editor = page.getByRole('region', { name: '編成の編集', exact: true });
+    const info = page.getByRole('complementary', { name: '選択選手情報', exact: true });
+    await info.getByRole('button', { name: '成績', exact: true }).click();
+    const order = page.getByRole('region', { name: '理想オーダー', exact: true });
+    await order.locator('.player-link').nth(1).click();
+    await expect(info.getByRole('button', { name: '成績', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await info.getByRole('combobox', { name: /の固定希望$/ }).selectOption('firstFixed');
+    await editor.getByRole('button', { name: '投手オーダー', exact: true }).click();
+    const close = page.getByRole('region', { name: '僅差', exact: true });
+    const closer = page.getByRole('region', { name: '抑え', exact: true });
+    const originalName = (await close.locator('.player-link').first().innerText()).trim();
+    await close
+      .getByRole('combobox', { name: originalName + 'の配置先', exact: true })
+      .selectOption('closer');
+    await expect(closer.locator('.player-link')).toHaveText([originalName]);
+    const farm = page.getByRole('region', { name: '二軍投手', exact: true });
+    const farmName = (await farm.locator('.player-link').first().innerText()).trim();
+    await farm.getByRole('button', { name: farmName + 'を一軍へ', exact: true }).click();
+    if (width === 1280) {
+      const source = close.getByRole('button', { name: farmName, exact: true });
+      const target = closer.getByRole('button', { name: originalName, exact: true });
+      await target.scrollIntoViewIfNeeded();
+      await source.hover();
+      // スクロール前後で選手名が同じ画面座標になるため、先にドラッグを開始する。
+      const origin = await source.boundingBox();
+      await page.mouse.down();
+      await page.mouse.move(origin!.x + origin!.width / 2 + 12, origin!.y + origin!.height / 2, {
+        steps: 3,
+      });
+      await target.hover();
+      await target.hover();
+      await page.mouse.up();
+    } else
+      await close
+        .getByRole('combobox', { name: farmName + 'の配置先', exact: true })
+        .selectOption('closer');
+    await expect(closer.locator('.player-link')).toHaveCount(2);
+    await expect(farm.getByRole('button', { name: farmName, exact: true })).toHaveCount(0);
+    await expect(info.getByRole('button', { name: '成績', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await editor.getByRole('button', { name: '起用方針', exact: true }).click();
+    await editor.getByLabel('直近の投球数以上', { exact: true }).fill('70');
+    await editor.getByLabel('個別条件の使い方', { exact: true }).selectOption('custom');
+    await editor
+      .getByRole('group', { name: '投手個別の条件', exact: true })
+      .getByLabel('直近の投球数以上', { exact: true })
+      .fill('65');
+    await editor.getByRole('button', { name: '投手オーダー', exact: true }).click();
+    await expect(closer.locator('.player-link')).toHaveCount(2);
+    await expect(info.getByRole('button', { name: '成績', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.screenshot({ path: `.tmp/formation-spec-qa/roles-${width}.png`, fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await nav.getByRole('button', { name: 'ホーム', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'クラブハウス', exact: true })).toBeVisible();
+    await nav.getByRole('button', { name: '編成', exact: true }).click();
+    await editor.getByRole('button', { name: '投手オーダー', exact: true }).click();
+    await expect(closer.locator('.player-link')).toHaveCount(2);
+    await editor.getByRole('button', { name: '起用方針', exact: true }).click();
+    await expect(
+      editor
+        .getByRole('group', { name: '一軍の既定条件', exact: true })
+        .getByLabel('直近の投球数以上', { exact: true }),
+    ).toHaveValue('70');
+    await expect(
+      editor
+        .getByRole('group', { name: '投手個別の条件', exact: true })
+        .getByLabel('直近の投球数以上', { exact: true }),
+    ).toHaveValue('65');
+    await page.screenshot({ path: `.tmp/formation-spec-qa/policy-${width}.png`, fullPage: true });
+  });
+}
+
+test('編成の欠員：二軍へ移した選手を別の打順へ戻しても重複せず、補充後に退出できる', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+  const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
+  await nav.getByRole('button', { name: '編成', exact: true }).click();
+  const order = page.getByRole('region', { name: '理想オーダー', exact: true });
+  const first = order.getByRole('combobox', { name: '1番の選手', exact: true });
+  const second = order.getByRole('combobox', { name: '2番の選手', exact: true });
+  const original = await first.inputValue();
+  await order
+    .locator('.formation-slot')
+    .first()
+    .getByRole('button', { name: /を二軍へ$/ })
+    .click();
+  await expect(first).toHaveValue('');
+  await nav.getByRole('button', { name: 'ホーム', exact: true }).click();
+  await expect(
+    page.getByText('一軍オーダーの空き枠を補充してください：1番', { exact: true }),
+  ).toBeVisible();
+  await second.selectOption(original);
+  await expect(second).toHaveValue(original);
+  await expect(first).toHaveValue('');
+  const bench = page.getByRole('region', { name: '一軍控え', exact: true });
+  const substitute = (await bench.locator('.player-link').first().innerText()).trim();
+  await first.selectOption({ label: substitute });
+  const ids = await order
+    .getByRole('combobox', { name: /^[1-9]番の選手$/ })
+    .evaluateAll((elements) => elements.map((e) => (e as HTMLSelectElement).value));
+  expect(new Set(ids).size).toBe(9);
+  await nav.getByRole('button', { name: 'ホーム', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'クラブハウス', exact: true })).toBeVisible();
 });

@@ -57,7 +57,16 @@ test('選手Query：全球団120人の現在状態だけを返し、欠測と0�
   assert.equal(typeof row.condition, 'string');
   assert.deepEqual(
     Object.keys(row).sort(),
-    ['playerId', 'clubId', 'registration', 'energyMilli', 'fatigueMilli', 'condition'].sort(),
+    [
+      'playerId',
+      'clubId',
+      'registration',
+      'energyMilli',
+      'fatigueMilli',
+      'condition',
+      'lastPitchedOn',
+      'lastPitchCount',
+    ].sort(),
   );
   assert.deepEqual(world, before);
   assert.ok(
@@ -107,14 +116,14 @@ test('貯金Query：勝敗・引分・未完了・二軍を分離し、月をま
   const rows = winBalanceSeries(view, 'firstRegular');
   assert.deepEqual(
     rows[0]!.points.map((row) => row.balance),
-    [1, 0, 0],
+    [1, 0],
   );
   assert.deepEqual(
     rows[1]!.points.map((row) => row.balance),
-    [-1, 0, 0],
+    [-1, 0],
   );
-  assert.deepEqual(rows[0]!.points[2], {
-    date: '2026-10-02',
+  assert.deepEqual(rows[0]!.points[1], {
+    date: '2026-10-01',
     wins: 1,
     losses: 1,
     draws: 1,
@@ -127,6 +136,8 @@ test('貯金Query：勝敗・引分・未完了・二軍を分離し、月をま
   );
   assert.deepEqual(view, before);
   view.currentDate = '2026-10-10';
+  assert.equal(winBalanceSeries(view, 'firstRegular')[0]!.points.at(-1)!.date, '2026-10-01');
+  view.games = view.games.filter((g) => g.status === 'completed');
   assert.equal(winBalanceSeries(view, 'firstRegular')[0]!.points.at(-1)!.date, '2026-10-03');
 });
 
@@ -186,4 +197,42 @@ test('貯金Query：実試合・一軍休養日・年度末と保存復元が累
       (row) => row.points[0]!.wins + row.points[0]!.losses + row.points[0]!.draws > 0,
     ),
   );
+});
+
+test('貯金Query：同日の他球団・二軍が終わるまで両大会の当日値を公表しない', async () => {
+  const view = await query(createBullpenWorld());
+  const today = view.games.filter((g) => g.date === view.currentDate);
+  assert.ok(today.some((g) => g.statScope === 'firstRegular'));
+  assert.ok(today.some((g) => g.statScope === 'farmRegular'));
+  const scopes = ['firstRegular', 'farmRegular'] as const;
+  for (let i = 0; i < today.length; i++) {
+    for (const scope of scopes) assert.equal(winBalanceSeries(view, scope)[0]!.points.length, 0);
+    today[i]!.status = 'completed';
+    today[i]!.result = { score: { away: 2, home: 1 } } as NonNullable<
+      (typeof today)[number]['result']
+    >;
+  }
+  for (const scope of scopes) {
+    const rows = winBalanceSeries(view, scope);
+    assert.equal(rows[0]!.points.length, 1);
+    assert.equal(rows[0]!.points[0]!.date, view.currentDate);
+    assert.equal(
+      rows.reduce((n, r) => n + r.points[0]!.wins, 0),
+      today.filter((g) => g.statScope === scope).length,
+    );
+  }
+  today.at(-1)!.result = null;
+  assert.equal(winBalanceSeries(view, 'firstRegular')[0]!.points.length, 0);
+});
+
+test('貯金Query：試合のない年度最終日は日次確定後に前日の値を表示する', async () => {
+  const view = await query(createBullpenWorld());
+  view.definitions.endDate = view.currentDate;
+  view.games = [];
+  assert.equal(winBalanceSeries(view, 'firstRegular')[0]!.points.length, 0);
+  view.completedDates.push(view.currentDate);
+  const points = winBalanceSeries(view, 'firstRegular')[0]!.points;
+  assert.equal(points.length, 1);
+  assert.equal(points[0]!.date, view.definitions.endDate);
+  assert.equal(points[0]!.balance, 0);
 });

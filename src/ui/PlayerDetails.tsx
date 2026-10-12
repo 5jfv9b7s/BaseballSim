@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import type { Ability } from '../engine/types.ts';
 import { pitchNames } from '../data/pitch-types/index.ts';
@@ -14,11 +14,16 @@ export function PlayerDetails({
   view,
   playerId,
   onClose,
+  inline = false,
+  registrationDraft,
 }: {
   view: WorldView;
   playerId: string;
   onClose: () => void;
+  inline?: boolean;
+  registrationDraft?: 'first' | 'farm';
 }) {
+  const headingId = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const [tab, setTab] = useState<'ability' | 'stats' | 'state' | 'contract'>('ability');
   const [scope, setScope] = useState<'firstRegular' | 'farmRegular'>('firstRegular');
@@ -35,14 +40,16 @@ export function PlayerDetails({
   }
 
   useEffect(() => {
+    if (inline) return;
     setTab('ability');
     setScope('firstRegular');
     if (playerId && resolvedId) dialog.current?.showModal();
     else dialog.current?.close();
-  }, [playerId, resolvedId]);
+  }, [playerId, resolvedId, inline]);
 
   if (!player || !squad) return null;
   const state = view.playerStatuses?.find((item) => item.playerId === playerId);
+  const registration = registrationDraft ?? state?.registration;
   const physical = squad.physicalInputs?.find((item) => item.playerId === playerId)?.physical;
   const abilities: [string, Ability | undefined][] = [
     ['右投手へのミート', player.batting.contactVsRight],
@@ -69,35 +76,32 @@ export function PlayerDetails({
   };
   const hasStats = Object.values(lines).some((rows) => rows.length > 0);
 
-  return (
-    <dialog
-      ref={dialog}
-      className="player-details"
-      aria-labelledby="player-details-name"
-      onCancel={(event) => {
-        event.preventDefault();
-        close();
-      }}
-    >
+  const content = (
+    <>
       <div className="player-details-heading">
         <div>
           <p>PLAYER PROFILE ／ {view.currentDate}現在</p>
-          <h2 id="player-details-name">
+          <h2 id={headingId}>
             {player.familyName} {player.givenName}
           </h2>
+          {inline && (
+            <p>
+              年齢：記録なし ／ 調子：{state?.condition ?? '記録なし'} ／ 疲労：
+              {statusPoints(state?.fatigueMilli)}
+            </p>
+          )}
           <p>
             {squad.team.name} ／ {player.throwingHand === 'R' ? '右' : '左'}投
             {player.battingHand === 'R' ? '右' : player.battingHand === 'L' ? '左' : '両'}打 ／{' '}
-            {state?.registration === 'first'
-              ? '一軍'
-              : state?.registration === 'farm'
-                ? '二軍'
-                : '登録記録なし'}
+            {registration === 'first' ? '一軍' : registration === 'farm' ? '二軍' : '登録記録なし'}
+            {registrationDraft && '（編集案）'}
           </p>
         </div>
-        <button autoFocus onClick={close} aria-label="選手詳細を閉じる">
-          閉じる ×
-        </button>
+        {!inline && (
+          <button autoFocus onClick={close} aria-label="選手詳細を閉じる">
+            閉じる ×
+          </button>
+        )}
       </div>
       <nav className="main-subnav" aria-label="選手詳細の項目">
         {(
@@ -107,11 +111,13 @@ export function PlayerDetails({
             ['state', '状態・成長'],
             ['contract', '契約・経歴'],
           ] as const
-        ).map(([id, label]) => (
-          <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>
-            {label}
-          </button>
-        ))}
+        )
+          .filter(([id]) => !inline || id !== 'contract')
+          .map(([id, label]) => (
+            <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>
+              {label}
+            </button>
+          ))}
       </nav>
       {tab === 'ability' && (
         <>
@@ -216,6 +222,23 @@ export function PlayerDetails({
         </>
       )}
       {tab === 'contract' && <p>契約・年俸・所属履歴・背番号・年齢のプロフィールは工事中です。</p>}
+    </>
+  );
+  return inline ? (
+    <section className="formation-profile" aria-labelledby={headingId}>
+      {content}
+    </section>
+  ) : (
+    <dialog
+      ref={dialog}
+      className="player-details"
+      aria-labelledby={headingId}
+      onCancel={(event) => {
+        event.preventDefault();
+        close();
+      }}
+    >
+      {content}
     </dialog>
   );
 }

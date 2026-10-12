@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { WorldAction, WorldView } from '../world/controller.ts';
 import type { IndividualRest, RestRules, RestSnapshot } from '../world/rest-types.ts';
 
-function RulesEditor({
+export function RulesEditor({
   value,
   onChange,
   disabled,

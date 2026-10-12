@@ -1,6 +1,6 @@
 .formation-columns {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1.1fr 0.9fr 0.9fr 1.35fr;
   gap: 12px;
   align-items: start;
   margin: 20px 0;
@@ -15,8 +15,8 @@
 .formation-player,
 .formation-slot {
   display: grid;
-  gap: 8px;
-  padding: 12px 0;
+  gap: 6px;
+  padding: 8px 0;
   border-top: 1px solid #d5decd;
 }
 .formation-editor select {
@@ -54,5 +54,54 @@
 @media (max-width: 600px) {
   .formation-columns {
     grid-template-columns: 1fr;
+  }
+}
+
+.formation-editor [hidden] {
+  display: none;
+}
+.formation-info .world-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.formation-info h2 {
+  font-size: 1.15rem;
+}
+.formation-info h3 {
+  font-size: 1rem;
+}
+.formation-info .main-subnav {
+  flex-wrap: wrap;
+}
+.formation-info .player-details-heading {
+  display: block;
+}
+.formation-relief-group {
+  padding: 8px 0;
+  border-top: 2px solid #c8d6bc;
+}
+.formation-relief-group h5 {
+  font-size: 1rem;
+  margin: 4px 0;
+}
+.formation-conditions input[type='number'] {
+  width: 100%;
+  min-width: 0;
+}
+.formation-conditions fieldset {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.formation-state {
+  color: #465643;
+  font-size: 0.75rem;
+}
+@media (max-width: 600px) {
+  .formation-info {
+    grid-row: 1;
+  }
+  .formation-profile .world-table {
+    max-height: 260px;
   }
 }

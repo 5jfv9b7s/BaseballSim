@@ -54,10 +54,11 @@ export function WinBalanceChart({
     <section className="balance-chart" aria-label="貯金・借金の推移">
       <h3>貯金・借金の推移</h3>
       <p>
-        {month} ／ {scope === 'firstRegular' ? '一軍公式戦' : '二軍公式戦'} ／ 確定試合のみ
+        {month} ／ {scope === 'firstRegular' ? '一軍公式戦' : '二軍公式戦'} ／
+        当日の全試合終了後に更新
       </p>
       <p className="hint">
-        貯金＝勝数−敗数。0が中央線です。日付の選択や線の確認だけでは試合は進みません。
+        貯金＝勝数−敗数。0が中央線です。一軍・二軍を含む全試合が終わるまでは前日までの結果を表示します。日付の選択や線の確認だけでは試合は進みません。
       </p>
       <div className="balance-legend">
         {rows.map((row) => (

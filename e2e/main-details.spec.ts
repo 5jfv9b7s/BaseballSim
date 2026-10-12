@@ -133,15 +133,14 @@ test('年間表示：未来月を予測で埋めず、進行中の選手タブ�
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-03-27');
   await nav.getByRole('button', { name: '日程', exact: true }).click();
   const chart = page.getByRole('region', { name: '貯金・借金の推移', exact: true });
-  await expect(
-    chart.getByRole('combobox', { name: 'グラフで確認する日', exact: true }),
-  ).toHaveValue('2026-03-27');
+  await expect(chart.getByRole('img')).toHaveCount(0);
+  await expect(chart).toContainText('表示できる日付はまだありません');
   await page.getByRole('button', { name: '翌月', exact: true }).click();
   await expect(chart.getByRole('img')).toHaveCount(0);
   await expect(chart).toContainText('表示できる日付はまだありません');
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-03-27');
   await page.getByRole('button', { name: '現在月', exact: true }).click();
-  await expect(chart.getByRole('img')).toBeVisible();
+  await expect(chart.getByRole('img')).toHaveCount(0);
   // Workerの更新が連続しても、開いたタブが能力に戻らないことを確認する。
   await page.evaluate(() => {
     const original = Worker.prototype.postMessage;
@@ -170,4 +169,81 @@ test('年間表示：未来月を予測で埋めず、進行中の選手タブ�
   );
   await expect(detail).toContainText('2026-03-28現在の状態');
   await detail.getByRole('button', { name: '選手詳細を閉じる', exact: true }).click();
+});
+
+test('貯金グラフ：同日の一部終了では更新せず、全試合終了後に一斉更新する', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    let hold = false;
+    let released = false;
+    let pending: (() => void) | undefined;
+    Reflect.set(window, 'releaseGraphDay', () => {
+      released = true;
+      hold = false;
+      pending?.();
+      pending = undefined;
+    });
+    window.Worker = class extends NativeWorker {
+      isWorld: boolean;
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        this.isWorld = String(url).includes('world-worker');
+        if (this.isWorld)
+          this.addEventListener('message', (event) => {
+            const view = event.data?.view;
+            if (!view) return;
+            const today = view.games.filter((g: { date: string }) => g.date === view.currentDate);
+            const done = today.filter((g: { status: string }) => g.status === 'completed').length;
+            if (!released && done > 0 && done < today.length) {
+              hold = true;
+              Reflect.set(window, 'partialGraphDay', { done, total: today.length });
+            }
+          });
+      }
+      postMessage(message: unknown, options?: StructuredSerializeOptions | Transferable[]) {
+        const send = () => {
+          if (Array.isArray(options)) super.postMessage(message, options);
+          else super.postMessage(message, options);
+        };
+        if (
+          this.isWorld &&
+          hold &&
+          message &&
+          typeof message === 'object' &&
+          'kind' in message &&
+          message.kind === 'advance'
+        ) {
+          pending = send;
+          Reflect.set(window, 'graphDayHeld', true);
+        } else send();
+      }
+    };
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+  await page.getByRole('button', { name: /^今日の試合へ/ }).click();
+  await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'graphDayHeld'))).toBe(true);
+  const partial = await page.evaluate(() => Reflect.get(window, 'partialGraphDay'));
+  expect(partial.done).toBeGreaterThan(0);
+  expect(partial.done).toBeLessThan(partial.total);
+  const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
+  await nav.getByRole('button', { name: '日程', exact: true }).click();
+  const chart = page.getByRole('region', { name: '貯金・借金の推移', exact: true });
+  await expect(chart.getByRole('img')).toHaveCount(0);
+  await expect(chart).toContainText('表示できる日付はまだありません');
+  await page.screenshot({ path: '.tmp/formation-spec-qa/graph-partial.png', fullPage: true });
+  await page.evaluate(() => Reflect.get(window, 'releaseGraphDay')());
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-25', {
+    timeout: 45000,
+  });
+  await expect(chart.getByRole('img')).toBeVisible();
+  await expect(
+    chart.getByRole('combobox', { name: 'グラフで確認する日', exact: true }),
+  ).toHaveValue('2026-09-24');
+  await expect(
+    chart.getByRole('combobox', { name: 'グラフで確認する日', exact: true }).locator('option'),
+  ).toHaveCount(1);
+  await page.screenshot({ path: '.tmp/formation-spec-qa/graph-completed.png', fullPage: true });
 });

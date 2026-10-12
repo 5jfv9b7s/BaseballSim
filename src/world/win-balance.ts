@@ -15,9 +15,9 @@ export interface BalanceSeries {
   points: BalancePoint[];
 }
 
-/** 勝数−敗数。未完了のスコアは集計せず、休養日と引分は前の値を保つ。 */
+/** 勝数−敗数。一軍・二軍を含むその日の全試合終了後に日単位で公表する。 */
 export function winBalanceSeries(
-  view: Pick<WorldView, 'games' | 'definitions' | 'currentDate'>,
+  view: Pick<WorldView, 'games' | 'definitions' | 'currentDate' | 'completedDates'>,
   scope: StatKey['statScope'],
 ): BalanceSeries[] {
   const squads =
@@ -43,6 +43,12 @@ export function winBalanceSeries(
     date <= end;
     date = new Date(Date.parse(date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10)
   ) {
+    // 日付が進んでも、未完了・中断・結果欠落が残る日を飛ばして公表しない。
+    const dayGames = view.games.filter((game) => game.date === date);
+    if (dayGames.some((game) => game.status !== 'completed' || !game.result)) break;
+    // 試合のない当日は、日次処理が終わり日付が進んでから表示する。
+    if (date === view.currentDate && dayGames.length === 0 && !view.completedDates.includes(date))
+      break;
     for (const game of gamesByDate.get(date) ?? []) {
       const away = totals.get(game.awaySquadId);
       const home = totals.get(game.homeSquadId);

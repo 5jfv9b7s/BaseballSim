@@ -1,3 +1,9 @@
+import { FormationEditor } from './FormationEditor.tsx';
+import {
+  createFormationDraft,
+  formationChanged,
+  type FormationDraft,
+} from '../world/formation-draft.ts';
 import { MainScreen, type MainPage } from './MainScreen.tsx';
 import {
   createProgressTarget,
@@ -38,6 +44,9 @@ export function WorldApp({
   development?: boolean;
   onOpenTools: () => void;
 }) {
+  const [formation, setFormation] = useState<FormationDraft | null>(null);
+  const formationBase = useRef<FormationDraft | null>(null);
+  const formationDestination = useRef<MainPage | 'tools' | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [page, setPage] = useState<MainPage>('home');
   const [plays, setPlays] = useState<StoredPlay[]>([]);
@@ -86,6 +95,49 @@ export function WorldApp({
       localWorldId: latest.current.localWorldId,
       expectedStateRevision: latest.current.revision,
     } satisfies WorldCommand);
+  }
+
+  function finishNavigation(destination: MainPage | 'tools') {
+    setFormation(null);
+    formationBase.current = null;
+    setSelectedPlayer('');
+    if (destination === 'tools') onOpenTools();
+    else {
+      if (destination === 'today') {
+        setScope('firstRegular');
+        setSelectedDate(latest.current?.currentDate ?? '');
+        setSelectedGame('');
+      }
+      setPage(destination);
+    }
+  }
+
+  function beginFormation() {
+    if (!latest.current || pending.current || auto.current || !latest.current.canEditManagement)
+      return;
+    const draft = createFormationDraft(latest.current);
+    formationBase.current = draft;
+    setFormation(draft ? structuredClone(draft) : null);
+  }
+
+  function navigate(destination: MainPage | 'tools') {
+    if (formationDestination.current) return;
+    if (
+      page === 'formation' &&
+      destination !== 'formation' &&
+      formation &&
+      formationBase.current &&
+      formationChanged(formationBase.current, formation)
+    ) {
+      if (pending.current || auto.current) return;
+      formationDestination.current = destination;
+      send({ kind: 'setFormation', ...formation });
+      return;
+    }
+    if (destination === 'formation') {
+      if (page !== 'formation') beginFormation();
+      setPage(destination);
+    } else finishNavigation(destination);
   }
 
   function inspectStorage() {
@@ -169,6 +221,7 @@ export function WorldApp({
       setView(data.view);
       setPlays(data.plays ?? []);
       if (!data.ok) {
+        formationDestination.current = null;
         progressTarget.current = null;
         auto.current = false;
         setRunning(false);
@@ -233,10 +286,18 @@ export function WorldApp({
         lastAction.current === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');
+      if (lastAction.current === 'setFormation') {
+        const destination = formationDestination.current;
+        formationDestination.current = null;
+        setMessage('編成の変更をまとめて確定し、自動保存しました。');
+        if (destination) finishNavigation(destination);
+      }
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
       if (lastAction.current === 'load' || lastAction.current === 'openPlay') {
         progressTarget.current = null;
         setSelectedPlayer('');
+        setFormation(null);
+        formationBase.current = null;
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setControlledSquadId(data.view.management?.controlledSquadId ?? '');
@@ -253,6 +314,8 @@ export function WorldApp({
         auto.current = false;
         setRunning(false);
         setSelectedPlayer('');
+        setFormation(null);
+        formationBase.current = null;
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setSelectedDate('');
@@ -271,6 +334,7 @@ export function WorldApp({
       if (auto.current) continueDay();
     };
     instance.onerror = () => {
+      formationDestination.current = null;
       progressTarget.current = null;
       pending.current = false;
       auto.current = false;
@@ -368,7 +432,37 @@ export function WorldApp({
       ].sort()
     : [];
 
+  const formationView = view && (formation ?? createFormationDraft(view));
   const panels = {
+    formation:
+      view && formationView ? (
+        <>
+          {!formation && view.canEditManagement && (
+            <button disabled={disabled} onClick={beginFormation}>
+              編成の編集を開始
+            </button>
+          )}
+          <FormationEditor
+            key={view.localWorldId + editorEpoch}
+            view={view}
+            draft={formationView}
+            changed={
+              !!formation &&
+              !!formationBase.current &&
+              formationChanged(formationBase.current, formation)
+            }
+            locked={!formation || disabled || !view.canEditManagement}
+            onChange={setFormation}
+            onReset={() => {
+              setFormation(structuredClone(formationBase.current));
+              setError('');
+            }}
+            onSelectPlayer={setSelectedPlayer}
+          />
+        </>
+      ) : (
+        <p>このプレイは編成編集に対応していません。</p>
+      ),
     progress: (
       <>
         <section className="panel" aria-label="日次進行">
@@ -950,14 +1044,7 @@ export function WorldApp({
         selectedPlayer={selectedPlayer}
         onSelectPlayer={setSelectedPlayer}
         page={page}
-        onNavigate={(nextPage) => {
-          if (nextPage === 'today') {
-            setScope('firstRegular');
-            setSelectedDate(view?.currentDate ?? '');
-            setSelectedGame('');
-          }
-          setPage(nextPage);
-        }}
+        onNavigate={navigate}
         panels={panels}
         busy={busy}
         running={running}
@@ -969,13 +1056,8 @@ export function WorldApp({
           setRunning(false);
           setMessage('一時停止しました。実行中の処理が終わり次第、停止します。');
         }}
-        onToday={() => {
-          setScope('firstRegular');
-          setSelectedDate(view?.currentDate ?? '');
-          setSelectedGame('');
-          setPage('today');
-        }}
-        onOpenTools={onOpenTools}
+        onToday={() => navigate('today')}
+        onOpenTools={() => navigate('tools')}
       />
     );
 

@@ -32,6 +32,7 @@ type PanelName =
   | 'calendar'
   | 'summary'
   | 'management'
+  | 'formation'
   | 'standings'
   | 'memorial'
   | 'results'
@@ -479,23 +480,7 @@ export function MainScreen({
             )}
           </>
         )}
-        {section === 'formation' && (
-          <section className="panel">
-            <h3>編成を整える</h3>
-            <p>
-              野手・投手・起用方針をまとめて編集し、画面を離れるときに変更を確定する機能を準備しています。
-            </p>
-            <div className="feature-grid">
-              <Construction title="野手編成" />
-              <Construction title="投手編成" />
-              <Construction title="起用方針" />
-            </div>
-            <p>現在の編成編集はシミュレーション開発ツールの「日程・球団運営」で利用できます。</p>
-            <button className="text-action" disabled={busy || running} onClick={onOpenTools}>
-              開発用画面を開く →
-            </button>
-          </section>
-        )}
+        {section === 'formation' && panels.formation}
         {section === 'team' && (
           <>
             {view && (

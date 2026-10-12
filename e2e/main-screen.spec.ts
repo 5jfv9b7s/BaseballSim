@@ -46,7 +46,7 @@ for (const width of [1280, 390]) {
       '安打ランキング',
     );
     await nav.getByRole('button', { name: '編成', exact: true }).click();
-    await expect(page.getByRole('button', { name: /野手編成\s*工事中/ })).toBeDisabled();
+    await expect(page.getByRole('region', { name: '編成の編集', exact: true })).toBeVisible();
     await nav.getByRole('button', { name: 'チーム', exact: true }).click();
     await expect(page.locator('.player-grid > div')).toHaveCount(30);
     await expect(page.getByRole('button', { name: /育成・練習\s*工事中/ })).toBeDisabled();

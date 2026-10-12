@@ -1,3 +1,5 @@
+import { applyFormation } from './formation.ts';
+import type { FormationAction } from './formation-draft.ts';
 import { playerStatuses } from './player-status.ts';
 import { singleGameHomeRunRecord } from './memorial.ts';
 import { gameDisplay } from './game-display.ts';
@@ -26,6 +28,7 @@ import type { WorldRecord, WorldPhase, ManagementAction, ClubManagement } from '
 
 export type WorldAction =
   | ManagementAction
+  | FormationAction
   | { kind: 'new'; seed: number; controlledSquadId?: string; calendar?: 'short' | 'annual' }
   | { kind: 'advance'; count: number }
   | { kind: 'completeDay'; date: string }
@@ -245,6 +248,7 @@ export class WorldController {
         'completeDay',
         'save',
         'load',
+        'setFormation',
         'setClubPlan',
         'setGameStarter',
         'setGameLineup',
@@ -288,6 +292,7 @@ export class WorldController {
       this.storageError = null;
     }
     if (
+      command.kind === 'setFormation' ||
       command.kind === 'setClubPlan' ||
       command.kind === 'setGameStarter' ||
       command.kind === 'setGameLineup' ||
@@ -304,7 +309,10 @@ export class WorldController {
         localWorldId: _worldId,
         ...action
       } = command;
-      const next = applyManagement(this.world, commandId, action);
+      const next =
+        action.kind === 'setFormation'
+          ? applyFormation(this.world, commandId, action)
+          : applyManagement(this.world, commandId, action);
       if (next !== this.world) {
         try {
           const slots = await this.storage.save(

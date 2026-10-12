@@ -19,7 +19,7 @@ for (const width of [1280, 390]) {
           else original.call(this, message, options as StructuredSerializeOptions);
         };
       });
-      await page.goto('/');
+      await page.goto('/?tools=1');
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
       const panel = page.getByRole('region', { name: '救援の役割・登板条件', exact: true });
       const open = () => panel.getByText('救援条件と登板判断を確認・編集', { exact: true }).click();

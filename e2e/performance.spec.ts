@@ -17,7 +17,7 @@ for (const width of [1280, 390]) {
         else original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     const panel = page.getByRole('region', { name: '試合時の能力', exact: true });
     const open = () => panel.getByText('試合前の状態と能力補正を確認', { exact: true }).click();

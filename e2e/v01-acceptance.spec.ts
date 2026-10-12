@@ -17,7 +17,7 @@ test('MVP-03/04: 自動進行の一時停止・表示切替・再開でも同じ
     };
   });
 
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const pause = page.getByRole('button', { name: '一時停止', exact: true });
   const step = page.getByRole('button', { name: '1イベント進める', exact: true });
@@ -51,7 +51,7 @@ test('MVP-03/04: 自動進行の一時停止・表示切替・再開でも同じ
 });
 
 test('MVP-06/07: 壊れた最新保存を読み込んでも画面を保ち、前保存を復元できる', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   const reset = page.getByRole('button', { name: '新しい試合を準備', exact: true });

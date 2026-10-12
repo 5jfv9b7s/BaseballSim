@@ -17,7 +17,7 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
   };
   const observe = (target: Page) => target.on('pageerror', (error) => errors.push(error.message));
   const openWorld = async (target: Page) => {
-    await target.goto(new URL('/', page.url()).href);
+    await target.goto(new URL('/?tools=1', page.url()).href);
     await target.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   };
   const stopped = async (target: Page) => {
@@ -66,7 +66,7 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
   };
   observe(page);
   try {
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
     await page

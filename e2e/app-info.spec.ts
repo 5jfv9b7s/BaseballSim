@@ -39,7 +39,7 @@ for (const width of [1280, 390]) {
           } else original.call(this, message, options as StructuredSerializeOptions);
         };
       });
-      await page.goto('/');
+      await page.goto('/?tools=1');
       const guide = page.getByRole('complementary', { name: 'バージョンと利用案内', exact: true });
       await expect(guide.locator('summary')).toHaveText('開発版 ' + version + '・利用案内');
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();

@@ -19,7 +19,7 @@ for (const width of [1280, 390]) {
         original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     const panel = page.getByRole('region', { name: '累計個人成績', exact: true });
     const scope = page.getByRole('combobox', { name: '表示する大会', exact: true });

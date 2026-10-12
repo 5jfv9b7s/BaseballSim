@@ -6,7 +6,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     const panel = page.getByRole('region', { name: '体力・疲労', exact: true });
     await panel.getByText('全選手の体力・負荷を確認', { exact: true }).click();

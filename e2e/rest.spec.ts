@@ -17,7 +17,7 @@ for (const width of [1280, 390]) {
         else original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     const panel = page.getByRole('region', { name: '投手の休養方針', exact: true });
     const preview = panel.getByRole('region', { name: '今日の一軍投手', exact: true });

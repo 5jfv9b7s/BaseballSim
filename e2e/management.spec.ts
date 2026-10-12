@@ -17,7 +17,7 @@ for (const width of [1280, 390]) {
         } else original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
     await page

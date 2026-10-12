@@ -556,37 +556,61 @@ function MatchGame() {
 }
 
 export function GameApp() {
+  const [toolsOpen, setToolsOpen] = useState(
+    () => new URLSearchParams(location.search).get('tools') === '1',
+  );
   const [tab, setTab] = useState<'game' | 'lab' | 'world'>('game');
-  const [worldOpened, setWorldOpened] = useState(false);
+  const [worldOpened, setWorldOpened] = useState(!toolsOpen);
+  const [matchOpened, setMatchOpened] = useState(toolsOpen);
+
+  function openTools() {
+    setToolsOpen(true);
+    setMatchOpened(true);
+  }
+
   return (
     <>
-      <nav className="app-nav" aria-label="画面切替">
-        <button
-          aria-pressed={tab === 'world'}
-          onClick={() => {
-            setWorldOpened(true);
-            setTab('world');
-          }}
-        >
-          日程・球団運営
-        </button>
-        <button aria-pressed={tab === 'game'} onClick={() => setTab('game')}>
-          1試合シミュレーション
-        </button>
-        <button aria-pressed={tab === 'lab'} onClick={() => setTab('lab')}>
-          1球の検証
-        </button>
-      </nav>
-      <AppInfo />
-      <div hidden={tab !== 'game'}>
-        <MatchGame />
-      </div>
-      {worldOpened && (
-        <div hidden={tab !== 'world'}>
-          <WorldApp />
+      {toolsOpen && (
+        <>
+          <nav className="app-nav" aria-label="画面切替">
+            <button
+              onClick={() => {
+                setWorldOpened(true);
+                setToolsOpen(false);
+              }}
+            >
+              本画面へ戻る
+            </button>
+            <button
+              aria-pressed={tab === 'world'}
+              onClick={() => {
+                setWorldOpened(true);
+                setTab('world');
+              }}
+            >
+              日程・球団運営
+            </button>
+            <button aria-pressed={tab === 'game'} onClick={() => setTab('game')}>
+              1試合シミュレーション
+            </button>
+            <button aria-pressed={tab === 'lab'} onClick={() => setTab('lab')}>
+              1球の検証
+            </button>
+          </nav>
+          <AppInfo />
+        </>
+      )}
+      {matchOpened && (
+        <div hidden={!toolsOpen || tab !== 'game'}>
+          <MatchGame />
         </div>
       )}
-      {tab === 'lab' && <PitchLab />}
+      {worldOpened && (
+        <div hidden={toolsOpen && tab !== 'world'}>
+          <WorldApp development={toolsOpen} onOpenTools={openTools} />
+        </div>
+      )}
+      {toolsOpen && tab === 'lab' && <PitchLab />}
     </>
   );
 }

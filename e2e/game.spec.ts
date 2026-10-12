@@ -7,7 +7,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto('/');
+    await page.goto('/?tools=1');
     const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
     const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
     const load = page.getByRole('button', { name: '保存した試合を読み込む', exact: true });
@@ -58,7 +58,7 @@ for (const width of [1280, 390]) {
 }
 
 test('無効seedは試合を変更せず、画面切替は進行状態を保持する', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const reset = page.getByRole('button', { name: '新しい試合を準備', exact: true });
   const step = page.getByRole('button', { name: '1イベント進める', exact: true });
   await expect(step).toBeEnabled();
@@ -79,7 +79,7 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'] as c
         readFileSync(new URL(`../tests/fixtures/completed-${legacy}.json.gz`, import.meta.url)),
       ).toString(),
     );
-    await page.goto('/');
+    await page.goto('/?tools=1');
     const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
     const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
     await expect(run).toBeEnabled();
@@ -155,7 +155,7 @@ for (const legacy of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'] as c
 }
 
 test('v7の犠飛を打席・打数と区別して表示し、保存後も同じ成績を復元する', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const reset = page.getByRole('button', { name: '新しい試合を準備', exact: true });
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
@@ -194,7 +194,7 @@ test('v7の犠飛を打席・打数と区別して表示し、保存後も同じ
 });
 
 test('v8の野手選択を安打と区別して表示し、保存・再読込後も維持する', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();
@@ -237,7 +237,7 @@ test('v8の野手選択を安打と区別して表示し、保存・再読込後
 });
 
 test('v9の守備成績を保存・復元し、旧版では未対応を明示する', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();
@@ -295,7 +295,7 @@ test('v9の守備成績を保存・復元し、旧版では未対応を明示す
 });
 
 test('v10の捕球失策と失点・自責点を区別して表示し、保存後も維持する', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();

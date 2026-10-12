@@ -6,7 +6,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
     await page
@@ -61,7 +61,7 @@ for (const width of [1280, 390]) {
 
 test('期間進行：短期日程の終了で停止し、直前自動から翌日へ再開できる', async ({ page }) => {
   test.setTimeout(60000);
-  await page.goto('/');
+  await page.goto('/?tools=1');
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByRole('button', { name: 'シーズン終了まで進行', exact: true }).click();
   await expect(page.getByTestId('world-date')).toHaveText('2026-09-28', { timeout: 40000 });
@@ -97,7 +97,7 @@ test('期間進行：日次確定のエラーで停止し、再試行後も勝�
       } else original.call(this, message, options as StructuredSerializeOptions);
     };
   });
-  await page.goto('/');
+  await page.goto('/?tools=1');
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByRole('button', { name: 'シーズン終了まで進行', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('古い世界状態', { timeout: 30000 });

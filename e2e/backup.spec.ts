@@ -9,7 +9,7 @@ for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 960 });
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
-      await page.goto('/');
+      await page.goto('/?tools=1');
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
       const date = page.getByTestId('world-date');
       await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
@@ -89,7 +89,7 @@ for (const width of [1280, 390]) {
       try {
         const receiver = await independent.newPage();
         receiver.on('pageerror', (error) => errors.push(error.message));
-        await receiver.goto(new URL('/', page.url()).href);
+        await receiver.goto(new URL('/?tools=1', page.url()).href);
         await receiver.getByRole('button', { name: '日程・球団運営', exact: true }).click();
         await receiver.getByText('ファイルのバックアップ・別プレイの復元', { exact: true }).click();
         await receiver.getByLabel('取り込む保存ファイル', { exact: true }).setInputFiles({

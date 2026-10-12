@@ -38,7 +38,7 @@ test('保存した独自名簿の球団・選手ID・名前を表示し、新規
     await db.delete();
   }
 
-  await page.goto('/');
+  await page.goto('/?tools=1');
   await expect(page.getByRole('button', { name: '1試合を自動進行', exact: true })).toBeEnabled();
   await page.evaluate(async (tables) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {

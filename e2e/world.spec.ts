@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 async function openWorld(page: Page) {
-  await page.goto('/');
+  await page.goto('/?tools=1');
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await expect(page.getByRole('button', { name: '1日を自動進行', exact: true })).toBeEnabled();
 }

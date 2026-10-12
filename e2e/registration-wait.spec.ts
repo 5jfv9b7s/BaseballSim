@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('年間の再登録待ち：月跨ぎ・保存復帰後も10日境界を守る', async ({ page }) => {
   test.setTimeout(120000);
-  await page.goto('/');
+  await page.goto('/?tools=1');
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
   await page

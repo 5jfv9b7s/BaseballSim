@@ -8,7 +8,7 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '1球の検証', exact: true }).click();
     const advance = page.getByRole('button', { name: '1球進める' });
     const reset = page.getByRole('button', { name: '設定を適用してやり直す' });

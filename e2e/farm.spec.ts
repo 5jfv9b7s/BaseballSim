@@ -8,7 +8,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/?tools=1');
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     const scope = page.getByRole('combobox', { name: '表示する大会', exact: true });
     const run = page.getByRole('button', { name: '1日を自動進行', exact: true });

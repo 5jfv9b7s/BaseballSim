@@ -6,10 +6,16 @@ export function SeasonCalendar({
   view,
   scope = 'firstRegular',
   onSelect,
+  selectedDate,
+  canAdvance,
+  onAdvanceTo,
 }: {
   view: WorldView;
   scope?: 'firstRegular' | 'farmRegular';
   onSelect: (date: string) => void;
+  selectedDate: string;
+  canAdvance: boolean;
+  onAdvanceTo: (date: string) => void;
 }) {
   const [chosenMonth, setChosenMonth] = useState('');
   const month =
@@ -78,6 +84,7 @@ export function SeasonCalendar({
               key={date}
               className="calendar-day secondary"
               onClick={() => onSelect(date)}
+              aria-pressed={date === selectedDate}
               aria-current={date === view.currentDate ? 'date' : undefined}
             >
               <strong>
@@ -98,7 +105,17 @@ export function SeasonCalendar({
           );
         })}
       </div>
-      <p className="hint">日付を選ぶと、その日の予定・結果を下の試合結果欄に表示します。</p>
+      {selectedDate > view.currentDate && selectedDate <= view.definitions.endDate && (
+        <div className="world-controls" aria-label="選択日の進行">
+          <span>選択日：{selectedDate}</span>
+          <button disabled={!canAdvance} onClick={() => onAdvanceTo(selectedDate)}>
+            この日の試合前まで進める
+          </button>
+        </div>
+      )}
+      <p className="hint">
+        日付を選ぶだけでは進行しません。その日の予定・結果を下の試合結果欄に表示します。
+      </p>
     </section>
   );
 }

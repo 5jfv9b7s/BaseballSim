@@ -1,3 +1,10 @@
+import {
+  createProgressTarget,
+  nextProgressAction,
+  progressLabel,
+  reachedProgressTarget,
+  type ProgressTarget,
+} from '../world/period-progress.ts';
 import { MemorialPanel } from './MemorialPanel.tsx';
 import { BackupPanel } from './BackupPanel.tsx';
 import { MAX_PACKAGE_BYTES } from '../world/backup-zip.ts';
@@ -31,7 +38,7 @@ export function WorldApp() {
   const [running, setRunning] = useState(false);
   const [calendar, setCalendar] = useState<'short' | 'annual'>('short');
   const [targetDate, setTargetDate] = useState('');
-  const autoThrough = useRef('');
+  const progressTarget = useRef<ProgressTarget | null>(null);
   const [seed, setSeed] = useState('20260924');
   const [controlledSquadId, setControlledSquadId] = useState('');
   const [editorEpoch, setEditorEpoch] = useState(0);
@@ -131,17 +138,13 @@ export function WorldApp() {
 
   function continueDay() {
     const current = latest.current;
-    if (!current) return;
-    if (current.currentDate > autoThrough.current) {
-      auto.current = false;
-      setRunning(false);
-      return;
-    }
-    if (current.phase === 'playing') send({ kind: 'advance', count: 25 });
-    else if (current.phase === 'readyToComplete')
-      send({ kind: 'completeDay', date: current.currentDate });
+    const target = progressTarget.current;
+    if (!current || !target || !auto.current || pending.current) return;
+    const action = nextProgressAction(current, target);
+    if (action) send(action);
     else {
       auto.current = false;
+      progressTarget.current = null;
       setRunning(false);
     }
   }
@@ -156,6 +159,7 @@ export function WorldApp() {
       setView(data.view);
       setPlays(data.plays ?? []);
       if (!data.ok) {
+        progressTarget.current = null;
         auto.current = false;
         setRunning(false);
         setError(data.error);
@@ -190,14 +194,21 @@ export function WorldApp() {
         setMessage('保存容量を確認しました。データは削除していません。');
       }
       if (lastAction.current === 'completeDay') {
-        if (data.view.currentDate > autoThrough.current) {
+        const target = progressTarget.current;
+        const arrived = target && reachedProgressTarget(data.view.currentDate, target);
+        if (arrived) {
           auto.current = false;
+          progressTarget.current = null;
           setRunning(false);
         }
-        setSelectedDate('');
+        setSelectedDate((selected) => (selected >= data.view.currentDate ? selected : ''));
         setSelectedGame('');
         setMessage(
-          data.view.lastCompletedDate + 'の全結果を反映し、翌日の状態を自動保存しました。',
+          data.view.lastCompletedDate +
+            'の全結果を反映し、翌日の状態を自動保存しました。' +
+            (arrived && target.boundary === 'beforeGames'
+              ? target.date + 'の試合前で停止しました。'
+              : ''),
         );
       }
       if (
@@ -214,6 +225,7 @@ export function WorldApp() {
         setMessage('編成を確定し、自動保存しました。');
       if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
       if (lastAction.current === 'load' || lastAction.current === 'openPlay') {
+        progressTarget.current = null;
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setControlledSquadId(data.view.management?.controlledSquadId ?? '');
@@ -226,6 +238,9 @@ export function WorldApp() {
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
       if (lastAction.current === 'new') {
+        progressTarget.current = null;
+        auto.current = false;
+        setRunning(false);
         setScope('firstRegular');
         setEditorEpoch((value) => value + 1);
         setSelectedDate('');
@@ -234,6 +249,7 @@ export function WorldApp() {
         setMessage('新しい日程を準備しました。');
       }
       if (data.view.phase === 'aborted') {
+        progressTarget.current = null;
         auto.current = false;
         setRunning(false);
         setError(
@@ -243,6 +259,7 @@ export function WorldApp() {
       if (auto.current) continueDay();
     };
     instance.onerror = () => {
+      progressTarget.current = null;
       pending.current = false;
       auto.current = false;
       setBusy(false);
@@ -259,20 +276,20 @@ export function WorldApp() {
     };
   }, []);
 
-  function startThrough(date: string) {
+  function startProgress(date: string, boundary: ProgressTarget['boundary']) {
     const current = latest.current;
-    if (
-      !current ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-      !Number.isFinite(Date.parse(date + 'T00:00:00Z')) ||
-      new Date(date + 'T00:00:00Z').toISOString().slice(0, 10) !== date ||
-      date < current.currentDate ||
-      date > current.definitions.endDate
-    ) {
-      setError('進行先は現在日から日程最終日までの日付を指定してください。');
+    if (!current || pending.current || auto.current) return;
+    try {
+      progressTarget.current = createProgressTarget(
+        current.currentDate,
+        current.definitions.endDate,
+        date,
+        boundary,
+      );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '進行先の日付を確認してください。');
       return;
     }
-    autoThrough.current = date;
     auto.current = true;
     setRunning(true);
     continueDay();
@@ -306,7 +323,7 @@ export function WorldApp() {
     <p role="status">
       {running && (
         <span>
-          {autoThrough.current}の終了まで進行中
+          {progressTarget.current && progressLabel(progressTarget.current)}進行中
           <br />
         </span>
       )}
@@ -316,6 +333,7 @@ export function WorldApp() {
 
   const disabled = !view || busy || running;
   const canRun = view?.phase === 'playing' || view?.phase === 'readyToComplete';
+  const pausedTarget = !running && canRun ? progressTarget.current : null;
   const resultDate = selectedDate || view?.lastCompletedDate || view?.currentDate || '';
   const displayScope = view?.farm ? scope : 'firstRegular';
   const displayStats = displayScope === 'farmRegular' ? view?.farm?.stats : view?.stats;
@@ -384,7 +402,7 @@ export function WorldApp() {
           <button
             disabled={disabled || !canRun}
             onClick={() => {
-              startThrough(view!.currentDate);
+              startProgress(view!.currentDate, 'afterDay');
             }}
           >
             1日を自動進行
@@ -400,6 +418,15 @@ export function WorldApp() {
           >
             日次進行を一時停止
           </button>
+          {pausedTarget && (
+            <button
+              className="secondary"
+              disabled={disabled}
+              onClick={() => startProgress(pausedTarget.date, pausedTarget.boundary)}
+            >
+              期間進行を再開
+            </button>
+          )}
           <button
             className="secondary"
             disabled={disabled || view?.phase !== 'readyToComplete'}
@@ -410,7 +437,7 @@ export function WorldApp() {
         </div>
         <div className="world-controls">
           <label>
-            進行する最終日{' '}
+            到着する日（試合前）{' '}
             <input
               type="date"
               value={targetDate || view?.currentDate || ''}
@@ -422,9 +449,9 @@ export function WorldApp() {
           </label>
           <button
             disabled={disabled || !canRun}
-            onClick={() => startThrough(targetDate || view!.currentDate)}
+            onClick={() => startProgress(targetDate || view!.currentDate, 'beforeGames')}
           >
-            指定日まで進行
+            指定日の試合前まで進行
           </button>
           <button
             className="secondary"
@@ -433,8 +460,9 @@ export function WorldApp() {
               const seventh = new Date(Date.parse(view!.currentDate + 'T00:00:00Z') + 6 * 86400000)
                 .toISOString()
                 .slice(0, 10);
-              startThrough(
+              startProgress(
                 seventh < view!.definitions.endDate ? seventh : view!.definitions.endDate,
+                'afterDay',
               );
             }}
           >
@@ -443,13 +471,15 @@ export function WorldApp() {
           <button
             className="secondary"
             disabled={disabled || !canRun}
-            onClick={() => startThrough(view!.definitions.endDate)}
+            onClick={() => startProgress(view!.definitions.endDate, 'afterDay')}
           >
             シーズン終了まで進行
           </button>
         </div>
+        {pausedTarget && <p>一時停止中：{progressLabel(pausedTarget)}進行する予定です。</p>}
         <p className="hint">
-          指定日を含めて1日ずつ進み、毎日自動保存します。保存失敗・試合の異常停止で期間進行も止まります。
+          指定日は、その日の試合を始める前に止まります。1日・1週間・シーズン終了の進行は対象日の終了まで進めます。
+          毎日自動保存し、保存失敗・試合の異常停止で止まります。
         </p>
         {!storageAction && notification}
         {error && (
@@ -485,6 +515,12 @@ export function WorldApp() {
           key={view.worldId + view.definitions.seasonId + editorEpoch}
           view={view}
           scope={displayScope}
+          selectedDate={selectedDate}
+          canAdvance={!disabled && canRun}
+          onAdvanceTo={(date) => {
+            setTargetDate(date);
+            startProgress(date, 'beforeGames');
+          }}
           onSelect={(date) => {
             setSelectedDate(date);
             setSelectedGame('');

@@ -77,8 +77,8 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
     await page
       .getByRole('region', { name: '日次進行', exact: true })
       .locator('input[type="date"]')
-      .fill('2026-06-30');
-    await page.getByRole('button', { name: '指定日まで進行', exact: true }).click();
+      .fill('2026-07-01');
+    await page.getByRole('button', { name: '指定日の試合前まで進行', exact: true }).click();
     await waitDate('2026-07-01');
     const middle = await standings(page);
     await page.getByRole('button', { name: '世界を手動保存', exact: true }).click();

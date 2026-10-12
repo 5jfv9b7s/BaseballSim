@@ -23,8 +23,8 @@ for (const width of [1280, 390]) {
     const target = page
       .getByRole('region', { name: '日次進行', exact: true })
       .locator('input[type="date"]');
-    await target.fill('2026-03-31');
-    await page.getByRole('button', { name: '指定日まで進行', exact: true }).click();
+    await target.fill('2026-04-01');
+    await page.getByRole('button', { name: '指定日の試合前まで進行', exact: true }).click();
     await expect(date).toHaveText('2026-04-01', { timeout: 60000 });
     await expect(
       page.getByRole('button', { name: '日次進行を一時停止', exact: true }),
@@ -101,6 +101,7 @@ test('期間進行：日次確定のエラーで停止し、再試行後も勝�
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
   await page.getByRole('button', { name: 'シーズン終了まで進行', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('古い世界状態', { timeout: 30000 });
+  await expect(page.getByRole('button', { name: '期間進行を再開', exact: true })).toHaveCount(0);
   await expect(page.getByTestId('world-date')).toHaveText('2026-09-24');
   await expect(
     page.getByRole('button', { name: '日次進行を一時停止', exact: true }),

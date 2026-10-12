@@ -20,8 +20,8 @@ test('年間の再登録待ち：月跨ぎ・保存復帰後も10日境界を守
   await page
     .getByRole('region', { name: '日次進行', exact: true })
     .locator('input[type="date"]')
-    .fill('2026-04-04');
-  await page.getByRole('button', { name: '指定日まで進行', exact: true }).click();
+    .fill('2026-04-05');
+  await page.getByRole('button', { name: '指定日の試合前まで進行', exact: true }).click();
   await expect(page.getByTestId('world-date')).toHaveText('2026-04-05', { timeout: 60000 });
   await expect(first).toBeDisabled();
   await page.reload();

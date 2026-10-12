@@ -1,4 +1,5 @@
 import { battingAverage, earnedRunAverage, inningsPitched } from '../game/results.ts';
+import type { GameDisplayPlayer } from '../world/game-display.ts';
 import type { GameResult } from '../game/types.ts';
 import type { WorldDefinitions } from '../world/types.ts';
 
@@ -8,21 +9,23 @@ type Lines = Pick<GameResult, 'batting' | 'pitching' | 'fielding'>;
 export function WorldStats({
   lines,
   definitions,
-}: {
-  lines: Lines;
-  definitions: WorldDefinitions;
-}) {
-  const players = definitions.squads.flatMap((squad) =>
-    squad.players.map((player) => ({
-      ...player,
-      teamName: squad.team.name,
-    })),
-  );
-  const player = (id: string) => {
-    const found = players.find((entry) => entry.playerId === id)!;
-    return found.familyName + ' ' + found.givenName;
-  };
-  const team = (id: string) => players.find((entry) => entry.playerId === id)!.teamName;
+  displayPlayers,
+}: { lines: Lines } & (
+  | { definitions: WorldDefinitions; displayPlayers?: never }
+  | { displayPlayers: GameDisplayPlayer[]; definitions?: never }
+)) {
+  const players =
+    displayPlayers ??
+    definitions.squads.flatMap((squad) =>
+      squad.players.map((player) => ({
+        playerId: player.playerId,
+        playerName: player.familyName + ' ' + player.givenName,
+        teamName: squad.team.name,
+      })),
+    );
+  const player = (id: string) => players.find((entry) => entry.playerId === id)?.playerName ?? id;
+  const team = (id: string) =>
+    players.find((entry) => entry.playerId === id)?.teamName ?? '所属不明';
 
   return (
     <>

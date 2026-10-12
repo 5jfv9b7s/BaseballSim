@@ -1,3 +1,4 @@
+import { MemorialPanel } from './MemorialPanel.tsx';
 import { BackupPanel } from './BackupPanel.tsx';
 import { MAX_PACKAGE_BYTES } from '../world/backup-zip.ts';
 import type { StoredPlay, WorldSlotKind } from '../world/storage.ts';
@@ -38,6 +39,7 @@ export function WorldApp() {
   const [message, setMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedGame, setSelectedGame] = useState('');
+  const resultsRef = useRef<HTMLElement>(null);
   const [scope, setScope] = useState<'firstRegular' | 'farmRegular'>('firstRegular');
   const worker = useRef<Worker | null>(null);
   const latest = useRef<WorldView | null>(null);
@@ -362,9 +364,9 @@ export function WorldApp() {
           const game = view.games.find((item) => item.gameId === gameId)!;
           return (
             <p key={gameId}>
-              {squadName(game.awaySquadId)}{' '}
+              {game.display?.teams.away ?? squadName(game.awaySquadId)}{' '}
               {game.score ? `${game.score.away} − ${game.score.home}` : '対'}{' '}
-              {squadName(game.homeSquadId)} ・{' '}
+              {game.display?.teams.home ?? squadName(game.homeSquadId)} ・{' '}
               {game.status === 'scheduled'
                 ? '試合前'
                 : game.status === 'completed'
@@ -608,7 +610,19 @@ export function WorldApp() {
         </div>
       </section>
 
-      <section className="panel" aria-label="日別の試合結果">
+      {view && view.memorial[displayScope] && (
+        <MemorialPanel
+          record={view.memorial[displayScope]}
+          onSelectGame={(entry) => {
+            setSelectedDate(entry.achievedOn);
+            setSelectedGame(entry.gameId);
+            resultsRef.current?.focus();
+            resultsRef.current?.scrollIntoView({ block: 'start' });
+          }}
+        />
+      )}
+
+      <section className="panel" aria-label="日別の試合結果" ref={resultsRef} tabIndex={-1}>
         <h2>日別の試合結果</h2>
         <label>
           結果の日付{' '}
@@ -630,13 +644,13 @@ export function WorldApp() {
         {games.length === 0 && <p>この日の試合はありません。</p>}
         {games.map((game) => (
           <p key={game.gameId}>
-            {squadName(game.awaySquadId)}{' '}
+            {game.display?.teams.away ?? squadName(game.awaySquadId)}{' '}
             {game.result ? `${game.result.score.away} − ${game.result.score.home}` : '対'}{' '}
-            {squadName(game.homeSquadId)} ・{' '}
+            {game.display?.teams.home ?? squadName(game.homeSquadId)} ・{' '}
             {game.result
               ? game.result.winner === 'draw'
                 ? '引き分け'
-                : `${squadName(game.result.winner === 'away' ? game.awaySquadId : game.homeSquadId)}の勝利`
+                : `${game.display!.teams[game.result.winner]}の勝利`
               : '未確定'}
           </p>
         ))}
@@ -649,7 +663,7 @@ export function WorldApp() {
             >
               {completedGames.map((game) => (
                 <option key={game.gameId} value={game.gameId}>
-                  {squadName(game.awaySquadId)} 対 {squadName(game.homeSquadId)}
+                  {game.display!.teams.away} 対 {game.display!.teams.home}
                 </option>
               ))}
             </select>
@@ -671,11 +685,7 @@ export function WorldApp() {
                 <tbody>
                   {(['away', 'home'] as const).map((side) => (
                     <tr key={side}>
-                      <th>
-                        {squadName(
-                          side === 'away' ? pickedGame.awaySquadId : pickedGame.homeSquadId,
-                        )}
-                      </th>
+                      <th>{pickedGame.display!.teams[side]}</th>
                       {result.innings[side].map((score, index) => (
                         <td key={index}>{score ?? '×'}</td>
                       ))}
@@ -687,7 +697,7 @@ export function WorldApp() {
             </div>
             <details>
               <summary>この試合の個人成績</summary>
-              <WorldStats lines={result} definitions={view.definitions} />
+              <WorldStats lines={result} displayPlayers={pickedGame.display!.players} />
             </details>
           </>
         )}

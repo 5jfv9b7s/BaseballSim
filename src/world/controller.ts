@@ -1,3 +1,5 @@
+import { singleGameHomeRunRecord } from './memorial.ts';
+import { gameDisplay } from './game-display.ts';
 import { bullpenView } from './bullpen.ts';
 import { reliefView } from './relief.ts';
 import { performanceView } from './performance.ts';
@@ -37,6 +39,10 @@ export type WorldCommand = WorldAction & {
 
 export interface WorldView {
   localWorldId: string;
+  memorial: {
+    firstRegular: ReturnType<typeof singleGameHomeRunRecord>;
+    farmRegular: ReturnType<typeof singleGameHomeRunRecord> | null;
+  };
   bullpen: ReturnType<typeof bullpenView> | null;
   relief: ReturnType<typeof reliefView> | null;
   fielderRestPolicy: {
@@ -84,6 +90,7 @@ export interface WorldView {
     score: { away: number; home: number } | null;
     totalPitches: number;
     result: GameResult | null;
+    display: ReturnType<typeof gameDisplay> | null;
     lineups: Record<'away' | 'home', import('../game/types.ts').Team['lineup']> | null;
     startingPitchers: { away: string; home: string } | null;
   }[];
@@ -137,6 +144,10 @@ export class WorldController {
     );
     return structuredClone({
       localWorldId: this.localWorldId,
+      memorial: {
+        firstRegular: singleGameHomeRunRecord(world),
+        farmRegular: world.definitions.farm ? singleGameHomeRunRecord(world, 'farmRegular') : null,
+      },
       bullpen: world.version === 'world-prototype-v14' ? bullpenView(world) : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
       fielderRestPolicy:
@@ -200,6 +211,7 @@ export class WorldController {
           score: game?.state.score ?? null,
           totalPitches: game?.state.totalPitches ?? 0,
           result: game?.result ?? null,
+          display: game?.result ? gameDisplay(game) : null,
           lineups: game
             ? { away: game.fixture.teams.away.lineup, home: game.fixture.teams.home.lineup }
             : null,

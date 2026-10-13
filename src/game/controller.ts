@@ -27,7 +27,7 @@ export interface GameView {
 
 /** UIから独立した状態所有者。Workerはdispatchを直列実行する。 */
 export class GameController {
-  private record = createGame();
+  private record = createGame(undefined, undefined, CURRENT_GAME_MODEL);
   private revision = 0;
   private slots: SaveSlotInfo = {
     snapshotId: null,

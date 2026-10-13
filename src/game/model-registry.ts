@@ -1,3 +1,4 @@
+import { GAME_MODEL_V11 } from './model-v11.ts';
 import { ensure } from '../engine/validation.ts';
 import { GAME_MODEL } from './model.ts';
 import { GAME_MODEL_V2 } from './model-v2.ts';
@@ -20,7 +21,8 @@ export type GameModelVersion =
   | typeof GAME_MODEL_V7.version
   | typeof GAME_MODEL_V8.version
   | typeof GAME_MODEL_V9.version
-  | typeof GAME_MODEL_V10.version;
+  | typeof GAME_MODEL_V10.version
+  | typeof GAME_MODEL_V11.version;
 export const GAME_MODEL_VERSIONS: readonly GameModelVersion[] = [
   'game-prototype-v1',
   'game-prototype-v2',
@@ -32,8 +34,9 @@ export const GAME_MODEL_VERSIONS: readonly GameModelVersion[] = [
   'game-prototype-v8',
   'game-prototype-v9',
   'game-prototype-v10',
+  'game-prototype-v11',
 ];
-export const CURRENT_GAME_MODEL = GAME_MODEL_V10.version;
+export const CURRENT_GAME_MODEL = GAME_MODEL_V11.version;
 export function gameModel(version: GameModelVersion = GAME_MODEL.version) {
   ensure(GAME_MODEL_VERSIONS.includes(version), '未対応の試合モデル版です');
   switch (version) {
@@ -41,6 +44,8 @@ export function gameModel(version: GameModelVersion = GAME_MODEL.version) {
       return GAME_MODEL;
     case 'game-prototype-v2':
       return GAME_MODEL_V2;
+    case 'game-prototype-v11':
+      return GAME_MODEL_V11;
     case 'game-prototype-v10':
       return GAME_MODEL_V10;
     case 'game-prototype-v9':
@@ -72,5 +77,9 @@ export function usesFieldersChoice(version?: GameModelVersion): boolean {
 
 /** 基本守備の記録・成績を作る版。 */
 export function usesFielding(version?: GameModelVersion): boolean {
-  return version === 'game-prototype-v9' || version === 'game-prototype-v10';
+  return version === 'game-prototype-v9' || usesErrors(version);
+}
+
+export function usesErrors(version?: GameModelVersion): boolean {
+  return version === 'game-prototype-v10' || version === 'game-prototype-v11';
 }

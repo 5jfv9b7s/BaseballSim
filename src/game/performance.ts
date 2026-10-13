@@ -1,3 +1,4 @@
+import { usesErrors } from './model-registry.ts';
 import { PITCH_TYPES } from '../data/pitch-types/index.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import type { Ability } from '../engine/types.ts';
@@ -131,17 +132,15 @@ function project(fixture: GameFixture, snapshot: PerformanceSnapshot) {
     if (p.fielding) scale(p.playerId, 'fielding.catching', '捕球', 'fielding', p.fielding.catching);
   }
   for (const p of effective.pitches) {
-    scale(
-      p.playerId,
-      p.pitchId + '.control',
-      PITCH_TYPES[p.pitchTypeCode].name + '：制球',
-      'control',
-      p.control,
-    );
+    const pitchName =
+      fixture.pitchProfiles?.profiles.find((profile) => profile.code === p.pitchTypeCode)?.name ??
+      PITCH_TYPES[p.pitchTypeCode]?.name ??
+      p.pitchTypeCode;
+    scale(p.playerId, p.pitchId + '.control', pitchName + '：制球', 'control', p.control);
     scale(
       p.playerId,
       p.pitchId + '.repeatability',
-      PITCH_TYPES[p.pitchTypeCode].name + '：再現性',
+      pitchName + '：再現性',
       'repeatability',
       p.repeatability,
     );
@@ -177,8 +176,7 @@ export function performanceFixture(
 ): GameFixture {
   if (!record.performance) return record.fixture;
   ensure(
-    record.state.simulationVersion === 'game-prototype-v10' &&
-      record.performance.gameId === record.state.gameId,
+    usesErrors(record.state.simulationVersion) && record.performance.gameId === record.state.gameId,
     '試合前補正と試合の対応が不正です',
   );
   return projection(record.fixture, record.performance).effective;

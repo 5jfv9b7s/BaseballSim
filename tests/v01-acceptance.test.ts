@@ -3,11 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameController, type GameCommand } from '../src/game/controller.ts';
 import { createGame, runToCompletion } from '../src/game/engine.ts';
+import { CURRENT_GAME_MODEL } from '../src/game/model-registry.ts';
 import { finalizeGame } from '../src/game/results.ts';
 import { DexieStorageAdapter, GameDatabase } from '../src/storage/dexie-adapter.ts';
 
 function completed(seed: number) {
-  const record = createGame(seed);
+  // 新規Controllerと同じ規則・名簿を使い、進行方法による差だけを比較する。
+  const record = createGame(seed, undefined, CURRENT_GAME_MODEL);
   runToCompletion(record);
   finalizeGame(record);
   return record;

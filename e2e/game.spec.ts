@@ -299,7 +299,7 @@ test('v10の捕球失策と失点・自責点を区別して表示し、保存�
   const run = page.getByRole('button', { name: '1試合を自動進行', exact: true });
   const save = page.getByRole('button', { name: '試合結果を保存', exact: true });
   await expect(run).toBeEnabled();
-  await expect(page.getByLabel('試合モデル', { exact: true })).toHaveValue('game-prototype-v10');
+  await page.getByLabel('試合モデル', { exact: true }).selectOption('game-prototype-v10');
   await page.getByLabel('試合seed', { exact: true }).fill('3668339987');
   await page.getByRole('button', { name: '新しい試合を準備', exact: true }).click();
   await expect(run).toBeEnabled();

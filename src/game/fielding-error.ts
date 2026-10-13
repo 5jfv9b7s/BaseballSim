@@ -1,3 +1,4 @@
+import { usesErrors } from './model-registry.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { ensure } from '../engine/validation.ts';
 import { evaluateInPlayV2 } from './in-play-v2.ts';
@@ -12,7 +13,7 @@ export function evaluateFieldingError(
   pitch: GameEvent['pitch'],
 ) {
   if (
-    state.simulationVersion !== 'game-prototype-v10' ||
+    !usesErrors(state.simulationVersion) ||
     ball.projectedBases !== 0 ||
     ball.type !== 'ground' ||
     !ball.fielderId ||

@@ -66,3 +66,11 @@ world-v11-save.json.gzは変更前d97a486のcreatePerformanceWorldで1日完了�
 ## backup-store.zip
 
 Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。manifest.jsonの内容は{}と改行だけで、ゲーム保存ではありません。tests/backup.test.tsでZIP読取の互換性を確認します。ZIP日時は2020-01-01 00:00:00に固定。自動試験の実行にPythonは不要です。
+
+## world-v14-pitch-baseline.json.gz
+
+球種特性導入前の0.24.1、コミット464a85f980c6629e21b9d8c7e1501771b9540630の`src/`と`config/`を`git archive`で取得し、そのコードで`advanceWorld(createBullpenWorld(), 25)`を実行したWorldRecordです。canonicalJsonのUTF-8をgzip化しました。球種特性は含みません。
+
+**展開後canonicalJsonのSHA-256**は`ca924b070286c3a14db2b9ad971c43cfdf20a4e2e0c6764093eff0dc626aaea0`です。`tests/pitch-profiles.test.ts`で全状態の一致、旧版の保存読み込み、続行を確認します。IndexedDBの全ストアダンプとは区別し、現行計算に合わせて期待値を再生成しません。
+
+圧縮ファイル自体のSHA-256は`7d82a01fea364551420dc0e4e940756ae035b13922fda7c873b850d3aeef0079`です。展開後のハッシュと区別します。

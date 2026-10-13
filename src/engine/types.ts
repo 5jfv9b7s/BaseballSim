@@ -1,14 +1,14 @@
+import type { PitchTypeCode } from '../data/pitch-types/index.ts';
+import type { PitchDelivery, PitchProfileConfig, SpinAxis } from './pitch-profile-types.ts';
+
 /** 1球試作専用の射影。設計書の全選手・全世界セーブ型ではない。 */
 export type Id = string;
 export type RatingMilli = number; // 整数 0..120000。境界で検査する。
 export type CentiKph = number;
 export type Millimeter = number;
 export type Side = 'R' | 'L';
-/** 現行モデルが計算できる球種。表示用辞書への追加だけでは有効化しない。 */
-export type PitchType = Extract<
-  import('../data/pitch-types/index.ts').PitchTypeCode,
-  'fastball' | 'slider' | 'fork'
->;
+/** 辞書と計算対応は別。実行時に保存内プロファイル、旧版は3球種で検査する。 */
+export type PitchType = PitchTypeCode;
 export type Count = { balls: number; strikes: number };
 export type Ability = { valueMilli: RatingMilli; ceilingMilli: RatingMilli };
 export type Location = { xMm: Millimeter; zMm: Millimeter };
@@ -26,6 +26,8 @@ export interface Player {
   swingAggressionMilli: number;
 }
 export interface PitchRepertoire {
+  /** 新モデルだけ。省略時は保存内の球種テンプレートを用いる。 */
+  delivery?: PitchDelivery;
   pitchId: Id;
   playerId: Id;
   pitchTypeCode: PitchType;
@@ -35,6 +37,7 @@ export interface PitchRepertoire {
   velocity: { typicalCentiKph: CentiKph; maxCentiKph: CentiKph; spreadCentiKph: CentiKph };
 }
 export interface Fixture {
+  pitchProfiles?: PitchProfileConfig;
   initialDatasetVersion: string;
   clubs: { clubId: Id; name: string; playerIds: Id[] }[];
   players: Player[];
@@ -85,15 +88,17 @@ export interface PitchRecord {
   contact: 'none' | 'foul' | 'fair';
   ruling: Ruling;
   measurement: {
-    spinRateRpm: null;
-    spinAxis: null;
-    release: null;
-    horizontalBreakMm: null;
-    verticalBreakMm: null;
-    modelOutputVersion: 'endpoint-only-v1';
-    availableFields: [];
+    spinRateRpm: number | null;
+    spinAxis: SpinAxis | null;
+    release: { lateralMm: number; heightMm: number; extensionMm: number } | null;
+    horizontalBreakMm: number | null;
+    verticalBreakMm: number | null;
+    modelOutputVersion: 'endpoint-only-v1' | 'pitch-shape-v1';
+    availableFields: (
+      'spinRateRpm' | 'spinAxis' | 'release' | 'horizontalBreakMm' | 'verticalBreakMm'
+    )[];
   };
-  measurementModelVersion: 'endpoint-only-v1';
+  measurementModelVersion: 'endpoint-only-v1' | 'pitch-shape-v1';
 }
 export interface PitchStep {
   state: PrototypeState;

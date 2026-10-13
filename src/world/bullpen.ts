@@ -8,7 +8,10 @@ export interface BullpenInput {
   squadId: string;
   enabled: boolean;
 }
-export type BullpenWorld = Extract<WorldRecord, { version: 'world-prototype-v14' }>;
+export type BullpenWorld = Extract<
+  WorldRecord,
+  { version: 'world-prototype-v14' | 'world-prototype-v15' }
+>;
 
 export function validateBullpenDefinitions(defs: WorldDefinitions): void {
   validateBullpenConfig(defs.bullpenConfig!);

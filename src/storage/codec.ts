@@ -1,3 +1,5 @@
+import { GAME_MODEL_V11 } from '../game/model-v11.ts';
+import { usesErrors } from '../game/model-registry.ts';
 import { GAME_MODEL_V10 } from '../game/model-v10.ts';
 import { validateErrorConfig, type ErrorConfig } from '../game/error-config.ts';
 import { GAME_MODEL_V9 } from '../game/model-v9.ts';
@@ -112,6 +114,14 @@ const VERSIONS_V10 = Object.freeze({
   initialDatasetVersion: GAME_MODEL_V10.datasetVersion,
 });
 
+const VERSIONS_V11 = Object.freeze({
+  ...VERSIONS_V10,
+  saveFormatVersion: 'v01-completed-game-11',
+  dataSchemaVersion: 'game-prototype-schema-v11',
+  simulationVersion: GAME_MODEL_V11.version,
+  rulesetVersion: GAME_MODEL_V11.rulesetVersion,
+});
+
 export function versionsFor(version: GameModelVersion) {
   gameModel(version);
   return version === 'game-prototype-v1'
@@ -132,7 +142,9 @@ export function versionsFor(version: GameModelVersion) {
                   ? VERSIONS_V8
                   : version === 'game-prototype-v9'
                     ? VERSIONS_V9
-                    : VERSIONS_V10;
+                    : version === 'game-prototype-v10'
+                      ? VERSIONS_V10
+                      : VERSIONS_V11;
 }
 export function definitionsFor(
   version: GameModelVersion,
@@ -141,9 +153,9 @@ export function definitionsFor(
 ) {
   if (usesMatchConfig(version)) {
     validateMatchConfig(config);
-    if (version === 'game-prototype-v10') validateErrorConfig(errorConfig);
+    if (usesErrors(version)) validateErrorConfig(errorConfig);
     return {
-      ...(version === 'game-prototype-v10' ? { errorConfig: structuredClone(errorConfig!) } : {}),
+      ...(usesErrors(version) ? { errorConfig: structuredClone(errorConfig!) } : {}),
       versions: versionsFor(version),
       gameModel: gameModel(version),
       config: structuredClone(config),
@@ -229,13 +241,17 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
       candidate.kind === 'completed-game-prototype-v7' ||
       candidate.kind === 'completed-game-prototype-v8' ||
       candidate.kind === 'completed-game-prototype-v9' ||
-      candidate.kind === 'completed-game-prototype-v10',
+      candidate.kind === 'completed-game-prototype-v10' ||
+      candidate.kind === 'completed-game-prototype-v11',
     '終了したv0.1試合だけを保存・復元できます',
   );
   integer(candidate.seed, 1, 0xffffffff, '保存seed');
   // v10は開始時の名簿全体を保存済み。編集後の現在値と比較しない。
   // 名前・能力・持ち球・編成はcreateGameの検査と全イベント再実行で照合する。
-  if (candidate.kind !== 'completed-game-prototype-v10')
+  if (
+    candidate.kind !== 'completed-game-prototype-v10' &&
+    candidate.kind !== 'completed-game-prototype-v11'
+  )
     ensure(
       canonicalJson(candidate.fixture) === canonicalJson(createGameFixture()),
       '未対応の初期データです',
@@ -259,9 +275,11 @@ export function validateCompletedRecord(value: unknown): asserts value is GameRe
                     ? 'game-prototype-v8'
                     : candidate.kind === 'completed-game-prototype-v9'
                       ? 'game-prototype-v9'
-                      : 'game-prototype-v10';
+                      : candidate.kind === 'completed-game-prototype-v10'
+                        ? 'game-prototype-v10'
+                        : 'game-prototype-v11';
   if (usesMatchConfig(version)) validateMatchConfig(candidate.state?.config);
-  if (version === 'game-prototype-v10') validateErrorConfig(candidate.state?.errorConfig);
+  if (usesErrors(version)) validateErrorConfig(candidate.state?.errorConfig);
   const replay = createGame(
     candidate.seed,
     candidate.fixture,

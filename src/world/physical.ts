@@ -10,7 +10,10 @@ export function validatePhysicalDefinitions(definitions: WorldDefinitions): void
   const config = definitions.physicalConfig;
   ensure(
     config?.version ===
-      (definitions.version === 'world-definitions-v13' ? 'physical-load-v2' : 'physical-load-v1'),
+      (definitions.version === 'world-definitions-v13' ||
+      definitions.version === 'world-definitions-v14'
+        ? 'physical-load-v2'
+        : 'physical-load-v1'),
     '身体モデルの設定が必要です',
   );
   for (const kind of ['pitching', 'batting', 'fielding', 'running', 'preparation'] as const)

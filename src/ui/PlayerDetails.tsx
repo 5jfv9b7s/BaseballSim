@@ -1,3 +1,4 @@
+import { PitchCharacteristics } from './PitchCharacteristics.tsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import type { Ability } from '../engine/types.ts';
@@ -161,7 +162,13 @@ export function PlayerDetails({
                 <tbody>
                   {pitches.map((pitch) => (
                     <tr key={pitch.pitchId}>
-                      <th>{pitchNames[pitch.pitchTypeCode] ?? pitch.pitchTypeCode}</th>
+                      <th>
+                        {view.definitions.pitchProfiles?.profiles.find(
+                          (p) => p.code === pitch.pitchTypeCode,
+                        )?.name ??
+                          pitchNames[pitch.pitchTypeCode] ??
+                          pitch.pitchTypeCode}
+                      </th>
                       <td>{(pitch.velocity.typicalCentiKph / 100).toFixed(2)} km/h</td>
                       <td>{(pitch.velocity.maxCentiKph / 100).toFixed(2)} km/h</td>
                       <td>{points(pitch.control.valueMilli)}</td>
@@ -172,6 +179,13 @@ export function PlayerDetails({
                 </tbody>
               </table>
             </div>
+          )}
+          {view.definitions.pitchProfiles && pitches.length > 0 && (
+            <PitchCharacteristics
+              pitches={pitches}
+              profiles={view.definitions.pitchProfiles}
+              side={player.throwingHand}
+            />
           )}
           <p className="hint">能力の値・上限は保存内の設定です。成長処理・守備適性は未実装です。</p>
         </>

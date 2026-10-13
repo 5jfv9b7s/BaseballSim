@@ -305,7 +305,8 @@ test('指示再送・表示で状態を進めず、保存失敗で正本を変�
     /no save/,
   );
   assert.deepEqual(c.query(), view);
-  const baseline = createGame(view.seed);
+  assert.equal(view.state.simulationVersion, 'game-prototype-v11');
+  const baseline = createGame(view.seed, undefined, view.state.simulationVersion);
   runToCompletion(baseline);
   finalizeGame(baseline);
   assert.deepEqual(view.state, baseline.state);

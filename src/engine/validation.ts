@@ -1,3 +1,4 @@
+import { validateDelivery, validatePitchProfiles } from './pitch-profile-validation.ts';
 import type { Ability, Count, Fixture, PrototypeState, RngState } from './types.ts';
 import { MODEL } from './model.ts';
 
@@ -55,12 +56,22 @@ export function validateFixture(fixture: Fixture): void {
     ability(player.batting.plateDiscipline);
     integer(player.swingAggressionMilli, 0, 100000, '積極性');
   }
+  if (fixture.pitchProfiles) validatePitchProfiles(fixture.pitchProfiles);
   for (const pitch of fixture.pitches) {
     ensure(
       fixture.players.some((p) => p.playerId === pitch.playerId),
       '持ち球の所有者が存在しません',
     );
-    ensure(Object.hasOwn(MODEL.baseWeights, pitch.pitchTypeCode), '未対応の球種です');
+    ensure(
+      fixture.pitchProfiles
+        ? fixture.pitchProfiles.profiles.some((p) => p.code === pitch.pitchTypeCode)
+        : Object.hasOwn(MODEL.baseWeights, pitch.pitchTypeCode),
+      '未対応の球種です',
+    );
+    if (pitch.delivery) {
+      ensure(fixture.pitchProfiles, '旧モデルへ回転入力は指定できません');
+      validateDelivery(pitch.delivery);
+    }
     integer(pitch.acquisitionProgressMilli, 0, 100000, '習得進度');
     ability(pitch.control);
     ability(pitch.repeatability);

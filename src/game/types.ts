@@ -150,12 +150,17 @@ export interface ScoringCredit {
     | 'game-rules-prototype-v7'
     | 'game-rules-prototype-v8'
     | 'game-rules-prototype-v9'
-    | 'game-rules-prototype-v10';
+    | 'game-rules-prototype-v10'
+    | 'game-rules-prototype-v11';
 }
 
 export interface PitchDecision {
   modelVersion:
-    'pitch-prototype-v2' | 'pitch-prototype-v3' | 'pitch-prototype-v4' | 'pitch-prototype-v5';
+    | 'pitch-prototype-v2'
+    | 'pitch-prototype-v3'
+    | 'pitch-prototype-v4'
+    | 'pitch-prototype-v5'
+    | 'pitch-prototype-v6';
   swingProbability: number;
   contactProbability: number | null;
   foulProbability: number | null;
@@ -216,7 +221,8 @@ export interface GameEvent {
     | 'game-rules-prototype-v7'
     | 'game-rules-prototype-v8'
     | 'game-rules-prototype-v9'
-    | 'game-rules-prototype-v10';
+    | 'game-rules-prototype-v10'
+    | 'game-rules-prototype-v11';
 }
 
 export interface BattingLine {
@@ -289,7 +295,9 @@ export interface GameRecord {
     | 'completed-game-prototype-v9'
     | 'running-game-prototype-v9'
     | 'completed-game-prototype-v10'
-    | 'running-game-prototype-v10';
+    | 'running-game-prototype-v10'
+    | 'running-game-prototype-v11'
+    | 'completed-game-prototype-v11';
   seed: number;
   fixture: GameFixture;
   state: GameState;

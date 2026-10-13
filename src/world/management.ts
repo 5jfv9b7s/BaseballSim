@@ -232,7 +232,8 @@ export function managementFixture(
   fixture.players = fixture.players.filter((player) => activeIds.includes(player.playerId));
   fixture.pitches = fixture.pitches.filter((pitch) => activeIds.includes(pitch.playerId));
   if ('reliefControl' in world) attachReliefPolicy(world, gameId, fixture);
-  if (world.version === 'world-prototype-v14') attachBullpen(world, gameId, fixture);
+  if (world.version === 'world-prototype-v14' || world.version === 'world-prototype-v15')
+    attachBullpen(world, gameId, fixture);
   validateGameFixture(fixture);
   return fixture;
 }

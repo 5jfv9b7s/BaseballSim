@@ -14,8 +14,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createBullpenWorld, worldPhase } from './engine.ts';
-import { createBullpenDefinitions } from '../data/world/bullpen.ts';
+import { advanceWorld, completeDay, createPitchProfileWorld, worldPhase } from './engine.ts';
+import { createPitchProfileDefinitions } from '../data/world/pitch-profiles.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -108,7 +108,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createBullpenWorld();
+  private world: WorldRecord = createPitchProfileWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -154,7 +154,10 @@ export class WorldController {
         firstRegular: singleGameHomeRunRecord(world),
         farmRegular: world.definitions.farm ? singleGameHomeRunRecord(world, 'farmRegular') : null,
       },
-      bullpen: world.version === 'world-prototype-v14' ? bullpenView(world) : null,
+      bullpen:
+        world.version === 'world-prototype-v14' || world.version === 'world-prototype-v15'
+          ? bullpenView(world)
+          : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
       fielderRestPolicy:
         'fielderRest' in world
@@ -164,7 +167,8 @@ export class WorldController {
         world.version === 'world-prototype-v11' ||
         world.version === 'world-prototype-v12' ||
         world.version === 'world-prototype-v13' ||
-        world.version === 'world-prototype-v14'
+        world.version === 'world-prototype-v14' ||
+        world.version === 'world-prototype-v15'
           ? performanceView(world)
           : null,
       condition: 'condition' in world ? conditionView(world) : null,
@@ -283,10 +287,10 @@ export class WorldController {
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
     if (command.kind === 'new') {
-      this.world = createBullpenWorld(
+      this.world = createPitchProfileWorld(
         command.seed,
         command.controlledSquadId,
-        createBullpenDefinitions(command.calendar),
+        createPitchProfileDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;

@@ -1,3 +1,5 @@
+import { createPitchProfileWorld } from '../src/world/engine.ts';
+import { createPitchProfileDefinitions } from '../src/data/world/pitch-profiles.ts';
 import { createBullpenWorld } from '../src/world/engine.ts';
 import { createBullpenDefinitions } from '../src/data/world/bullpen.ts';
 import { createReliefWorld } from '../src/world/engine.ts';
@@ -167,6 +169,21 @@ for (const calendar of ['short', 'annual'] as const) {
     '自動ブルペン: ' +
       world.definitions.bullpenInputs!.length +
       'チーム / ' +
+      calendar +
+      '（検査成功）',
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createPitchProfileWorld(
+    undefined,
+    undefined,
+    createPitchProfileDefinitions(calendar),
+  );
+  console.log(
+    '球種特性: ' +
+      world.definitions.pitchProfiles!.profiles.length +
+      '球種 / ' +
       calendar +
       '（検査成功）',
   );

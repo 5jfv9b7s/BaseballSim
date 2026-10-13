@@ -1,3 +1,4 @@
+import { legacyPitchType } from './legacy-pitch-type.ts';
 import type { Fixture, PitchStep, PrototypeState, Ruling } from './types.ts';
 import { MODEL } from './model.ts';
 import type { MatchConfig } from '../game/config.ts';
@@ -61,10 +62,10 @@ export function simulateConfiguredPitch(
   );
   const weights = available.map(
     (p) =>
-      m.baseWeights[p.pitchTypeCode] *
-      (input.count.strikes === 2 ? m.twoStrike[p.pitchTypeCode] : 1) *
-      (input.count.balls === 3 ? m.threeBall[p.pitchTypeCode] : 1) *
-      (battingSide !== pitcher.throwingHand ? m.oppositeSide[p.pitchTypeCode] : 1),
+      m.baseWeights[legacyPitchType(p.pitchTypeCode)] *
+      (input.count.strikes === 2 ? m.twoStrike[legacyPitchType(p.pitchTypeCode)] : 1) *
+      (input.count.balls === 3 ? m.threeBall[legacyPitchType(p.pitchTypeCode)] : 1) *
+      (battingSide !== pitcher.throwingHand ? m.oppositeSide[legacyPitchType(p.pitchTypeCode)] : 1),
   );
   const pitch = available[selectWeightedIndex(weights, draw())]!;
 

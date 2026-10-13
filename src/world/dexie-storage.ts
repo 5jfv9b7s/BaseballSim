@@ -130,7 +130,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         {
           world: definitions,
           engine: definitionsFor(
-            'game-prototype-v10',
+            world.version === 'world-prototype-v15' ? 'game-prototype-v11' : 'game-prototype-v10',
             definitions.matchConfig,
             definitions.errorConfig,
           ),
@@ -277,6 +277,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
                 'world-prototype-v12',
                 'world-prototype-v13',
                 'world-prototype-v14',
+                'world-prototype-v15',
               ].includes(snapshot.versions.simulationVersion)
                 ? 259
                 : 35),

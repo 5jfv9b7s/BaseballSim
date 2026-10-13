@@ -197,6 +197,7 @@ function MatchGame() {
             disabled={busy || running}
             onChange={(e) => setModelVersion(e.target.value as GameModelVersion)}
           >
+            <option value="game-prototype-v11">球種特性対応試作 v11</option>
             <option value="game-prototype-v10">捕球失策対応試作 v10</option>
             <option value="game-prototype-v9">守備成績対応試作 v9</option>
             <option value="game-prototype-v8">野手選択対応試作 v8</option>
@@ -523,12 +524,35 @@ function MatchGame() {
                 {event.before.inning}回{event.before.half === 'top' ? '表' : '裏'}
               </span>{' '}
               {eventText(event, fixture)}
+              {event.pitch?.measurementModelVersion === 'pitch-shape-v1' && (
+                <small className="pitch-measurement">
+                  {' ／ '}
+                  {
+                    fixture.pitchProfiles?.profiles.find(
+                      (p) => p.code === event.pitch!.pitchTypeCode,
+                    )?.name
+                  }
+                  {' ／ '}
+                  {(event.pitch.velocityCentiKph / 100).toFixed(2)} km/h
+                  {' ／ 回転 '}
+                  {event.pitch.measurement.spinRateRpm} rpm
+                  {' ／ 横 '}
+                  {event.pitch.measurement.horizontalBreakMm} mm
+                  {' ／ 縦 '}
+                  {event.pitch.measurement.verticalBreakMm} mm（試作）
+                </small>
+              )}
             </li>
           ))}
         </ol>
       </section>
       <details className="panel">
         <summary>試作の対応範囲</summary>
+        <p>
+          v11は9球種の回転数・回転軸から変化量を計算し、打者の判断へ反映します。
+          縦変化の＋は無回転の基準球より上、横変化の＋は捕手から見て右です。
+          到達点の簡易計算であり、連続した軌道やナックルの不規則変化は未対応です。
+        </p>
         <p>
           9回、最大12回、同点引き分け、サヨナラ、DH、打席間の自動継投。四死球・三振・単打・二塁打・三塁打・本塁打・打球アウトを生成します。
         </p>

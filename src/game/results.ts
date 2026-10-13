@@ -1,3 +1,4 @@
+import { usesErrors } from './model-registry.ts';
 import { settleEarnedRuns } from './earned-runs.ts';
 import {
   usesMatchConfig,
@@ -85,7 +86,7 @@ export function aggregateResult(record: GameRecord): GameResult {
           fielding.push({
             ...defender,
             gamesAtPosition: 1,
-            ...(record.state.simulationVersion === 'game-prototype-v10' ? { errors: 0 } : {}),
+            ...(usesErrors(record.state.simulationVersion) ? { errors: 0 } : {}),
             fieldingOuts: 0,
             putouts: 0,
             assists: 0,
@@ -178,10 +179,9 @@ export function aggregateResult(record: GameRecord): GameResult {
   );
   const actualOuts = record.events.reduce((s, e) => s + e.outDecisions.length, 0);
   ensure(pitching.reduce((s, p) => s + p.outsRecorded, 0) === actualOuts, '投球アウト数が不正です');
-  const teamStats =
-    record.state.simulationVersion === 'game-prototype-v10'
-      ? { away: { errors: 0, earnedRuns: 0 }, home: { errors: 0, earnedRuns: 0 } }
-      : undefined;
+  const teamStats = usesErrors(record.state.simulationVersion)
+    ? { away: { errors: 0, earnedRuns: 0 }, home: { errors: 0, earnedRuns: 0 } }
+    : undefined;
   if (teamStats) {
     for (const event of record.events) {
       const defense = event.before.half === 'top' ? 'home' : 'away';
@@ -221,14 +221,17 @@ export function aggregateResult(record: GameRecord): GameResult {
 /** 確定結果は一度だけ作る。再呼出しでカウンタへ再加算しない。 */
 export function finalizeGame(record: GameRecord): GameResult {
   if (record.result) return record.result;
-  if (record.state.simulationVersion === 'game-prototype-v10') {
+  if (usesErrors(record.state.simulationVersion)) {
     const completed = structuredClone(record);
     settleEarnedRuns(completed);
     const result = aggregateResult(completed);
     record.events = completed.events;
     record.earnedRunEvaluation = completed.earnedRunEvaluation!;
     record.result = result;
-    record.kind = 'completed-game-prototype-v10';
+    record.kind =
+      record.state.simulationVersion === 'game-prototype-v11'
+        ? 'completed-game-prototype-v11'
+        : 'completed-game-prototype-v10';
     return result;
   }
   const result = aggregateResult(record);

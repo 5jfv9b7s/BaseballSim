@@ -2,6 +2,10 @@
 
 新規の1試合v10、短期プレイ、年間プレイは、このフォルダの球団別データを共通で参照します。従来の基礎データは全4球団・60選手・36持ち球です。0.8.0の短期・年間プレイはfarm/の追加60人・36持ち球を結合し、全120選手・72持ち球を使います。他球団や控えの能力を実行時にコピー生成しません。
 
+## 球種特性の追加（0.25.0）
+
+新規プレイは9球種の特性を使います。[球種の編集ガイド](pitch-types/README.md)に分類別のデータ、追加持ち球、共通係数と試作式をまとめています。新規世界の入口は[world/pitch-profiles.ts](world/pitch-profiles.ts)、新規v11試合は[datasets/pitch-profiles.ts](datasets/pitch-profiles.ts)です。従来のファイルと旧モデルを残し、開始済みの保存へ特性を後付けしません。
+
 ## 編集するファイル
 
 | 球団           | 選手15人（控え3人を含む）                    | 持ち球9件                                            | 球団・初期編成                           |
@@ -68,15 +72,15 @@ ratingは0〜120000の整数（表示値の1000倍）。第2引数は現在値�
 
 該当球団のrepertoiresファイルで編集します。
 
-| 項目                     | 意味・範囲                               |
-| ------------------------ | ---------------------------------------- |
-| pitchId / playerId       | 持ち球固有ID / 所有選手ID                |
-| pitchTypeCode            | 計算対応はfastball / slider / fork       |
-| acquisitionProgressMilli | 習得進度0〜100000。100000だけ使用        |
-| control / repeatability  | 制球 / 再現性（rating）                  |
-| velocity.typicalCentiKph | 中心球速。14600＝146.00km/h、5000〜18000 |
-| velocity.maxCentiKph     | 最大球速。中心球速以上〜20000            |
-| velocity.spreadCentiKph  | 球速幅。450＝4.50km/h、0〜2000           |
+| 項目                     | 意味・範囲                                                 |
+| ------------------------ | ---------------------------------------------------------- |
+| pitchId / playerId       | 持ち球固有ID / 所有選手ID                                  |
+| pitchTypeCode            | 旧版はfastball / slider / fork。新規v11は上記ガイドの9球種 |
+| acquisitionProgressMilli | 習得進度0〜100000。100000だけ使用                          |
+| control / repeatability  | 制球 / 再現性（rating）                                    |
+| velocity.typicalCentiKph | 中心球速。14600＝146.00km/h、5000〜18000                   |
+| velocity.maxCentiKph     | 最大球速。中心球速以上〜20000                              |
+| velocity.spreadCentiKph  | 球速幅。450＝4.50km/h、0〜2000                             |
 
 各投手へ最低1つの習得済み球種を残してください。新しい球種名を辞書へ追加しただけでは現行モデルで投げられません。配球・物理モデル・設定・保存互換性を新モデル版で追加する必要があります。
 

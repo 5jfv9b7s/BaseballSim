@@ -65,7 +65,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
   ensure(['dailyAuto', 'manual', 'actionAuto'].includes(snapshot.saveKind), '保存種別が不正です');
   exactKeys(snapshot.versions, ['saveFormatVersion', 'simulationVersion'], '保存形式');
   ensure(
-    /^world-prototype-v([1-9]|1[0-4])$/.test(snapshot.versions.simulationVersion) &&
+    /^world-prototype-v([1-9]|1[0-5])$/.test(snapshot.versions.simulationVersion) &&
       snapshot.versions.saveFormatVersion === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
   );
@@ -164,6 +164,7 @@ export async function decodeWorldSnapshot(
       'world-prototype-v12',
       'world-prototype-v13',
       'world-prototype-v14',
+      'world-prototype-v15',
     ].includes(snapshot.versions.simulationVersion) &&
       format === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
@@ -200,6 +201,7 @@ export async function decodeWorldSnapshot(
             'v013-world-snapshot-v12',
             'v014-world-snapshot-v13',
             'v015-world-snapshot-v14',
+            'v016-world-snapshot-v15',
           ].includes(format)
             ? MAX_ANNUAL_RAW_BYTES
             : MAX_BYTES) &&
@@ -245,7 +247,7 @@ export async function decodeWorldSnapshot(
     canonicalJson(definitions.engine) ===
       canonicalJson(
         definitionsFor(
-          'game-prototype-v10',
+          world.version === 'world-prototype-v15' ? 'game-prototype-v11' : 'game-prototype-v10',
           world.definitions.matchConfig,
           world.definitions.errorConfig,
         ),

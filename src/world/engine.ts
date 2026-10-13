@@ -1,3 +1,5 @@
+import { createPitchProfileDefinitions } from '../data/world/pitch-profiles.ts';
+import { validatePitchProfiles } from '../engine/pitch-profile-validation.ts';
 import { validateBullpenDefinitions } from './bullpen.ts';
 import { createBullpenDefinitions } from '../data/world/bullpen.ts';
 import { initialRelief, validateReliefDefinitions } from './relief.ts';
@@ -85,6 +87,7 @@ export function scheduledFixture(
   ]);
   return structuredClone({
     initialDatasetVersion: 'game-fixture-v2',
+    ...(definitions.pitchProfiles ? { pitchProfiles: definitions.pitchProfiles } : {}),
     players: [...away.players, ...home.players].filter(
       (player) =>
         ![
@@ -99,6 +102,7 @@ export function scheduledFixture(
           'world-definitions-v11',
           'world-definitions-v12',
           'world-definitions-v13',
+          'world-definitions-v14',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -127,6 +131,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -175,6 +180,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v11',
         'world-definitions-v12',
         'world-definitions-v13',
+        'world-definitions-v14',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -203,6 +209,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v11',
           'world-definitions-v12',
           'world-definitions-v13',
+          'world-definitions-v14',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -251,6 +258,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
@@ -293,6 +301,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -313,6 +322,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -330,6 +340,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validatePhysicalDefinitions(definitions);
@@ -347,6 +358,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validateRestDefinitions(definitions);
@@ -362,6 +374,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validateConditionDefinitions(definitions);
@@ -377,14 +390,18 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v11',
       'world-definitions-v12',
       'world-definitions-v13',
+      'world-definitions-v14',
     ].includes(definitions.version)
   )
     validatePerformanceConfig(definitions.performanceConfig!);
   else ensure(definitions.performanceConfig === undefined, '旧定義へ試合前補正を追加できません');
   if (
-    ['world-definitions-v11', 'world-definitions-v12', 'world-definitions-v13'].includes(
-      definitions.version,
-    )
+    [
+      'world-definitions-v11',
+      'world-definitions-v12',
+      'world-definitions-v13',
+      'world-definitions-v14',
+    ].includes(definitions.version)
   )
     validateFielderRestDefinitions(definitions);
   else
@@ -393,19 +410,30 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         definitions.fielderRestInputs === undefined,
       '旧定義へ野手休養を追加できません',
     );
-  if (['world-definitions-v12', 'world-definitions-v13'].includes(definitions.version))
+  if (
+    ['world-definitions-v12', 'world-definitions-v13', 'world-definitions-v14'].includes(
+      definitions.version,
+    )
+  )
     validateReliefDefinitions(definitions);
   else
     ensure(
       definitions.reliefConfig === undefined && definitions.reliefPolicyInputs === undefined,
       '旧定義へ救援条件を追加できません',
     );
-  if (definitions.version === 'world-definitions-v13') validateBullpenDefinitions(definitions);
+  if (
+    definitions.version === 'world-definitions-v13' ||
+    definitions.version === 'world-definitions-v14'
+  )
+    validateBullpenDefinitions(definitions);
   else
     ensure(
       definitions.bullpenConfig === undefined && definitions.bullpenInputs === undefined,
       '旧定義へブルペン準備を追加できません',
     );
+  if (definitions.version === 'world-definitions-v14')
+    validatePitchProfiles(definitions.pitchProfiles!);
+  else ensure(definitions.pitchProfiles === undefined, '旧定義へ球種特性は追加できません');
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
 }
@@ -470,7 +498,7 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
     world.version !== 'world-prototype-v1'
       ? managementFixture(world, gameId, scheduledFixture(world.definitions, scheduled))
       : scheduledFixture(world.definitions, scheduled),
-    'game-prototype-v10',
+    world.version === 'world-prototype-v15' ? 'game-prototype-v11' : 'game-prototype-v10',
     world.definitions.matchConfig,
     world.definitions.errorConfig,
   );
@@ -481,7 +509,8 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
     world.version === 'world-prototype-v11' ||
     world.version === 'world-prototype-v12' ||
     world.version === 'world-prototype-v13' ||
-    world.version === 'world-prototype-v14'
+    world.version === 'world-prototype-v14' ||
+    world.version === 'world-prototype-v15'
   ) {
     ensure(scheduled.date === world.currentDate, '試合前補正は当日の状態から作成します');
     game.performance = performanceSnapshot(world, gameId, game.fixture);
@@ -807,6 +836,30 @@ export function createBullpenWorld(
   const world: Extract<WorldRecord, { version: 'world-prototype-v14' }> = {
     ...createManagedWorld(seed, definitions, controlledSquadId),
     version: 'world-prototype-v14',
+    reliefControl: initialRelief(definitions),
+    fielderRest: initialFielderRest(definitions),
+    seasonSummary: null,
+    farmSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(definitions),
+    rosterControl: initialRosterControl(definitions),
+    physical: initialPhysical(definitions),
+    restControl: initialRest(definitions),
+    condition: initialCondition(definitions, seed),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
+}
+
+export function createPitchProfileWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createPitchProfileDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v15' }> {
+  ensure(definitions.version === 'world-definitions-v14', '球種特性対応の初期定義が必要です');
+  const world: Extract<WorldRecord, { version: 'world-prototype-v15' }> = {
+    ...createManagedWorld(seed, definitions, controlledSquadId),
+    version: 'world-prototype-v15',
     reliefControl: initialRelief(definitions),
     fielderRest: initialFielderRest(definitions),
     seasonSummary: null,

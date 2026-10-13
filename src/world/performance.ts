@@ -8,7 +8,11 @@ export type PerformanceWorld = Extract<
   WorldRecord,
   {
     version:
-      'world-prototype-v11' | 'world-prototype-v12' | 'world-prototype-v13' | 'world-prototype-v14';
+      | 'world-prototype-v11'
+      | 'world-prototype-v12'
+      | 'world-prototype-v13'
+      | 'world-prototype-v14'
+      | 'world-prototype-v15';
   }
 >;
 

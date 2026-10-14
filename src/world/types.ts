@@ -47,7 +47,8 @@ export interface WorldDefinitions {
     | 'world-definitions-v11'
     | 'world-definitions-v12'
     | 'world-definitions-v13'
-    | 'world-definitions-v14';
+    | 'world-definitions-v14'
+    | 'world-definitions-v15';
   pitchProfiles?: import('../engine/pitch-profile-types.ts').PitchProfileConfig;
   bullpenConfig?: import('../game/bullpen-types.ts').BullpenConfig;
   bullpenInputs?: import('./bullpen.ts').BullpenInput[];

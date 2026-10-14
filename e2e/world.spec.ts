@@ -1,4 +1,25 @@
 import { test, expect, type Page } from '@playwright/test';
+import { advanceWorld, createPitchProfileWorld, worldPhase } from '../src/world/engine.ts';
+import type { WorldRecord } from '../src/world/types.ts';
+
+// UIと同じ現行入力をNodeで計算し、Workerから表示までの接続を照合する。
+// 旧モデルの結果固定はtests/fixturesの互換性試験で別途確認する。
+let expectedScores: string[];
+test.beforeAll(() => {
+  let world: WorldRecord = createPitchProfileWorld();
+  const date = world.currentDate;
+  while (worldPhase(world) === 'playing') world = advanceWorld(world, 25);
+  expectedScores = world.definitions.schedule
+    .filter(
+      (game) =>
+        game.date === date &&
+        world.definitions.squads.some((squad) => squad.squadId === game.awaySquadId),
+    )
+    .map((game) => {
+      const record = world.games[game.gameId]!;
+      return `${record.fixture.teams.away.name} ${record.result!.score.away} − ${record.result!.score.home} ${record.fixture.teams.home.name}`;
+    });
+});
 
 async function openWorld(page: Page) {
   await page.goto('/?tools=1');
@@ -24,9 +45,8 @@ for (const width of [1280, 390]) {
     await expect(date).toHaveText('2026-09-25', { timeout: 20000 });
     await expect(page.getByRole('status')).toContainText('2026-09-24の全結果を反映');
     await expect(results).toContainText('表示している結果：2026-09-24');
-    await expect(results).toContainText('0 − 2');
-    // world-prototype-v11：試合前の能力補正を含む既定seedの結果。
-    await expect(results).toContainText('2 − 5');
+    expect(expectedScores).toHaveLength(2);
+    for (const score of expectedScores) await expect(results).toContainText(score);
     const firstStandings = await table.innerText();
     await page
       .getByRole('region', { name: '累計個人成績', exact: true })

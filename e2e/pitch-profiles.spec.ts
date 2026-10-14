@@ -15,11 +15,19 @@ for (const width of [1280, 390]) {
     await directory
       .getByRole('combobox', { name: '選手の種類', exact: true })
       .selectOption('pitcher');
-    await directory.locator('.player-link').first().click();
+    await directory.getByRole('button', { name: '川瀬 陸', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByText('球種の特性（試作）', { exact: true }).click();
     const table = dialog.getByRole('table', { name: '球種の特性', exact: true });
-    await expect(table).toContainText('rpm');
+    await expect(table.getByRole('row').filter({ hasText: 'ストレート' })).toContainText(
+      '2350 rpm',
+    );
+    await expect(table).toContainText('個人設定');
+    await expect(table).not.toContainText('球種共通');
+    await dialog.getByText('回転軸・リリースを確認', { exact: true }).click();
+    const release = dialog.getByRole('table', { name: '回転軸とリリース', exact: true });
+    await expect(release).toContainText('1830');
+    await expect(dialog).toContainText('軌道計算には使っていません');
     await expect(table).toContainText('mm');
     await expect(dialog).toContainText('係数は未校正');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
@@ -28,6 +36,19 @@ for (const width of [1280, 390]) {
     await table.scrollIntoViewIfNeeded();
     await expect(table).toBeInViewport();
     await dialog.screenshot({ path: `.tmp/pitch-profile-qa/player-${width}.png` });
+    await release.scrollIntoViewIfNeeded();
+    await dialog.screenshot({ path: `.tmp/pitch-profile-qa/release-${width}.png` });
+    await dialog.getByRole('button', { name: '選手詳細を閉じる', exact: true }).click();
+    await directory.getByRole('button', { name: '羽田 匠', exact: true }).click();
+    const characteristics = dialog
+      .locator('details')
+      .filter({ has: page.getByText('球種の特性（試作）', { exact: true }) })
+      .first();
+    if ((await characteristics.getAttribute('open')) === null)
+      await dialog.getByText('球種の特性（試作）', { exact: true }).click();
+    await expect(table.getByRole('row').filter({ hasText: 'ストレート' })).toContainText(
+      '2100 rpm',
+    );
     await page.goto('/?tools=1');
     const model = page.getByLabel('試合モデル', { exact: true });
     await expect(model).toHaveValue('game-prototype-v11');

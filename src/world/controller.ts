@@ -15,7 +15,7 @@ import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import { advanceWorld, completeDay, createPitchProfileWorld, worldPhase } from './engine.ts';
-import { createPitchProfileDefinitions } from '../data/world/pitch-profiles.ts';
+import { createIndividualPitchDefinitions } from '../data/world/individual-pitches.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -290,7 +290,7 @@ export class WorldController {
       this.world = createPitchProfileWorld(
         command.seed,
         command.controlledSquadId,
-        createPitchProfileDefinitions(command.calendar),
+        createIndividualPitchDefinitions(command.calendar),
       );
       this.unsavedChanges = true;
       this.storageError = null;

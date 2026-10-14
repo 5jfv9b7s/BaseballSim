@@ -74,3 +74,9 @@ Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。man
 **展開後canonicalJsonのSHA-256**は`ca924b070286c3a14db2b9ad971c43cfdf20a4e2e0c6764093eff0dc626aaea0`です。`tests/pitch-profiles.test.ts`で全状態の一致、旧版の保存読み込み、続行を確認します。IndexedDBの全ストアダンプとは区別し、現行計算に合わせて期待値を再生成しません。
 
 圧縮ファイル自体のSHA-256は`7d82a01fea364551420dc0e4e940756ae035b13922fda7c873b850d3aeef0079`です。展開後のハッシュと区別します。
+
+## world-v15-individual-baseline.json.gz
+
+個人別データ導入前の0.25.0（a6a01026b8c548aa4454bdce68ba66749b4fb792）で `advanceWorld(createPitchProfileWorld(), 25)` を実行したcanonicalJsonのgzipです。世界v15・定義v14、個人別deliveryは未設定です。変更前ソースから生成した後、実装に着手しました。
+
+展開後canonicalJsonのSHA-256は `f2d9e35b4c3b1f69fdbadf713dd33109f68545a6be329889b8a4fa58dfeff700`。tests/individual-pitches.test.tsで全状態・保存復元・日次続行を検証します。現行データに合わせて期待値を再生成しません。

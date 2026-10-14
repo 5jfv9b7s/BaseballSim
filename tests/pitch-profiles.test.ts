@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { createGame, advanceGameEvent, runToCompletion } from '../src/game/engine.ts';
 import { finalizeGame } from '../src/game/results.ts';
+import { createIndividualPitchDefinitions } from '../src/data/world/individual-pitches.ts';
 import { createPitchProfileFixture } from '../src/data/datasets/pitch-profiles.ts';
 import { createPitchProfileConfig } from '../src/data/pitch-types/profiles.ts';
 import { createPitchProfileDefinitions } from '../src/data/world/pitch-profiles.ts';
@@ -220,7 +221,7 @@ test('新v15の年間進行：188日216試合を終え、年度末を保存内�
   let world: WorldRecord = createPitchProfileWorld(
     20260924,
     undefined,
-    createPitchProfileDefinitions('annual'),
+    createIndividualPitchDefinitions('annual'),
   );
   while (worldPhase(world) !== 'scheduleComplete') world = finishDay(world, 25);
   assert.equal(world.completedDates.length, 188);

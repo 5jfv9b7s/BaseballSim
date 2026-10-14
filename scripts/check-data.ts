@@ -24,6 +24,8 @@ import {
   createFarmWorld,
 } from '../src/world/engine.ts';
 import { createGame } from '../src/game/engine.ts';
+import { createIndividualPitchDefinitions } from '../src/data/world/individual-pitches.ts';
+import { createIndividualPitchFixture } from '../src/data/datasets/individual-pitches.ts';
 import { PITCH_TYPES } from '../src/data/pitch-types/index.ts';
 
 // 試合を開始できる名簿か検査する。計算・保存・既存データの書換えは行わない。
@@ -42,7 +44,7 @@ console.log(
 );
 
 const world = createWorld();
-console.log('現行モデルの計算対応: ストレート、スライダー、フォーク');
+console.log('旧モデルの計算対応: ストレート、スライダー、フォーク');
 console.log(
   '日次データ: ' +
     world.definitions.squads.length +
@@ -186,5 +188,14 @@ for (const calendar of ['short', 'annual'] as const) {
       '球種 / ' +
       calendar +
       '（検査成功）',
+  );
+}
+
+createGame(1, createIndividualPitchFixture(), 'game-prototype-v11');
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createPitchProfileWorld(1, undefined, createIndividualPitchDefinitions(calendar));
+  const pitches = world.definitions.squads.flatMap((squad) => squad.pitches);
+  console.log(
+    `個人別球質: ${new Set(pitches.map((p) => p.playerId)).size}投手 / ${pitches.length}持ち球 / ${calendar}（検査成功）`,
   );
 }

@@ -1,5 +1,5 @@
 import { simulateProfilePitch } from '../engine/pitch-profile.ts';
-import { createPitchProfileFixture } from '../data/datasets/pitch-profiles.ts';
+import { createIndividualPitchFixture } from '../data/datasets/individual-pitches.ts';
 import {
   validateBullpenFixture,
   initialBullpen,
@@ -135,7 +135,7 @@ export function createGame(
   const model = gameModel(version);
   fixture ??=
     version === 'game-prototype-v11'
-      ? createPitchProfileFixture()
+      ? createIndividualPitchFixture()
       : usesErrors(version)
         ? createErrorFixture()
         : createGameFixture();

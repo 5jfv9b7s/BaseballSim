@@ -2,9 +2,15 @@
 
 新規の1試合v10、短期プレイ、年間プレイは、このフォルダの球団別データを共通で参照します。従来の基礎データは全4球団・60選手・36持ち球です。0.8.0の短期・年間プレイはfarm/の追加60人・36持ち球を結合し、全120選手・72持ち球を使います。他球団や控えの能力を実行時にコピー生成しません。
 
+## 現在の持ち球の編集先（0.26.0）
+
+新規プレイの持ち球は [repertoires/individual/README.md](repertoires/individual/README.md) の球団別・選手別ファイルで編集します。全24投手80件を明示し、球速・制球・再現性・回転・リリースを一つの選手ファイルへまとめています。旧 `repertoires/*.ts`、`farm/*/repertoires.ts`、`repertoires/pitch-profiles/` は0.25.0以前向けに保持します。新規プレイの持ち球を変更する際に、これらを重ねて編集する必要はありません。
+
+入口は [world/individual-pitches.ts](world/individual-pitches.ts) と [datasets/individual-pitches.ts](datasets/individual-pitches.ts)。選手自体の能力・氏名・登録・編成は下表の従来のファイルを使います。
+
 ## 球種特性の追加（0.25.0）
 
-新規プレイは9球種の特性を使います。[球種の編集ガイド](pitch-types/README.md)に分類別のデータ、追加持ち球、共通係数と試作式をまとめています。新規世界の入口は[world/pitch-profiles.ts](world/pitch-profiles.ts)、新規v11試合は[datasets/pitch-profiles.ts](datasets/pitch-profiles.ts)です。従来のファイルと旧モデルを残し、開始済みの保存へ特性を後付けしません。
+新規プレイは9球種の特性を使います。[球種の編集ガイド](pitch-types/README.md)に分類別のデータ、追加持ち球、共通係数と試作式をまとめています。0.25.0の世界の入口は[world/pitch-profiles.ts](world/pitch-profiles.ts)、同版のv11試合は[datasets/pitch-profiles.ts](datasets/pitch-profiles.ts)です。従来のファイルと旧モデルを残し、開始済みの保存へ特性を後付けしません。
 
 ## 編集するファイル
 
@@ -25,7 +31,7 @@
 - [pitch-types/index.ts](pitch-types/index.ts)：球種の表示辞書。辞書追加と計算対応の追加は別です。
 - [rating.ts](rating.ts)：能力値と上限を読みやすく指定する補助関数。
 
-`away.ts`/`home.ts`の旧データ、`datasets/legacy-v1.ts`、旧世界の`world/teams.ts`は以前の実装の参照用として保持します。通常の編集先は上表と下記farm/です。過去モデルの凍結データや試験用保存を変更しないでください。
+`away.ts`/`home.ts`の旧データ、`datasets/legacy-v1.ts`、旧世界の`world/teams.ts`は以前の実装の参照用として保持します。選手・編成の編集先は上表と下記farm/、現行の持ち球はindividual/です。過去モデルの凍結データや試験用保存を変更しないでください。
 
 ## 二軍対応で追加した選手・編成
 

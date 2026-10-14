@@ -90,34 +90,34 @@ function validateWithCache(
   ensure(Array.isArray(actions), '編成履歴が不正です');
   integer(actions.length, 0, 'seasonSummary' in candidate ? 2048 : 256, '編成履歴の件数');
   ensure(
-    candidate.definitions.version ===
-      (candidate.version === 'world-prototype-v15'
-        ? 'world-definitions-v14'
-        : candidate.version === 'world-prototype-v14'
-          ? 'world-definitions-v13'
-          : candidate.version === 'world-prototype-v13'
-            ? 'world-definitions-v12'
-            : candidate.version === 'world-prototype-v12'
-              ? 'world-definitions-v11'
-              : candidate.version === 'world-prototype-v11'
-                ? 'world-definitions-v10'
-                : candidate.version === 'world-prototype-v10'
-                  ? 'world-definitions-v9'
-                  : candidate.version === 'world-prototype-v9'
-                    ? 'world-definitions-v8'
-                    : candidate.version === 'world-prototype-v8'
-                      ? 'world-definitions-v7'
-                      : candidate.version === 'world-prototype-v7'
-                        ? 'world-definitions-v6'
-                        : candidate.version === 'world-prototype-v6'
-                          ? 'world-definitions-v5'
-                          : candidate.version === 'world-prototype-v5'
-                            ? 'world-definitions-v4'
-                            : candidate.version === 'world-prototype-v4'
-                              ? 'world-definitions-v3'
-                              : candidate.version === 'world-prototype-v3'
-                                ? 'world-definitions-v2'
-                                : 'world-definitions-v1'),
+    candidate.version === 'world-prototype-v15'
+      ? ['world-definitions-v14', 'world-definitions-v15'].includes(candidate.definitions.version)
+      : candidate.definitions.version ===
+          (candidate.version === 'world-prototype-v14'
+            ? 'world-definitions-v13'
+            : candidate.version === 'world-prototype-v13'
+              ? 'world-definitions-v12'
+              : candidate.version === 'world-prototype-v12'
+                ? 'world-definitions-v11'
+                : candidate.version === 'world-prototype-v11'
+                  ? 'world-definitions-v10'
+                  : candidate.version === 'world-prototype-v10'
+                    ? 'world-definitions-v9'
+                    : candidate.version === 'world-prototype-v9'
+                      ? 'world-definitions-v8'
+                      : candidate.version === 'world-prototype-v8'
+                        ? 'world-definitions-v7'
+                        : candidate.version === 'world-prototype-v7'
+                          ? 'world-definitions-v6'
+                          : candidate.version === 'world-prototype-v6'
+                            ? 'world-definitions-v5'
+                            : candidate.version === 'world-prototype-v5'
+                              ? 'world-definitions-v4'
+                              : candidate.version === 'world-prototype-v4'
+                                ? 'world-definitions-v3'
+                                : candidate.version === 'world-prototype-v3'
+                                  ? 'world-definitions-v2'
+                                  : 'world-definitions-v1'),
     '世界モデルと日程定義の版が異なります',
   );
   const resumed = resumeCheckpoint(candidate, cache?.checkpoint);

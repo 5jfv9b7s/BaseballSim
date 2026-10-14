@@ -1,4 +1,4 @@
-import { createPitchProfileDefinitions } from '../data/world/pitch-profiles.ts';
+import { createIndividualPitchDefinitions } from '../data/world/individual-pitches.ts';
 import { validatePitchProfiles } from '../engine/pitch-profile-validation.ts';
 import { validateBullpenDefinitions } from './bullpen.ts';
 import { createBullpenDefinitions } from '../data/world/bullpen.ts';
@@ -103,6 +103,7 @@ export function scheduledFixture(
           'world-definitions-v12',
           'world-definitions-v13',
           'world-definitions-v14',
+          'world-definitions-v15',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -132,6 +133,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -181,6 +183,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v12',
         'world-definitions-v13',
         'world-definitions-v14',
+        'world-definitions-v15',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -210,6 +213,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v12',
           'world-definitions-v13',
           'world-definitions-v14',
+          'world-definitions-v15',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -259,6 +263,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
@@ -302,6 +307,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -323,6 +329,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -341,6 +348,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validatePhysicalDefinitions(definitions);
@@ -359,6 +367,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validateRestDefinitions(definitions);
@@ -375,6 +384,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validateConditionDefinitions(definitions);
@@ -391,6 +401,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validatePerformanceConfig(definitions.performanceConfig!);
@@ -401,6 +412,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v12',
       'world-definitions-v13',
       'world-definitions-v14',
+      'world-definitions-v15',
     ].includes(definitions.version)
   )
     validateFielderRestDefinitions(definitions);
@@ -411,9 +423,12 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       '旧定義へ野手休養を追加できません',
     );
   if (
-    ['world-definitions-v12', 'world-definitions-v13', 'world-definitions-v14'].includes(
-      definitions.version,
-    )
+    [
+      'world-definitions-v12',
+      'world-definitions-v13',
+      'world-definitions-v14',
+      'world-definitions-v15',
+    ].includes(definitions.version)
   )
     validateReliefDefinitions(definitions);
   else
@@ -423,7 +438,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
     );
   if (
     definitions.version === 'world-definitions-v13' ||
-    definitions.version === 'world-definitions-v14'
+    ['world-definitions-v14', 'world-definitions-v15'].includes(definitions.version)
   )
     validateBullpenDefinitions(definitions);
   else
@@ -431,7 +446,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       definitions.bullpenConfig === undefined && definitions.bullpenInputs === undefined,
       '旧定義へブルペン準備を追加できません',
     );
-  if (definitions.version === 'world-definitions-v14')
+  if (['world-definitions-v14', 'world-definitions-v15'].includes(definitions.version))
     validatePitchProfiles(definitions.pitchProfiles!);
   else ensure(definitions.pitchProfiles === undefined, '旧定義へ球種特性は追加できません');
   validateMatchConfig(definitions.matchConfig);
@@ -854,9 +869,12 @@ export function createBullpenWorld(
 export function createPitchProfileWorld(
   seed = 20260924,
   controlledSquadId?: string,
-  definitions = createPitchProfileDefinitions(),
+  definitions = createIndividualPitchDefinitions(),
 ): Extract<WorldRecord, { version: 'world-prototype-v15' }> {
-  ensure(definitions.version === 'world-definitions-v14', '球種特性対応の初期定義が必要です');
+  ensure(
+    ['world-definitions-v14', 'world-definitions-v15'].includes(definitions.version),
+    '球種特性対応の初期定義が必要です',
+  );
   const world: Extract<WorldRecord, { version: 'world-prototype-v15' }> = {
     ...createManagedWorld(seed, definitions, controlledSquadId),
     version: 'world-prototype-v15',

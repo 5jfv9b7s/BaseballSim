@@ -1,3 +1,4 @@
+import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
 
@@ -87,7 +88,7 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
     await inspect(page);
     await page.reload();
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-    await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
+    await openOnlyCreatedPlay(page, 'manual');
     await expect(page.getByTestId('world-date')).toHaveText('2026-07-01', { timeout: 180000 });
     expect(await standings(page)).toEqual(middle);
     await stopped(page);
@@ -112,7 +113,7 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
     await page.screenshot({ path: info.outputPath('season-complete.png'), fullPage: true });
     await page.reload();
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-    await page.getByRole('button', { name: '自動保存を読み込む', exact: true }).click();
+    await openOnlyCreatedPlay(page, 'auto');
     await expect(summary).toContainText('全144試合', { timeout: 180000 });
     expect(await standings(page)).toEqual(finalStandings);
     await stopped(page);

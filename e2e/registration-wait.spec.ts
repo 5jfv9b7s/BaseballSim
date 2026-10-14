@@ -1,3 +1,4 @@
+import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect } from '@playwright/test';
 
 test('年間の再登録待ち：月跨ぎ・保存復帰後も10日境界を守る', async ({ page }) => {
@@ -26,7 +27,7 @@ test('年間の再登録待ち：月跨ぎ・保存復帰後も10日境界を守
   await expect(first).toBeDisabled();
   await page.reload();
   await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-  await page.getByRole('button', { name: '自動保存を読み込む', exact: true }).click();
+  await openOnlyCreatedPlay(page, 'auto');
   await expect(page.getByTestId('world-date')).toHaveText('2026-04-05');
   await editor.getByText('一軍登録・当日のベンチを編集', { exact: true }).click();
   await expect(first).toBeDisabled();
@@ -44,7 +45,8 @@ test('年間の再登録待ち：月跨ぎ・保存復帰後も10日境界を守
     page.getByRole('region', { name: '球団運営', exact: true }).getByRole('listitem').first(),
   ).toContainText('汐見 航');
   await page.getByRole('button', { name: '自動保存を読み込む', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('読み込みました');
+  // 年間保存は試合履歴を再検証するため、画面の読込完了を待つ。
+  await expect(page.getByRole('status')).toContainText('読み込みました', { timeout: 30000 });
   await editor.getByText('一軍登録・当日のベンチを編集', { exact: true }).click();
   await expect(first).toBeChecked();
   await expect(first).toBeEnabled();

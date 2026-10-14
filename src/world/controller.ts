@@ -15,7 +15,6 @@ import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import { advanceWorld, completeDay, createPitchProfileWorld, worldPhase } from './engine.ts';
-import { createIndividualPitchDefinitions } from '../data/world/individual-pitches.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -125,6 +124,21 @@ export class WorldController {
     this.revision = initialRevision;
     this.storage = storage;
     this.localWorldId = localWorldId;
+  }
+
+  /** DBへの初回保存が成功した候補だけを、Workerの正本にする。 */
+  static fromCommitted(
+    storage: WorldStorageAdapter,
+    localWorldId: string,
+    revision: number,
+    world: WorldRecord,
+    slots: WorldSlots,
+  ): WorldController {
+    const controller = new WorldController(storage, localWorldId, revision);
+    controller.world = world;
+    controller.slots = slots;
+    controller.unsavedChanges = false;
+    return controller;
   }
 
   async initialize(): Promise<WorldView> {
@@ -247,7 +261,6 @@ export class WorldController {
     integer(command.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER - 1, '状態版');
     ensure(
       [
-        'new',
         'advance',
         'completeDay',
         'save',
@@ -265,13 +278,6 @@ export class WorldController {
       ].includes(command.kind),
       '未対応の世界指示です',
     );
-    if (command.kind === 'new') {
-      integer(command.seed, 1, 0xffffffff, '世界seed');
-      ensure(
-        command.calendar === undefined || ['short', 'annual'].includes(command.calendar),
-        '日程種類が不正です',
-      );
-    }
     if (command.kind === 'advance') integer(command.count, 1, 25, '進行イベント数');
     if (command.kind === 'completeDay')
       ensure(typeof command.date === 'string', '完了日が不正です');
@@ -286,15 +292,6 @@ export class WorldController {
     ensure(command.expectedStateRevision === this.revision, '古い世界状態への指示です');
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
 
-    if (command.kind === 'new') {
-      this.world = createPitchProfileWorld(
-        command.seed,
-        command.controlledSquadId,
-        createIndividualPitchDefinitions(command.calendar),
-      );
-      this.unsavedChanges = true;
-      this.storageError = null;
-    }
     if (
       command.kind === 'setFormation' ||
       command.kind === 'setClubPlan' ||

@@ -321,7 +321,9 @@ export function WorldApp({
         setSelectedDate('');
         setSelectedGame('');
         setTargetDate('');
-        setMessage('新しい日程を準備しました。');
+        setImportedId('');
+        setPage('home');
+        setMessage('新しい日程を準備しました。別プレイとして初回保存が完了しました。');
       }
       if (data.view.phase === 'aborted') {
         progressTarget.current = null;
@@ -376,6 +378,7 @@ export function WorldApp({
       ? allWorldSquads(view.definitions).find((squad) => squad.squadId === squadId)?.team.name
       : null) ?? squadId;
   const storageAction = [
+    'new',
     'save',
     'load',
     'openPlay',
@@ -385,6 +388,7 @@ export function WorldApp({
     'query',
   ].includes(lastAction.current ?? '');
   const processingMessages: Partial<Record<NonNullable<typeof lastAction.current>, string>> = {
+    new: '新しいプレイを作成し、初回保存しています。完了までこの画面を開いておいてください。',
     save: '世界を手動保存しています。完了までこの画面を開いておいてください。',
     load: '保存を読み込み、内容を確認しています。完了後は停止状態で開きます。',
     openPlay: '選んだプレイを読み込み、内容を確認しています。',
@@ -407,6 +411,10 @@ export function WorldApp({
     </p>
   );
 
+  const resumeNotice =
+    view?.revision === 0 && view.unsavedChanges && view.slots.storageRevision > 0
+      ? '以前の保存があります。「世界の保存」から読み込むか、新規プレイを作成してください。'
+      : '';
   const disabled = !view || busy || running;
   const canRun = view?.phase === 'playing' || view?.phase === 'readyToComplete';
   const pausedTarget = !running && canRun ? progressTarget.current : null;
@@ -1002,7 +1010,7 @@ export function WorldApp({
             />
           </label>
           <button
-            disabled={disabled}
+            disabled={disabled || (!!view?.unsavedChanges && view.revision > 0)}
             onClick={() => {
               if (
                 !/^\d+$/.test(seed) ||
@@ -1026,11 +1034,22 @@ export function WorldApp({
           >
             新しい日程を準備
           </button>
+          {view?.unsavedChanges && view.revision > 0 && (
+            <div>
+              <p>未保存の変更があります。新規作成の前に現在の作業を保存してください。</p>
+              <button disabled={disabled} onClick={() => send({ kind: 'save' })}>
+                現在の作業を手動保存
+              </button>
+            </div>
+          )}
+          <p>
+            既存の保存を保持し、独立したプレイを作成します。初回保存に成功するとホームを開きます。
+          </p>
           <p>
             短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日。一軍144試合、二軍72試合（9月15日まで）の暫定構成です。日程構成は暫定仕様です。
           </p>
           <p>
-            係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。能力・状態評価による自動昇降格、試合中の代打/交代・疲労による能力補正・成長・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復と投手の休養方針を使用します。
+            係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。能力・状態評価による自動昇降格、試合中の代打/交代・恒久的な成長・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復、試合開始時の状態による能力補正、投手の休養方針を使用します。
           </p>
         </details>
       </>
@@ -1048,7 +1067,7 @@ export function WorldApp({
         panels={panels}
         busy={busy}
         running={running}
-        error={error || view?.storageError || ''}
+        error={error || view?.storageError || resumeNotice}
         notice={notification}
         hasSavedPlays={plays.length > 0}
         onPause={() => {
@@ -1070,6 +1089,7 @@ export function WorldApp({
         <p>全試合の結果を成績と順位へ反映し、翌日へ進めます。</p>
       </header>
 
+      {resumeNotice && <p role="alert">{resumeNotice}</p>}
       {panels.progress}
       {panels.competition}
       {panels.calendar}

@@ -133,6 +133,9 @@ test('期間目標：今日・過去・範囲外は拒否し、新規プレイ�
   await page.getByRole('button', { name: '日次進行を一時停止', exact: true }).click();
   await expect(page.getByRole('button', { name: '期間進行を再開', exact: true })).toBeEnabled();
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
+  await expect(page.getByRole('button', { name: '新しい日程を準備', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '現在の作業を手動保存', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('世界全体を手動保存', { timeout: 30000 });
   await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('新しい日程を準備しました');
   await expect(page.getByRole('button', { name: '期間進行を再開', exact: true })).toHaveCount(0);

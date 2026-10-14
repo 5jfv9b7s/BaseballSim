@@ -1,3 +1,4 @@
+import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1280, 390]) {
@@ -19,7 +20,7 @@ for (const width of [1280, 390]) {
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
     // 通常のUIから、初日に一軍・二軍とも本塁打が出る固定seedを準備する。
     await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
-    await page.getByRole('textbox', { name: '世界seed', exact: true }).fill('1');
+    await page.getByRole('textbox', { name: '世界seed', exact: true }).fill('2');
     await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('新しい日程を準備しました');
     const panel = page.getByRole('region', { name: 'メモリアル', exact: true });
@@ -67,7 +68,7 @@ for (const width of [1280, 390]) {
     await expect(panel).toContainText('確定試合での本塁打記録はまだありません');
     await page.reload();
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-    await page.getByRole('button', { name: '自動保存を読み込む', exact: true }).click();
+    await openOnlyCreatedPlay(page, 'auto');
     await expect(date).toHaveText('2026-09-25', { timeout: 30000 });
     expect(await panel.innerText()).toBe(first);
     await scope.selectOption('farmRegular');

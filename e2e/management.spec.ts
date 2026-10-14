@@ -1,3 +1,4 @@
+import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1280, 390]) {
@@ -12,7 +13,7 @@ for (const width of [1280, 390]) {
       const original = Worker.prototype.postMessage;
       Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
         const data = message as { kind?: string; localWorldId?: string };
-        if (data.kind === 'advance' && data.localWorldId === 'v02-local') {
+        if (data.kind === 'advance' && typeof data.localWorldId === 'string') {
           setTimeout(() => original.call(this, message, options as StructuredSerializeOptions), 35);
         } else original.call(this, message, options as StructuredSerializeOptions);
       };
@@ -60,7 +61,7 @@ for (const width of [1280, 390]) {
     await expect(club.getByTestId('today-starter')).toContainText(replacementName);
     await page.reload();
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-    await page.getByRole('button', { name: '自動保存を読み込む', exact: true }).click();
+    await openOnlyCreatedPlay(page, 'auto');
     await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました');
     await expect(club.getByRole('heading', { level: 2 })).toHaveText('担当球団：青凪ハーバーズ');
     await club.getByText('打順・守備・投手起用を編集', { exact: true }).click();

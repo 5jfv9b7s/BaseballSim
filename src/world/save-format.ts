@@ -53,6 +53,8 @@ export const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 export interface LocalWorld {
   displayName?: string;
   importPackageHash?: string;
+  /** 新規作成の再送確認用。端末内のメタデータで、バックアップには含めない。 */
+  creationFingerprint?: string;
   localWorldId: string;
   worldId: string;
   storageRevision: number;

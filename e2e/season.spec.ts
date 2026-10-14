@@ -1,3 +1,4 @@
+import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1280, 390]) {
@@ -34,7 +35,7 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('status')).toContainText('世界全体を手動保存', { timeout: 30000 });
     await page.reload();
     await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-    await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
+    await openOnlyCreatedPlay(page, 'manual');
     await expect(date).toHaveText('2026-04-01', { timeout: 30000 });
     expect(await page.getByRole('region', { name: '順位表', exact: true }).innerText()).toBe(
       standings,

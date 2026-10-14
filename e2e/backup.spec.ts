@@ -33,6 +33,10 @@ for (const width of [1280, 390]) {
       await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
       await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
       await expect(date).toHaveText('2026-09-24');
+      await expect(page.getByRole('status')).toContainText('初回保存が完了');
+      await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
+      await page.getByRole('button', { name: '日次進行を一時停止', exact: true }).click();
+      await expect(panel).toContainText('作業状態には未保存の変更');
       await panel.getByLabel('取り込む保存ファイル', { exact: true }).setInputFiles({
         name: 'broken.bssave',
         mimeType: 'application/zip',
@@ -70,7 +74,7 @@ for (const width of [1280, 390]) {
       await plays.selectOption('v02-local');
       await panel.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('manual');
       await panel.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
-      await expect(date).toHaveText('2026-09-24', { timeout: 30000 });
+      await expect(date).toHaveText('2026-09-25', { timeout: 30000 });
 
       await page.reload();
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();

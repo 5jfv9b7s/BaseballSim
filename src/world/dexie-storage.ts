@@ -106,6 +106,26 @@ export class DexieWorldStorage implements WorldStorageAdapter {
     kind: 'auto' | 'manual' | 'action',
     expectedStorageRevision: number,
   ): Promise<WorldSlots> {
+    return this.commit(world, stateRevision, kind, expectedStorageRevision);
+  }
+
+  /** 独立したプレイと最初の自動保存を、同じトランザクションで作成する。 */
+  async createPlay(
+    world: WorldRecord,
+    stateRevision: number,
+    creationFingerprint: string,
+  ): Promise<WorldSlots> {
+    ensure(creationFingerprint.length > 0, '新規作成指示がありません');
+    return this.commit(world, stateRevision, 'action', 0, creationFingerprint);
+  }
+
+  private async commit(
+    world: WorldRecord,
+    stateRevision: number,
+    kind: 'auto' | 'manual' | 'action',
+    expectedStorageRevision: number,
+    creationFingerprint?: string,
+  ): Promise<WorldSlots> {
     ensure(['auto', 'manual', 'action'].includes(kind), '保存枠が不正です');
     const slotKind = kind === 'manual' ? 'manual' : 'auto';
     const format = formatFor(world.version);
@@ -212,6 +232,15 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       db.save_blocks,
       async () => {
         const current = await this.readSlots();
+        const existing = await db.local_worlds.get(this.localWorldId);
+
+        if (creationFingerprint !== undefined) {
+          ensure(
+            !existing && !current.auto && !current.previousAuto && !current.manual,
+            'この新規プレイは既に作成されています。一覧を更新してください',
+          );
+        }
+
         ensure(
           current.storageRevision === expectedStorageRevision &&
             current.storageRevision === previous.storageRevision,
@@ -232,7 +261,22 @@ export class DexieWorldStorage implements WorldStorageAdapter {
           updatedAt: snapshot.createdAt,
         });
         await db.local_worlds.put({
-          ...(await db.local_worlds.get(this.localWorldId)),
+          ...existing,
+          ...(creationFingerprint !== undefined
+            ? {
+                creationFingerprint,
+                displayName:
+                  ('management' in world
+                    ? world.definitions.squads.find(
+                        (squad) => squad.squadId === world.management.controlledSquadId,
+                      )?.team.name
+                    : '世界') +
+                  ' / ' +
+                  world.currentDate +
+                  ' 作成 ' +
+                  snapshot.createdAt,
+              }
+            : {}),
           localWorldId: this.localWorldId,
           worldId: world.worldId,
           selectedSnapshotId: snapshot.snapshotId,

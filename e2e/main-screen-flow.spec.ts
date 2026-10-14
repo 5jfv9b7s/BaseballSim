@@ -11,7 +11,8 @@ test('本画面：新規プレイ・休養日・記録達成試合・年度末',
   await nav.getByRole('button', { name: 'システム', exact: true }).click();
   await page.getByRole('button', { name: '新規プレイ', exact: true }).click();
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
-  await page.getByRole('textbox', { name: '世界seed', exact: true }).fill('1');
+  // 現行の個人別球質データではseed=2で9/24の二軍に本塁打がある。
+  await page.getByRole('textbox', { name: '世界seed', exact: true }).fill('2');
   await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('新しい日程を準備しました');
   await nav.getByRole('button', { name: '日程', exact: true }).click();

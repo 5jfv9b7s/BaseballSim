@@ -349,6 +349,13 @@ test('Worker境界：未保存の取込は正本を変えず、切替時は保�
     });
     let result = await workspace.handle({ kind: 'query' });
     result = await workspace.handle({
+      kind: 'load',
+      slot: 'manual',
+      commandId: crypto.randomUUID(),
+      ...context(result.view),
+    });
+    assert(result.ok);
+    result = await workspace.handle({
       kind: 'advance',
       count: 1,
       commandId: crypto.randomUUID(),

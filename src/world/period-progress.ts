@@ -47,7 +47,7 @@ export function progressLabel(target: ProgressTarget): string {
 }
 
 /**
- * 到着日の最初のイベントを送る前に止める。
+ * afterDayは指定日の全試合・日次確定・保存後、beforeGamesは指定日の開始前に止める。
  * 日付や試合を直接更新せず、従来のWorker指示を一つずつ返す。
  * completeDayの応答は翌日への移行と自動保存の成功後に届く。
  */
@@ -60,4 +60,21 @@ export function nextProgressAction(
   if (current.phase === 'readyToComplete')
     return { kind: 'completeDay', date: current.currentDate };
   return null;
+}
+
+/** 表示用の件数。一軍・二軍を含め、終了した試合は残数に入れない。 */
+export function estimateProgress(
+  currentDate: string,
+  endDate: string,
+  date: string,
+  games: readonly { date: string; status: string }[],
+): { days: number; games: number } | null {
+  if (!validDate(date) || date < currentDate || date > endDate) return null;
+
+  return {
+    days: Math.round((Date.parse(date) - Date.parse(currentDate)) / 86400000) + 1,
+    games: games.filter(
+      (game) => game.date >= currentDate && game.date <= date && game.status !== 'completed',
+    ).length,
+  };
 }

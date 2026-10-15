@@ -1,6 +1,7 @@
 import { formationDefaults } from '../../config/formation.ts';
-import { useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import type { WorldView } from '../world/controller.ts';
+import { createFormationDraft } from '../world/formation-draft.ts';
 import type { FormationDraft } from '../world/formation-draft.ts';
 import type { IdealLineup } from '../world/types.ts';
 import type { RosterPreference } from '../world/roster-policy-types.ts';
@@ -19,6 +20,13 @@ const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'] as const
 const PLAYER = 'text/plain';
 const POSITION = 'application/x-baseball-position';
 const ROLE = 'application/x-baseball-relief-group';
+
+type Placement = {
+  playerId: string;
+  kind: 'player' | 'position';
+  source?: FormationReliefGroup;
+};
+type Destination = { key: string; label: string; apply: () => void };
 
 export function FormationEditor({
   view,
@@ -39,6 +47,15 @@ export function FormationEditor({
 }) {
   const [tab, setTab] = useState<'batters' | 'pitchers' | 'policy'>('batters');
   const [selected, setSelected] = useState('');
+  const [selectedRole, setSelectedRole] = useState<FormationReliefGroup>();
+  const [placement, setPlacement] = useState<Placement | null>(null);
+  const [operationMessage, setOperationMessage] = useState('');
+  const editorRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (placement)
+      editorRef.current?.querySelector<HTMLButtonElement>('[data-placement-target]')?.focus();
+  }, [placement]);
   const [showControls, setShowControls] = useState(false);
   const [dragged, setDragged] = useState<{ playerId?: string; position?: number } | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -61,7 +78,7 @@ export function FormationEditor({
     .map((p) => p.playerId)
     .filter((id) => first.includes(id));
   const candidateIds = tab === 'pitchers' ? pitcherIds : batterIds;
-  const infoId = selected || order[0]!.playerId;
+  const infoId = candidateIds.includes(selected) ? selected : candidateIds[0]!;
   const rules = view.definitions.registrationRules;
   const registrationLocked =
     locked || !draft.firstPlayerIds || draft.rosterPolicy?.changeMode === 'auto';
@@ -150,6 +167,7 @@ export function FormationEditor({
     );
     if (next.firstPlayerIds && !first.includes(id)) next.firstPlayerIds.push(id);
     setSelected(id);
+    setSelectedRole(target === 'rotation' ? undefined : target);
     onChange(next);
   }
   function statusLine(id: string, pitcher = false) {
@@ -197,6 +215,7 @@ export function FormationEditor({
         e.dataTransfer.setData(PLAYER, id);
         if (source) e.dataTransfer.setData(ROLE, source);
         setSelected(id);
+        setSelectedRole(source);
         setDragged({ playerId: id });
       },
     };
@@ -240,9 +259,181 @@ export function FormationEditor({
     !waiting(draggedPlayer) &&
     (first.includes(draggedPlayer) || !registrationLocked);
 
-  function playerButton(id: string) {
+  function selectPlayer(id: string, source?: FormationReliefGroup) {
+    setSelected(id);
+    setSelectedRole(source);
+    setPlacement(null);
+  }
+
+  function startPlacement(kind: Placement['kind']) {
+    if (locked || waiting(infoId)) return;
+    setPlacement({ playerId: infoId, kind, source: selectedRole });
+    setOperationMessage('移動先を選んでください。矢印キーで移動、Enterで配置、Escapeで取消。');
+  }
+
+  const destinations: Destination[] = [];
+  const sourceId = placement?.playerId;
+  if (sourceId && !locked && !waiting(sourceId)) {
+    const sourceIndex = order.findIndex((row) => row.playerId === sourceId);
+    if (placement.kind === 'position' && sourceIndex >= 0) {
+      order.forEach((_, index) => {
+        if (index === sourceIndex) return;
+        destinations.push({
+          key: 'order-' + index,
+          label: `${index + 1}番と守備を交換`,
+          apply: () => {
+            const rows = structuredClone(order);
+            [rows[index]!.battingRole, rows[sourceIndex]!.battingRole] = [
+              rows[sourceIndex]!.battingRole,
+              rows[index]!.battingRole,
+            ];
+            onChange({ ...draft, lineup: lineup(rows) });
+          },
+        });
+      });
+    } else if (placement.kind === 'player') {
+      if (
+        tab === 'batters' &&
+        batterIds.includes(sourceId) &&
+        (first.includes(sourceId) || !registrationLocked)
+      ) {
+        order.forEach((row, index) => {
+          if (row.playerId === sourceId && first.includes(sourceId)) return;
+          destinations.push({
+            key: 'order-' + index,
+            label: `${index + 1}番へ配置`,
+            apply: () => putBatter(index, sourceId),
+          });
+        });
+      }
+      if (
+        tab === 'pitchers' &&
+        !roleLocked &&
+        pitcherIds.includes(sourceId) &&
+        (first.includes(sourceId) || !registrationLocked)
+      ) {
+        const groups: ('rotation' | FormationReliefGroup)[] = [
+          'rotation',
+          ...formationReliefGroups,
+        ];
+        for (const target of groups) {
+          const ids =
+            target === 'rotation'
+              ? rotation
+              : (draft.reliefRoles ?? [])
+                  .filter(
+                    (row) => formationReliefGroup(row) === target && relief.includes(row.playerId),
+                  )
+                  .sort((a, b) => a.priority - b.priority)
+                  .map((row) => row.playerId);
+          const title = target === 'rotation' ? '先発' : formationReliefLabels[target];
+          for (const id of ids.filter((id) => id !== sourceId)) {
+            destinations.push({
+              key: target + id,
+              label: `${name(id)}の前へ配置`,
+              apply: () => placePitcher(sourceId, target, id, placement.source),
+            });
+          }
+          destinations.push({
+            key: target,
+            label: `${title}の最後へ配置`,
+            apply: () => placePitcher(sourceId, target, undefined, placement.source),
+          });
+        }
+      }
+      if (!registrationLocked) {
+        const toFirst = !first.includes(sourceId);
+        const title = toFirst ? '一軍控え' : tab === 'pitchers' ? '二軍投手' : '二軍野手';
+        // 投手の一軍側は先発・救援の配置先から登録する。
+        if (tab === 'batters' || !toFirst) {
+          destinations.push({
+            key: title,
+            label: toFirst ? '一軍控えへ登録' : '二軍へ登録',
+            apply: () => moveRegistration(sourceId, toFirst),
+          });
+          const ids = candidateIds.filter(
+            (id) =>
+              first.includes(id) === toFirst &&
+              (toFirst ? !order.some((row) => row.playerId === id) : !waiting(id)),
+          );
+          for (const id of ids) {
+            destinations.push({
+              key: title + id,
+              label: `${name(id)}と登録を交換`,
+              apply: () => moveRegistration(sourceId, toFirst, id),
+            });
+          }
+        }
+      }
+    }
+  }
+
+  function focusSelected() {
+    requestAnimationFrame(() =>
+      editorRef.current
+        ?.querySelector<HTMLButtonElement>('.formation-select[aria-pressed="true"]')
+        ?.focus(),
+    );
+  }
+
+  function cancelPlacement() {
+    setPlacement(null);
+    setOperationMessage('移動を取り消しました。');
+    focusSelected();
+  }
+
+  function navigateDestination(event: KeyboardEvent<HTMLButtonElement>) {
+    const buttons = [
+      ...(editorRef.current?.querySelectorAll<HTMLButtonElement>('[data-placement-target]') ?? []),
+    ];
+    const index = buttons.indexOf(event.currentTarget);
+    const delta = ['ArrowDown', 'ArrowRight'].includes(event.key)
+      ? 1
+      : ['ArrowUp', 'ArrowLeft'].includes(event.key)
+        ? -1
+        : 0;
+    if (!delta) return;
+    event.preventDefault();
+    buttons[(index + delta + buttons.length) % buttons.length]?.focus();
+  }
+
+  function placementTarget(key: string) {
+    const target = destinations.find((destination) => destination.key === key);
+    if (!target) return null;
     return (
-      <button className="player-link" aria-pressed={infoId === id} onClick={() => setSelected(id)}>
+      <button
+        className="formation-place secondary"
+        data-placement-target={key}
+        onKeyDown={navigateDestination}
+        onClick={() => {
+          target.apply();
+          setPlacement(null);
+          setOperationMessage(
+            `${name(sourceId!)}：${target.label}しました。編成を離れると保存します。`,
+          );
+          focusSelected();
+        }}
+      >
+        {target.label}
+      </button>
+    );
+  }
+
+  function playerButton(id: string, source?: FormationReliefGroup) {
+    return (
+      <button
+        className="player-link formation-select"
+        aria-pressed={infoId === id}
+        aria-describedby="formation-select-guide"
+        onClick={() => selectPlayer(id, source)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' || locked || waiting(id)) return;
+          event.preventDefault();
+          setSelected(id);
+          setSelectedRole(source);
+          setPlacement({ playerId: id, kind: 'player', source });
+        }}
+      >
         {name(id)}
       </button>
     );
@@ -275,6 +466,7 @@ export function FormationEditor({
           moveRegistration(e.dataTransfer.getData(PLAYER), toFirst);
         }}
       >
+        {placementTarget(title)}
         <h4>
           {title}（{ids.length}人）
         </h4>
@@ -301,6 +493,7 @@ export function FormationEditor({
               </span>
               {playerButton(id)}
             </div>
+            {placementTarget(title + id)}
             {statusLine(id, tab === 'pitchers')}
             {waiting(id) && <small>再登録可能：{waiting(id)}</small>}
             <div className="formation-fallback formation-actions" hidden={!showControls}>
@@ -341,8 +534,9 @@ export function FormationEditor({
           <span className="formation-grip" aria-hidden="true">
             ⠿
           </span>
-          <span>{index + 1}.</span> {playerButton(id)}
+          <span>{index + 1}.</span> {playerButton(id, target === 'rotation' ? undefined : target)}
         </div>
+        {placementTarget(target + id)}
         {statusLine(id, true)}
         <div className="formation-fallback" hidden={!showControls}>
           <div className="formation-actions">
@@ -476,47 +670,136 @@ export function FormationEditor({
       </div>
     );
   }
+  const baseline = createFormationDraft(view);
+  const changedFields = baseline
+    ? (
+        [
+          'lineup',
+          'pitchers',
+          'firstPlayerIds',
+          'rosterPolicy',
+          'restPolicy',
+          'reliefRoles',
+        ] as const
+      ).filter((key) => JSON.stringify(baseline[key]) !== JSON.stringify(draft[key])).length
+    : 0;
+  const emptySlots =
+    draft.rosterPolicy?.changeMode === 'auto'
+      ? []
+      : order.filter((row) => !first.includes(row.playerId));
+  const selectedIndex = order.findIndex((row) => row.playerId === infoId && first.includes(infoId));
+
   return (
     <section
       className="panel formation-editor"
+      ref={editorRef}
+      data-has-selection={!!selected && candidateIds.includes(selected) && tab !== 'policy'}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && placement) {
+          event.preventDefault();
+          cancelPlacement();
+        }
+      }}
       aria-label="編成の編集"
       onDragEnd={endDrag}
       onDropCapture={endDrag}
     >
       <h3>{squad.team.name}の編成</h3>
-      <p role="status">
-        {changed ? '変更中 — 編成を離れると検証して自動保存します。' : '変更はありません。'}
-      </p>
-      <p>
-        {view.currentDate}の登録案：一軍 {first.length}/{rules?.firstLimit ?? '—'}人（投手{' '}
-        {pitcherIds.filter((id) => first.includes(id)).length}人を含む） ／ 二軍{' '}
-        {squad.players.length - first.length}人
-      </p>
-      <p>
-        {view.currentDate}の確定状態からのベンチ見込み：
-        {view.registrationPreview?.roster.playerIds.length ?? '—'}/{rules?.benchLimit ?? '—'}
-        人（編集案の反映前）
-      </p>
-      <div className="world-controls">
-        <button disabled={locked || !changed} onClick={onReset}>
+      <div className="formation-summary">
+        <strong role="status">
+          {changed ? `変更中：${changedFields}項目` : '変更はありません。'}
+        </strong>
+        <button
+          className="secondary"
+          aria-describedby="formation-reset-hint"
+          disabled={locked || !changed}
+          onClick={() => {
+            setPlacement(null);
+            onReset();
+          }}
+        >
           変更を戻す
         </button>
-        <button aria-pressed={tab === 'policy'} onClick={() => setTab('policy')}>
-          起用方針
-        </button>
+        <span className="hint" id="formation-reset-hint">
+          {changed ? '未確定の変更をすべて取り消します。' : '変更すると戻せます。'}
+        </span>
       </div>
+      <div className="formation-counts">
+        <span>
+          {view.currentDate}の登録案：一軍 {first.length}/{rules?.firstLimit ?? '—'}人（投手{' '}
+          {pitcherIds.filter((id) => first.includes(id)).length}人）
+        </span>
+        <span>二軍 {squad.players.length - first.length}人</span>
+        <span>
+          {view.currentDate}のベンチ見込み：
+          {view.registrationPreview?.roster.playerIds.length ?? '—'}/{rules?.benchLimit ?? '—'}
+          人（編集案の反映前）
+        </span>
+      </div>
+      {emptySlots.length > 0 && (
+        <div className="formation-errors" aria-label="編成の修正箇所">
+          <strong>エラー：空き枠 {emptySlots.length}件</strong>
+          <p>一軍から外した選手の枠です。一軍選手で補充するか、変更を戻してください。</p>
+          {emptySlots.map((row) => (
+            <button
+              className="secondary"
+              key={row.slotNo}
+              onClick={() => {
+                setTab('batters');
+                requestAnimationFrame(() =>
+                  editorRef.current
+                    ?.querySelector<HTMLElement>(`[data-slot="${row.slotNo}"]`)
+                    ?.focus(),
+                );
+              }}
+            >
+              {row.slotNo}番の空き枠へ移動
+            </button>
+          ))}
+        </div>
+      )}
       <nav className="main-subnav" aria-label="編成の項目">
-        <button aria-pressed={tab === 'batters'} onClick={() => setTab('batters')}>
+        <button
+          aria-pressed={tab === 'batters'}
+          onClick={() => {
+            setTab('batters');
+            setSelected('');
+            setPlacement(null);
+          }}
+        >
           野手オーダー
         </button>
-        <button aria-pressed={tab === 'pitchers'} onClick={() => setTab('pitchers')}>
+        <button
+          aria-pressed={tab === 'pitchers'}
+          onClick={() => {
+            setTab('pitchers');
+            setSelected('');
+            setPlacement(null);
+          }}
+        >
           投手オーダー
+        </button>
+        <button
+          aria-pressed={tab === 'policy'}
+          onClick={() => {
+            setTab('policy');
+            setPlacement(null);
+          }}
+        >
+          起用方針
         </button>
       </nav>
       {locked && <p className="hint">現在は閲覧のみです。当日の全試合を始める前に編集できます。</p>}
-      <p className="hint">
-        タブの切替や選手詳細の閲覧では確定しません。再読込で未確定の編集は失われます。保存できなければこの画面で修正・取消できます。
-      </p>
+      <p className="hint">編成を離れると検証して自動保存します。</p>
+      <details className="workflow-disclosure">
+        <summary>編成の操作・保存について</summary>
+        <p>
+          タブの切替や選手詳細の閲覧では確定しません。再読込で未確定の編集は失われます。保存できなければこの画面で修正・取消できます。
+        </p>
+        <p>
+          守備の交換は「守備を交換」、選手の交換は「移す」を選びます。配置先のボタンは矢印キーで移動し、Enterで確定、Escapeで取消できます。
+        </p>
+      </details>
       <div hidden={tab !== 'policy'}>
         <FormationPolicy view={view} draft={draft} locked={locked} onChange={onChange} />
       </div>
@@ -527,17 +810,24 @@ export function FormationEditor({
               ? '⠿ 投手カードをドラッグして配置。役割の変更や、先発順・役割内の優先順を変更できます。'
               : '⠿ 選手カードをドラッグして配置。守備位置のアイコンは、アイコン同士で交換できます。'}
           </p>
-          <button aria-pressed={showControls} onClick={() => setShowControls(!showControls)}>
+          <button
+            className="secondary"
+            aria-pressed={showControls}
+            onClick={() => setShowControls(!showControls)}
+          >
             選択欄・ボタンで操作
           </button>
-          <small>キーボードやタッチで操作する場合はこちらを開いてください。</small>
+          <small id="formation-select-guide">
+            選手名で選択して「移す」、または選手名にフォーカスしてEnterで移動先を選べます。従来の入力欄も開けます。
+          </small>
         </div>
         <p className="formation-drag-status" role="status" aria-live="polite">
           {dragged?.position != null
             ? '守備位置を交換：別の守備アイコンへドロップ'
             : draggedPlayer
               ? `${name(draggedPlayer)}を移動中：枠に重ねてドロップ`
-              : '選手名をクリックすると右端に詳細を表示します。'}
+              : operationMessage ||
+                '選手名で選択すると操作バーを表示します。詳細は「詳細を開く」で確認できます。'}
         </p>
         {draft.rosterPolicy?.changeMode === 'auto' && (
           <p>
@@ -552,6 +842,8 @@ export function FormationEditor({
                 {order.map((row, index) => (
                   <div
                     className="formation-slot"
+                    data-slot={index + 1}
+                    tabIndex={-1}
                     key={row.slotNo}
                     {...(first.includes(row.playerId) ? playerDrag(row.playerId) : {})}
                     {...dropArea(
@@ -601,6 +893,7 @@ export function FormationEditor({
                         {row.battingRole} ↔
                       </span>
                     </div>
+                    {placementTarget('order-' + index)}
                     {first.includes(row.playerId) && statusLine(row.playerId)}
                     <div className="formation-fallback" hidden={!showControls}>
                       <select
@@ -682,6 +975,7 @@ export function FormationEditor({
                 }}
               >
                 <h4>先発ローテーション</h4>
+                {placementTarget('rotation')}
                 {rotation.map((id, index) => pitcherRow(id, index, rotation, 'rotation'))}
                 <p className="formation-drop-space">ここへ投手を追加（ローテーションの最後へ）</p>
                 <label>
@@ -737,6 +1031,7 @@ export function FormationEditor({
                       <h5>
                         {formationReliefLabels[key]}（{ids.length}人）
                       </h5>
+                      {placementTarget(key)}
                       {ids.map((id, index) => pitcherRow(id, index, ids, key))}
                       <p className="formation-drop-space">ここへ投手を追加（優先順の最後へ）</p>
                     </section>
@@ -823,6 +1118,83 @@ export function FormationEditor({
             {formationDefaults.closeGameScoreDifference}
             点の仮値で、登板条件から変更できます。二軍の通常起用案は保持します。
           </p>
+        )}
+        {selected && !dragged && candidateIds.includes(selected) && (
+          <div className="formation-selection-bar" role="region" aria-label="選択選手の操作">
+            <strong>{name(infoId)}を選択中</strong>
+            <div className="formation-actions">
+              {placement ? (
+                <button className="secondary" onClick={cancelPlacement}>
+                  移動を取り消す
+                </button>
+              ) : (
+                <>
+                  <button
+                    disabled={
+                      locked ||
+                      !!waiting(infoId) ||
+                      (!first.includes(infoId) && registrationLocked) ||
+                      (tab === 'pitchers' && roleLocked)
+                    }
+                    onClick={() => startPlacement('player')}
+                  >
+                    移す
+                  </button>
+                  {tab === 'batters' && selectedIndex >= 0 && (
+                    <>
+                      <button
+                        className="secondary"
+                        disabled={locked || selectedIndex === 0}
+                        onClick={() => putBatter(selectedIndex - 1, infoId)}
+                      >
+                        上へ
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={locked || selectedIndex === order.length - 1}
+                        onClick={() => putBatter(selectedIndex + 1, infoId)}
+                      >
+                        下へ
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={locked}
+                        onClick={() => startPlacement('position')}
+                      >
+                        守備を交換
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="secondary"
+                    disabled={registrationLocked || !!waiting(infoId)}
+                    onClick={() => moveRegistration(infoId, !first.includes(infoId))}
+                  >
+                    {first.includes(infoId) ? '選択選手を二軍へ' : '選択選手を一軍へ'}
+                  </button>
+                </>
+              )}
+              <button className="secondary" onClick={() => onSelectPlayer(infoId)}>
+                詳細を開く
+              </button>
+              <button
+                className="secondary"
+                onClick={() => {
+                  setSelected('');
+                  setPlacement(null);
+                }}
+              >
+                選択を解除
+              </button>
+            </div>
+            {placement && (
+              <small>強調された配置先を選択。矢印で移動・Enterで配置・Escapeで取消。</small>
+            )}
+            {waiting(infoId) && (
+              <small>再登録可能：{waiting(infoId)}。それまでは移動できません。</small>
+            )}
+            {registrationLocked && <small>登録変更は手動管理・試合開始前のみ行えます。</small>}
+          </div>
         )}
       </div>
     </section>

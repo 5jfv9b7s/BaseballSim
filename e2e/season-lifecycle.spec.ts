@@ -1,3 +1,4 @@
+import { setProgressDate } from './period-controls.ts';
 import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -75,11 +76,8 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
       .selectOption('annual');
     await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
     await expect(page.getByTestId('world-date')).toHaveText('2026-03-27');
-    await page
-      .getByRole('region', { name: '日次進行', exact: true })
-      .locator('input[type="date"]')
-      .fill('2026-07-01');
-    await page.getByRole('button', { name: '指定日の試合前まで進行', exact: true }).click();
+    await setProgressDate(page, '2026-06-30');
+    await page.getByRole('button', { name: '指定日の終了まで進行', exact: true }).click();
     await waitDate('2026-07-01');
     const middle = await standings(page);
     await page.getByRole('button', { name: '世界を手動保存', exact: true }).click();

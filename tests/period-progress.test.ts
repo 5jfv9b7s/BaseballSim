@@ -1,7 +1,11 @@
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createProgressTarget, nextProgressAction } from '../src/world/period-progress.ts';
+import {
+  createProgressTarget,
+  nextProgressAction,
+  estimateProgress,
+} from '../src/world/period-progress.ts';
 import {
   advanceWorld,
   completeDay,
@@ -145,5 +149,50 @@ test('期間進行：途中停止・再開と到着日の保存復帰で、同�
     assert.deepEqual(finishDay(restored), finishDay(expected));
   } finally {
     await db.delete();
+  }
+});
+
+test('指定日を含む進行：対象日の一軍・二軍と日次保存の境界を越え、翌日の試合は始めない', () => {
+  const initial = createBullpenWorld(1);
+  const target = createProgressTarget(
+    initial.currentDate,
+    initial.definitions.endDate,
+    '2026-09-26',
+    'afterDay',
+  );
+  const result = runTo(initial, target);
+  assert.equal(result.currentDate, '2026-09-27');
+  assert.deepEqual(result.completedDates, ['2026-09-24', '2026-09-25', '2026-09-26']);
+  assert.deepEqual(result, finishDay(finishDay(finishDay(initial))));
+  assert.equal(result.dayPlan.cursor, 0);
+  for (const id of result.dayPlan.gameIds) {
+    assert.equal(result.games[id], undefined);
+    assert.equal(result.statApplicationMarkers[id], undefined);
+  }
+  assert.equal(runTo(result, target), result);
+  assert.deepEqual(
+    nextProgressAction({ currentDate: target.date, phase: 'readyToComplete' }, target),
+    { kind: 'completeDay', date: target.date },
+  );
+});
+
+test('進行の見込み：指定日を含み、一軍・二軍の未終了試合と休養日を数える', () => {
+  const games = [
+    { date: '2026-09-24', status: 'completed' },
+    { date: '2026-09-24', status: 'playing' },
+    { date: '2026-09-26', status: 'scheduled' },
+    { date: '2026-09-26', status: 'scheduled' },
+    { date: '2026-09-27', status: 'scheduled' },
+  ];
+  assert.deepEqual(estimateProgress('2026-09-24', '2026-09-27', '2026-09-26', games), {
+    days: 3,
+    games: 3,
+  });
+  assert.deepEqual(estimateProgress('2026-09-25', '2026-09-27', '2026-09-25', games), {
+    days: 1,
+    games: 0,
+  });
+  for (const date of ['', '2026-09-23', '2026-09-28', '2026-09-31']) {
+    assert.equal(estimateProgress('2026-09-24', '2026-09-27', date, games), null);
   }
 });

@@ -17,10 +17,10 @@ test('本画面：新規プレイ・休養日・記録達成試合・年度末',
   await expect(page.getByRole('status')).toContainText('新しい日程を準備しました');
   await nav.getByRole('button', { name: '日程', exact: true }).click();
   const calendar = page.getByRole('region', { name: '月別カレンダー' });
-  await calendar.getByRole('button', { name: /^09-26/ }).click();
+  await calendar.getByRole('button', { name: /^09-25/ }).click();
   await expect(date).toHaveAttribute('datetime', '2026-09-24');
   await page.screenshot({ path: '.tmp/main-screen-qa/calendar.png', fullPage: true });
-  await page.getByRole('button', { name: 'この日の試合前まで進める', exact: true }).click();
+  await page.getByRole('button', { name: 'この日の終了まで進める', exact: true }).click();
   await expect(date).toHaveAttribute('datetime', '2026-09-26', { timeout: 45000 });
   await nav.getByRole('button', { name: 'ホーム', exact: true }).click();
   await expect(page.getByRole('region', { name: '今日の対戦' })).toContainText(

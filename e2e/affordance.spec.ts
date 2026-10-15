@@ -1,3 +1,4 @@
+import { setProgressDate } from './period-controls.ts';
 import { expect, test } from '@playwright/test';
 
 for (const width of [1280, 390, 320]) {
@@ -78,7 +79,7 @@ for (const width of [1280, 390, 320]) {
       day.getByRole('button', { name: '日次進行を一時停止', exact: true }),
     ).toBeDisabled();
     await expect(day).toContainText('一時停止は、自動進行を始めると使えます。');
-    await page.getByLabel('到着する日（試合前）', { exact: true }).fill('2026-09-26');
+    await setProgressDate(page, '2026-09-26');
     await expect(date).toHaveAttribute('datetime', '2026-09-24');
     expect(await page.evaluate(() => Reflect.get(window, 'worldCommands'))).toBe(afterSave);
     await page.screenshot({ path: `.tmp/affordance-qa/progress-${width}.png`, fullPage: true });

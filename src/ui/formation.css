@@ -102,7 +102,7 @@
 }
 @media (max-width: 600px) {
   .formation-info {
-    grid-row: 1;
+    grid-row: auto;
   }
   .formation-profile .world-table {
     max-height: 260px;
@@ -178,4 +178,106 @@
 .formation-fallback {
   display: grid;
   gap: 6px;
+}
+
+.formation-summary,
+.formation-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0;
+}
+.formation-counts > span {
+  border: 1px solid #c6d3bc;
+  border-radius: 6px;
+  background: #f1f4eb;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+}
+.formation-editor .formation-select {
+  border: 1px solid #adbea0;
+  border-radius: 5px;
+  padding: 4px 8px;
+  text-decoration: none;
+  text-align: left;
+}
+.formation-slot:has(.formation-select[aria-pressed='true']),
+.formation-player:has(.formation-select[aria-pressed='true']) {
+  border: 2px solid #426c2f;
+}
+.formation-editor .formation-place {
+  border: 2px dashed #426c2f;
+  background: #e7f0dd;
+  font-size: 0.8rem;
+}
+.formation-selection-bar {
+  position: fixed;
+  z-index: 8;
+  bottom: var(--menu-clearance, 12px);
+  left: max(16px, calc((100vw - 1100px) / 2));
+  right: max(16px, calc((100vw - 1100px) / 2));
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid #426c2f;
+  border-radius: 10px;
+  background: #fffef6;
+  box-shadow: 0 4px 20px #182b222b;
+}
+.formation-selection-bar small {
+  color: #465643;
+}
+.formation-editor[data-has-selection='true'] {
+  padding-bottom: 220px;
+}
+.formation-errors {
+  border: 2px solid #9e473b;
+  background: #fff1e8;
+  padding: 12px;
+  border-radius: 8px;
+}
+.formation-errors button {
+  margin: 4px;
+}
+@media (max-width: 600px) {
+  .formation-slot,
+  .formation-player {
+    padding: 8px;
+    gap: 2px;
+  }
+  .formation-column {
+    padding: 8px;
+  }
+  .formation-drag-guide {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+  .formation-selection-bar {
+    left: 8px;
+    right: 8px;
+    padding: 8px;
+    gap: 4px;
+  }
+  .formation-selection-bar button {
+    font-size: 0.8rem;
+    padding: 6px 8px;
+  }
+  .formation-selection-bar small {
+    font-size: 0.75rem;
+  }
+}
+
+.main-screen .formation-editor .formation-select[aria-pressed='true'] {
+  text-decoration: none;
+  background: #e3edd9;
+}
+.formation-editor [data-placement-target],
+.formation-editor [data-slot] {
+  scroll-margin-block: 140px 400px;
+}
+
+.formation-selection-bar button:not(.secondary):enabled {
+  background: #365d46;
+  color: #fff;
 }

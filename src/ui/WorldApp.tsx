@@ -1,3 +1,4 @@
+import { ProgressEstimate } from './ProgressEstimate.tsx';
 import { FormationEditor } from './FormationEditor.tsx';
 import {
   createFormationDraft,
@@ -269,8 +270,11 @@ export function WorldApp({
         setMessage(
           data.view.lastCompletedDate +
             'の全結果を反映し、翌日の状態を自動保存しました。' +
-            (arrived && target.boundary === 'beforeGames'
-              ? target.date + 'の試合前で停止しました。'
+            (arrived
+              ? target.date +
+                (target.boundary === 'beforeGames'
+                  ? 'の試合前で停止しました。'
+                  : 'の終了まで進めて停止しました。')
               : ''),
         );
       }
@@ -443,6 +447,13 @@ export function WorldApp({
   const formationView = view && (formation ?? createFormationDraft(view));
   const formationPending =
     !!formation && !!formationBase.current && formationChanged(formationBase.current, formation);
+  const seventh = view
+    ? new Date(Date.parse(view.currentDate + 'T00:00:00Z') + 6 * 86400000)
+        .toISOString()
+        .slice(0, 10)
+    : '';
+  const weekEnd = view && seventh > view.definitions.endDate ? view.definitions.endDate : seventh;
+
   const panels = {
     formation:
       view && formationView ? (
@@ -475,35 +486,43 @@ export function WorldApp({
           <h2>
             現在日：<time data-testid="world-date">{view?.currentDate ?? '準備中'}</time>
           </h2>
-          <p>
-            {view?.phase === 'scheduleComplete'
-              ? '試作日程をすべて完了しました。'
-              : `本日の試合：${view?.dayPlan.cursor ?? 0} / ${view?.dayPlan.gameIds.length ?? 0} 完了`}
-          </p>
-          {view?.farm &&
-            !view.games.some(
-              (game) => game.date === view.currentDate && game.statScope === 'firstRegular',
-            ) && <p>一軍は今日は試合がありません。二軍の予定も含めて日次確定します。</p>}
-          {view?.dayPlan.gameIds.map((gameId) => {
-            const game = view.games.find((item) => item.gameId === gameId)!;
-            return (
-              <p key={gameId}>
-                {game.display?.teams.away ?? squadName(game.awaySquadId)}{' '}
-                {game.score ? `${game.score.away} − ${game.score.home}` : '対'}{' '}
-                {game.display?.teams.home ?? squadName(game.homeSquadId)} ・{' '}
-                {game.status === 'scheduled'
-                  ? '試合前'
-                  : game.status === 'completed'
-                    ? '終了'
-                    : game.status === 'aborted'
-                      ? '異常停止'
-                      : `進行中（${game.totalPitches}球）`}
-              </p>
-            );
-          })}
-          {view?.phase === 'readyToComplete' && view.dayPlan.gameIds.length === 0 && (
-            <p>今日は試合がありません。日次確定と自動保存を行います。</p>
-          )}
+          <ol className="day-steps" aria-label="今日の進行段階">
+            <li
+              aria-current={
+                view?.phase === 'playing' &&
+                view.dayPlan.cursor === 0 &&
+                !view.games.some(
+                  (game) => game.date === view.currentDate && game.status !== 'scheduled',
+                )
+                  ? 'step'
+                  : undefined
+              }
+            >
+              1. 試合前
+            </li>
+            <li
+              aria-current={
+                view?.phase === 'playing' &&
+                (view.dayPlan.cursor > 0 ||
+                  view.games.some(
+                    (game) => game.date === view.currentDate && game.status !== 'scheduled',
+                  ))
+                  ? 'step'
+                  : undefined
+              }
+            >
+              2. 自動試合
+            </li>
+            <li
+              aria-current={
+                view?.phase === 'readyToComplete' || view?.phase === 'scheduleComplete'
+                  ? 'step'
+                  : undefined
+              }
+            >
+              3. 結果・日次確定
+            </li>
+          </ol>
           <section
             className="workflow-group workflow-primary"
             aria-labelledby="advance-day-heading"
@@ -558,56 +577,89 @@ export function WorldApp({
             </div>
             {!running && <p className="hint">一時停止は、自動進行を始めると使えます。</p>}
           </section>
+          <p>
+            {view?.phase === 'scheduleComplete'
+              ? '試作日程をすべて完了しました。'
+              : `本日の試合：${view?.dayPlan.cursor ?? 0} / ${view?.dayPlan.gameIds.length ?? 0} 完了`}
+          </p>
+          {view?.farm &&
+            !view.games.some(
+              (game) => game.date === view.currentDate && game.statScope === 'firstRegular',
+            ) && <p>一軍は今日は試合がありません。二軍の予定も含めて日次確定します。</p>}
+          {view?.dayPlan.gameIds.map((gameId) => {
+            const game = view.games.find((item) => item.gameId === gameId)!;
+            return (
+              <p key={gameId}>
+                {game.display?.teams.away ?? squadName(game.awaySquadId)}{' '}
+                {game.score ? `${game.score.away} − ${game.score.home}` : '対'}{' '}
+                {game.display?.teams.home ?? squadName(game.homeSquadId)} ・{' '}
+                {game.status === 'scheduled'
+                  ? '試合前'
+                  : game.status === 'completed'
+                    ? '終了'
+                    : game.status === 'aborted'
+                      ? '異常停止'
+                      : `進行中（${game.totalPitches}球）`}
+              </p>
+            );
+          })}
+          {view?.phase === 'readyToComplete' && view.dayPlan.gameIds.length === 0 && (
+            <p>今日は試合がありません。日次確定と自動保存を行います。</p>
+          )}
           <section className="workflow-group" aria-labelledby="advance-period-heading">
             <h3 id="advance-period-heading">まとめて進める</h3>
             <p className="action-hint" id="advance-period-hint">
-              日付を選ぶだけでは進行しません。「指定日の試合前まで進行」で開始します。
-              1週間・シーズン終了の操作は、対象日の全試合終了まで進めます。
+              日付を選ぶだけでは進行しません。「指定日の終了まで進行」で開始します。
+              選んだ当日の全試合・日次確定・自動保存まで行います。
             </p>
-            <div className="world-controls">
-              <label>
-                到着する日（試合前）{' '}
-                <input
-                  type="date"
-                  value={targetDate || view?.currentDate || ''}
-                  min={view?.currentDate}
-                  max={view?.definitions.endDate}
+            <details className="workflow-disclosure">
+              <summary>日付を入力して進める</summary>
+              <div className="world-controls">
+                <label>
+                  進める最終日（当日を含む）{' '}
+                  <input
+                    type="date"
+                    value={targetDate || view?.currentDate || ''}
+                    min={view?.currentDate}
+                    max={view?.definitions.endDate}
+                    disabled={disabled || !canRun}
+                    onChange={(event) => setTargetDate(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="secondary"
+                  aria-describedby="advance-period-hint advance-day-hint"
                   disabled={disabled || !canRun}
-                  onChange={(event) => setTargetDate(event.target.value)}
-                />
-              </label>
-              <button
-                className="secondary"
-                aria-describedby="advance-period-hint advance-day-hint"
-                disabled={disabled || !canRun}
-                onClick={() => startProgress(targetDate || view!.currentDate, 'beforeGames')}
-              >
-                指定日の試合前まで進行
-              </button>
-              <button
-                className="secondary"
-                disabled={disabled || !canRun}
-                onClick={() => {
-                  const seventh = new Date(
-                    Date.parse(view!.currentDate + 'T00:00:00Z') + 6 * 86400000,
-                  )
-                    .toISOString()
-                    .slice(0, 10);
-                  startProgress(
-                    seventh < view!.definitions.endDate ? seventh : view!.definitions.endDate,
-                    'afterDay',
-                  );
-                }}
-              >
-                1週間を進行
-              </button>
-              <button
-                className="secondary"
-                disabled={disabled || !canRun}
-                onClick={() => startProgress(view!.definitions.endDate, 'afterDay')}
-              >
-                シーズン終了まで進行
-              </button>
+                  onClick={() => startProgress(targetDate || view!.currentDate, 'afterDay')}
+                >
+                  指定日の終了まで進行
+                </button>
+              </div>
+              {view && <ProgressEstimate view={view} date={targetDate || view.currentDate} />}
+            </details>
+            <div className="period-shortcuts">
+              <div>
+                <button
+                  className="secondary"
+                  disabled={disabled || !canRun}
+                  onClick={() => {
+                    startProgress(weekEnd, 'afterDay');
+                  }}
+                >
+                  1週間を進行
+                </button>
+                {view && <ProgressEstimate view={view} date={weekEnd} />}
+              </div>
+              <div>
+                <button
+                  className="secondary"
+                  disabled={disabled || !canRun}
+                  onClick={() => startProgress(view!.definitions.endDate, 'afterDay')}
+                >
+                  シーズン終了まで進行
+                </button>
+                {view && <ProgressEstimate view={view} date={view.definitions.endDate} />}
+              </div>
             </div>
           </section>
           <details className="workflow-disclosure" open={view?.phase === 'readyToComplete'}>
@@ -628,7 +680,7 @@ export function WorldApp({
           </details>
           {pausedTarget && <p>一時停止中：{progressLabel(pausedTarget)}進行する予定です。</p>}
           <p className="hint">
-            指定日は、その日の試合を始める前に止まります。1日・1週間・シーズン終了の進行は対象日の終了まで進めます。
+            どの進行方法でも指定日を含みます。対象日の全試合と日次確定が終わると、翌日の試合前で止まります。
             毎日自動保存し、保存失敗・試合の異常停止で止まります。
           </p>
           {development && !storageAction && notification}
@@ -676,7 +728,7 @@ export function WorldApp({
             canAdvance={!disabled && canRun}
             onAdvanceTo={(date) => {
               setTargetDate(date);
-              startProgress(date, 'beforeGames');
+              startProgress(date, 'afterDay');
             }}
             onSelect={(date) => {
               setSelectedDate(date);

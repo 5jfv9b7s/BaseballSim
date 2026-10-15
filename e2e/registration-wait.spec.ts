@@ -1,3 +1,4 @@
+import { setProgressDate } from './period-controls.ts';
 import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect } from '@playwright/test';
 
@@ -18,11 +19,8 @@ test('年間の再登録待ち：月跨ぎ・保存復帰後も10日境界を守
   await editor.getByRole('button', { name: '登録変更を確定して保存', exact: true }).click();
   await expect(first).toBeDisabled();
   await expect(editor).toContainText('2026-04-06');
-  await page
-    .getByRole('region', { name: '日次進行', exact: true })
-    .locator('input[type="date"]')
-    .fill('2026-04-05');
-  await page.getByRole('button', { name: '指定日の試合前まで進行', exact: true }).click();
+  await setProgressDate(page, '2026-04-04');
+  await page.getByRole('button', { name: '指定日の終了まで進行', exact: true }).click();
   await expect(page.getByTestId('world-date')).toHaveText('2026-04-05', { timeout: 60000 });
   await expect(first).toBeDisabled();
   await page.reload();

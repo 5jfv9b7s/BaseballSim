@@ -1,3 +1,4 @@
+import { MenuIcon, type MenuIconName } from './MenuIcon.tsx';
 import { PlayerDetails } from './PlayerDetails.tsx';
 import { PlayerDirectory } from './PlayerDirectory.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -39,13 +40,13 @@ type PanelName =
   | 'stats'
   | 'storage'
   | 'setup';
-const NAV: { id: Section; name: string; page: MainPage }[] = [
-  { id: 'home', name: 'ホーム', page: 'home' },
-  { id: 'schedule', name: '日程', page: 'schedule' },
-  { id: 'formation', name: '編成', page: 'formation' },
-  { id: 'team', name: 'チーム', page: 'team' },
-  { id: 'records', name: '成績', page: 'standings' },
-  { id: 'system', name: 'システム', page: 'save' },
+const NAV: { id: Section; name: string; page: MainPage; icon: MenuIconName }[] = [
+  { id: 'home', icon: 'home', name: 'ホーム', page: 'home' },
+  { id: 'schedule', icon: 'schedule', name: '日程', page: 'schedule' },
+  { id: 'formation', icon: 'lineup', name: '編成', page: 'formation' },
+  { id: 'team', icon: 'team', name: 'チーム', page: 'team' },
+  { id: 'records', icon: 'stats', name: '成績', page: 'standings' },
+  { id: 'system', icon: 'settings', name: 'システム', page: 'save' },
 ];
 const TITLES: Record<MainPage, string> = {
   home: 'クラブハウス',
@@ -117,6 +118,22 @@ export function MainScreen({
 }) {
   const [card, setCard] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const nav = navigationRef.current;
+    if (!nav) return;
+    const update = () =>
+      mainRef.current?.style.setProperty(
+        '--menu-clearance',
+        `${Math.ceil(nav.getBoundingClientRect().height) + 24}px`,
+      );
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    update();
+    return () => observer.disconnect();
+  }, []);
   const previousPage = useRef(page);
 
   useEffect(() => {
@@ -210,7 +227,7 @@ export function MainScreen({
           CLUB MANAGEMENT <span className="main-preview">開発中</span>
         </span>
       </div>
-      <main className="main-screen world-page">
+      <main className="main-screen world-page" ref={mainRef}>
         <header className="club-header">
           <div className="club-date">
             <span>{view?.currentDate.slice(0, 4) ?? '—'} SEASON</span>
@@ -444,7 +461,7 @@ export function MainScreen({
                 </div>
                 <div className="card-navigation">
                   <button aria-label="前の情報カード" onClick={() => setCard((card + 4) % 5)}>
-                    ←
+                    前へ
                   </button>
                   <div>
                     {cardTitles.map((title, index) => (
@@ -454,12 +471,12 @@ export function MainScreen({
                         aria-pressed={card === index}
                         onClick={() => setCard(index)}
                       >
-                        <span />
+                        {title}
                       </button>
                     ))}
                   </div>
                   <button aria-label="次の情報カード" onClick={() => setCard((card + 1) % 5)}>
-                    →
+                    次へ
                   </button>
                 </div>
               </section>
@@ -567,13 +584,14 @@ export function MainScreen({
             </div>
           </>
         )}
-        <nav className="main-navigation" aria-label="メインメニュー">
+        <nav className="main-navigation" aria-label="メインメニュー" ref={navigationRef}>
           {NAV.map((item) => (
             <button
               key={item.id}
               aria-current={section === item.id ? 'page' : undefined}
               onClick={() => onNavigate(item.page)}
             >
+              <MenuIcon name={item.icon} />
               {item.name}
             </button>
           ))}

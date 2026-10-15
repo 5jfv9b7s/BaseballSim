@@ -953,3 +953,71 @@
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 }
+
+.menu-icon {
+  display: inline-block;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  mask: var(--menu-icon) center / contain no-repeat;
+}
+.main-navigation button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.card-navigation {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.card-navigation > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  order: 1;
+}
+.card-navigation button {
+  width: auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #849674;
+  border-radius: 6px;
+}
+.card-navigation > div button {
+  font-size: 0.75rem;
+}
+.card-navigation button[aria-pressed='true'] {
+  font-weight: bold;
+  text-decoration: underline;
+  background: #e3edda;
+}
+
+/* 固定操作バーの基準となるメニューを、画面下端に固定する。 */
+.main-screen {
+  padding-bottom: calc(var(--menu-clearance, 120px) + 20px);
+}
+.main-navigation {
+  position: fixed;
+  left: max(12px, calc((100vw - 1192px) / 2));
+  right: max(12px, calc((100vw - 1192px) / 2));
+  bottom: 10px;
+  margin: 0;
+}
+
+/* 最後の操作も、固定バーより上までスクロールして表示できる余白を確保する。 */
+.main-screen:has(.formation-selection-bar) {
+  padding-bottom: calc(var(--menu-clearance, 120px) + 280px);
+}
+.main-screen :is(button, input, select, summary) {
+  scroll-margin-bottom: calc(var(--menu-clearance, 120px) + 240px);
+}
+@media (max-width: 600px) {
+  .main-screen:has(.calendar-selection[data-selected='true']) {
+    padding-bottom: calc(var(--menu-clearance, 180px) + 280px);
+  }
+}

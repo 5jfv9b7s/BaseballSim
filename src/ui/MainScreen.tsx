@@ -39,13 +39,13 @@ type PanelName =
   | 'stats'
   | 'storage'
   | 'setup';
-const NAV: { id: Section; name: string; page: MainPage; icon: string }[] = [
-  { id: 'home', name: 'ホーム', page: 'home', icon: '⌂' },
-  { id: 'schedule', name: '日程', page: 'schedule', icon: '▦' },
-  { id: 'formation', name: '編成', page: 'formation', icon: '◇' },
-  { id: 'team', name: 'チーム', page: 'team', icon: '♧' },
-  { id: 'records', name: '成績', page: 'standings', icon: '▥' },
-  { id: 'system', name: 'システム', page: 'save', icon: '⚙' },
+const NAV: { id: Section; name: string; page: MainPage }[] = [
+  { id: 'home', name: 'ホーム', page: 'home' },
+  { id: 'schedule', name: '日程', page: 'schedule' },
+  { id: 'formation', name: '編成', page: 'formation' },
+  { id: 'team', name: 'チーム', page: 'team' },
+  { id: 'records', name: '成績', page: 'standings' },
+  { id: 'system', name: 'システム', page: 'save' },
 ];
 const TITLES: Record<MainPage, string> = {
   home: 'クラブハウス',
@@ -94,6 +94,7 @@ export function MainScreen({
   error,
   notice,
   hasSavedPlays,
+  formationPending,
   onPause,
   onToday,
   onOpenTools,
@@ -109,6 +110,7 @@ export function MainScreen({
   error: string;
   notice: ReactNode;
   hasSavedPlays: boolean;
+  formationPending: boolean;
   onPause: () => void;
   onToday: () => void;
   onOpenTools: () => void;
@@ -249,7 +251,22 @@ export function MainScreen({
           <h2 ref={headingRef} tabIndex={-1}>
             {TITLES[page]}
           </h2>
-          <span>{view?.unsavedChanges ? '● 未保存の変更あり' : '保存状態を確認できます'}</span>
+          <div className="save-indicator">
+            <span className="save-badge" data-unsaved={formationPending || view?.unsavedChanges}>
+              {!view
+                ? '読み込み中'
+                : formationPending
+                  ? '編成を編集中'
+                  : view.unsavedChanges
+                    ? '未保存の変更あり'
+                    : '保存済み'}
+            </span>
+            {page !== 'save' && (
+              <button className="secondary" disabled={!view} onClick={() => onNavigate('save')}>
+                セーブ画面を開く
+              </button>
+            )}
+          </div>
         </div>
         {page === 'home' && (
           <>
@@ -338,7 +355,7 @@ export function MainScreen({
                 <p className="today-note">
                   {view?.phase === 'scheduleComplete'
                     ? '確定したシーズンの記録を確認できます。'
-                    : '次の画面で確認してから、全試合を自動進行します。'}
+                    : '進行画面を開きます。試合を始めるには、次の画面で「1日を自動進行」を押してください。'}
                 </p>
               </section>
               <section
@@ -557,7 +574,6 @@ export function MainScreen({
               aria-current={section === item.id ? 'page' : undefined}
               onClick={() => onNavigate(item.page)}
             >
-              <span aria-hidden="true">{item.icon}</span>
               {item.name}
             </button>
           ))}

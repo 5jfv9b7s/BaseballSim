@@ -131,3 +131,63 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+/* 実行範囲ごとにまとめる。開発用画面でも同じ順序と説明を使う。 */
+.workflow-group {
+  margin: 20px 0;
+  padding: 20px 0;
+  border-top: 1px solid currentColor;
+}
+.workflow-group h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+.workflow-group .world-controls {
+  align-items: center;
+  margin: 12px 0;
+}
+.workflow-fields,
+.save-slot-grid,
+.backup-workflows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 16px;
+}
+.workflow-fields > *,
+.save-slot,
+.backup-workflows > * {
+  min-width: 0;
+}
+.world-page .workflow-fields label,
+.world-page .backup-workflows label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0;
+}
+.save-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.save-slot h4,
+.save-slot p {
+  margin: 0;
+}
+.save-slot button {
+  margin-top: auto;
+}
+.workflow-disclosure {
+  margin: 20px 0;
+}
+.workflow-disclosure > summary {
+  padding: 14px 12px;
+}
+.workflow-disclosure[open] > summary {
+  margin-bottom: 16px;
+}
+.action-hint {
+  margin: 8px 0;
+}

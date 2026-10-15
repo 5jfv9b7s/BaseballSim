@@ -70,6 +70,7 @@ for (const width of [1280, 390]) {
     await nav.getByRole('button', { name: '編成', exact: true }).click();
     await enableControls(page);
     await editor.getByRole('button', { name: '1番を下へ', exact: true }).click();
+    await expect(page.locator('.save-badge')).toHaveText('編成を編集中');
     await expect(first).toHaveValue(originalSecond);
     await editor.getByRole('button', { name: '投手オーダー', exact: true }).click();
     await editor.getByRole('button', { name: '起用方針', exact: true }).click();
@@ -93,6 +94,7 @@ for (const width of [1280, 390]) {
     );
     await nav.getByRole('button', { name: 'ホーム', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'クラブハウス', exact: true })).toBeVisible();
+    await expect(page.locator('.save-badge')).toHaveText('保存済み');
     expect(await page.evaluate(() => Reflect.get(window, 'formationCommands'))).toBe(1);
     await nav.getByRole('button', { name: '編成', exact: true }).click();
     await enableControls(page);

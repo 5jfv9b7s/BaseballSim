@@ -134,8 +134,10 @@ test('新規プレイ：未保存の途中経過は作成画面の手動保存�
   await page.reload();
   await expect(page.getByRole('alert')).toContainText('以前の保存があります');
   const restarted = await saves(page);
-  await restarted.getByRole('button', { name: '世界を手動保存', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('保存を読み込むか、新規プレイ');
+  await expect(
+    restarted.getByRole('button', { name: '世界を手動保存', exact: true }),
+  ).toBeDisabled();
+  await expect(restarted.locator('#manual-save-hint')).toContainText('以前の保存があります');
   await restarted.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました', {
     timeout: 30000,

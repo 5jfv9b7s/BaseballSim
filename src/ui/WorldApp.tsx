@@ -13,7 +13,7 @@ import {
   type ProgressTarget,
 } from '../world/period-progress.ts';
 import { MemorialPanel } from './MemorialPanel.tsx';
-import { BackupPanel } from './BackupPanel.tsx';
+import { BackupPanel, SavedPlayPicker } from './BackupPanel.tsx';
 import { MAX_PACKAGE_BYTES } from '../world/backup-zip.ts';
 import type { StoredPlay, WorldSlotKind } from '../world/storage.ts';
 import { StorageInspectionPanel } from './StorageInspectionPanel.tsx';
@@ -249,7 +249,7 @@ export function WorldApp({
       if (data.importedLocalWorldId) {
         setImportedId(data.importedLocalWorldId);
         setMessage(
-          '別プレイとして取り込みました。現在の作業は保持しています。下の一覧から開けます。',
+          '別プレイとして取り込みました。現在の作業は保持しています。「保存したプレイを再開」から開けます。',
         );
       }
       if (data.inspection) {
@@ -416,7 +416,7 @@ export function WorldApp({
       ? '以前の保存があります。「世界の保存」から読み込むか、新規プレイを作成してください。'
       : '';
   const disabled = !view || busy || running;
-  const canRun = view?.phase === 'playing' || view?.phase === 'readyToComplete';
+  const canRun = !resumeNotice && (view?.phase === 'playing' || view?.phase === 'readyToComplete');
   const pausedTarget = !running && canRun ? progressTarget.current : null;
   const resultDate = selectedDate || view?.lastCompletedDate || view?.currentDate || '';
   const displayScope = view?.farm ? scope : 'firstRegular';
@@ -441,6 +441,8 @@ export function WorldApp({
     : [];
 
   const formationView = view && (formation ?? createFormationDraft(view));
+  const formationPending =
+    !!formation && !!formationBase.current && formationChanged(formationBase.current, formation);
   const panels = {
     formation:
       view && formationView ? (
@@ -454,11 +456,7 @@ export function WorldApp({
             key={view.localWorldId + editorEpoch}
             view={view}
             draft={formationView}
-            changed={
-              !!formation &&
-              !!formationBase.current &&
-              formationChanged(formationBase.current, formation)
-            }
+            changed={formationPending}
             locked={!formation || disabled || !view.canEditManagement}
             onChange={setFormation}
             onReset={() => {
@@ -506,86 +504,128 @@ export function WorldApp({
           {view?.phase === 'readyToComplete' && view.dayPlan.gameIds.length === 0 && (
             <p>今日は試合がありません。日次確定と自動保存を行います。</p>
           )}
-          <div className="world-controls">
-            <button
-              disabled={disabled || !canRun}
-              onClick={() => {
-                startProgress(view!.currentDate, 'afterDay');
-              }}
-            >
-              1日を自動進行
-            </button>
-            <button
-              className="secondary"
-              disabled={!running}
-              onClick={() => {
-                auto.current = false;
-                setRunning(false);
-                setMessage('一時停止しました。実行中の処理が終わり次第、停止します。');
-              }}
-            >
-              日次進行を一時停止
-            </button>
-            {pausedTarget && (
+          <section
+            className="workflow-group workflow-primary"
+            aria-labelledby="advance-day-heading"
+          >
+            <h3 id="advance-day-heading">今日を進める</h3>
+            <p className="action-hint" id="advance-day-hint">
+              {running
+                ? '自動進行中です。一時停止すると、実行中の処理が終わり次第止まります。'
+                : busy
+                  ? '処理が終わるまでお待ちください。'
+                  : !view
+                    ? '試合情報を読み込み中です。'
+                    : resumeNotice
+                      ? resumeNotice
+                      : view.phase === 'aborted'
+                        ? '試合が異常停止しています。エラーを確認し、保存した時点からの再開をご検討ください。'
+                        : !canRun
+                          ? '今季の日程は終了しています。成績メニューで記録を確認できます。'
+                          : '今日の一軍・二軍の全試合を終え、日次確定と自動保存まで行います。'}
+            </p>
+            <div className="world-controls">
+              <button
+                aria-describedby="advance-day-hint"
+                disabled={disabled || !canRun}
+                onClick={() => {
+                  startProgress(view!.currentDate, 'afterDay');
+                }}
+              >
+                1日を自動進行
+              </button>
+              <button
+                className={running ? 'stop-action' : 'secondary'}
+                aria-describedby="advance-day-hint"
+                disabled={!running}
+                onClick={() => {
+                  auto.current = false;
+                  setRunning(false);
+                  setMessage('一時停止しました。実行中の処理が終わり次第、停止します。');
+                }}
+              >
+                日次進行を一時停止
+              </button>
+              {pausedTarget && (
+                <button
+                  className="secondary"
+                  disabled={disabled}
+                  onClick={() => startProgress(pausedTarget.date, pausedTarget.boundary)}
+                >
+                  期間進行を再開
+                </button>
+              )}
+            </div>
+            {!running && <p className="hint">一時停止は、自動進行を始めると使えます。</p>}
+          </section>
+          <section className="workflow-group" aria-labelledby="advance-period-heading">
+            <h3 id="advance-period-heading">まとめて進める</h3>
+            <p className="action-hint" id="advance-period-hint">
+              日付を選ぶだけでは進行しません。「指定日の試合前まで進行」で開始します。
+              1週間・シーズン終了の操作は、対象日の全試合終了まで進めます。
+            </p>
+            <div className="world-controls">
+              <label>
+                到着する日（試合前）{' '}
+                <input
+                  type="date"
+                  value={targetDate || view?.currentDate || ''}
+                  min={view?.currentDate}
+                  max={view?.definitions.endDate}
+                  disabled={disabled || !canRun}
+                  onChange={(event) => setTargetDate(event.target.value)}
+                />
+              </label>
               <button
                 className="secondary"
-                disabled={disabled}
-                onClick={() => startProgress(pausedTarget.date, pausedTarget.boundary)}
-              >
-                期間進行を再開
-              </button>
-            )}
-            <button
-              className="secondary"
-              disabled={disabled || view?.phase !== 'readyToComplete'}
-              onClick={() => send({ kind: 'completeDay', date: view!.currentDate })}
-            >
-              日次確定を再試行
-            </button>
-          </div>
-          <div className="world-controls">
-            <label>
-              到着する日（試合前）{' '}
-              <input
-                type="date"
-                value={targetDate || view?.currentDate || ''}
-                min={view?.currentDate}
-                max={view?.definitions.endDate}
+                aria-describedby="advance-period-hint advance-day-hint"
                 disabled={disabled || !canRun}
-                onChange={(event) => setTargetDate(event.target.value)}
-              />
-            </label>
-            <button
-              disabled={disabled || !canRun}
-              onClick={() => startProgress(targetDate || view!.currentDate, 'beforeGames')}
-            >
-              指定日の試合前まで進行
-            </button>
-            <button
-              className="secondary"
-              disabled={disabled || !canRun}
-              onClick={() => {
-                const seventh = new Date(
-                  Date.parse(view!.currentDate + 'T00:00:00Z') + 6 * 86400000,
-                )
-                  .toISOString()
-                  .slice(0, 10);
-                startProgress(
-                  seventh < view!.definitions.endDate ? seventh : view!.definitions.endDate,
-                  'afterDay',
-                );
-              }}
-            >
-              1週間を進行
-            </button>
-            <button
-              className="secondary"
-              disabled={disabled || !canRun}
-              onClick={() => startProgress(view!.definitions.endDate, 'afterDay')}
-            >
-              シーズン終了まで進行
-            </button>
-          </div>
+                onClick={() => startProgress(targetDate || view!.currentDate, 'beforeGames')}
+              >
+                指定日の試合前まで進行
+              </button>
+              <button
+                className="secondary"
+                disabled={disabled || !canRun}
+                onClick={() => {
+                  const seventh = new Date(
+                    Date.parse(view!.currentDate + 'T00:00:00Z') + 6 * 86400000,
+                  )
+                    .toISOString()
+                    .slice(0, 10);
+                  startProgress(
+                    seventh < view!.definitions.endDate ? seventh : view!.definitions.endDate,
+                    'afterDay',
+                  );
+                }}
+              >
+                1週間を進行
+              </button>
+              <button
+                className="secondary"
+                disabled={disabled || !canRun}
+                onClick={() => startProgress(view!.definitions.endDate, 'afterDay')}
+              >
+                シーズン終了まで進行
+              </button>
+            </div>
+          </section>
+          <details className="workflow-disclosure" open={view?.phase === 'readyToComplete'}>
+            <summary>日次確定が止まったとき</summary>
+            <p className="hint" id="retry-day-hint">
+              全試合が終わり、日次確定を待っているときに使えます。保存に失敗した場合は、エラーの原因を解消してから再試行してください。
+            </p>
+            <div className="world-controls">
+              <button
+                className="secondary"
+                disabled={disabled || view?.phase !== 'readyToComplete'}
+                aria-describedby="retry-day-hint"
+                onClick={() => send({ kind: 'completeDay', date: view!.currentDate })}
+              >
+                日次確定を再試行
+              </button>
+            </div>
+          </details>
           {pausedTarget && <p>一時停止中：{progressLabel(pausedTarget)}進行する予定です。</p>}
           <p className="hint">
             指定日は、その日の試合を始める前に止まります。1日・1週間・シーズン終了の進行は対象日の終了まで進めます。
@@ -908,16 +948,91 @@ export function WorldApp({
         <section className="panel" aria-label="世界の保存">
           <h2>世界の保存</h2>
           {development && storageAction && notification}
+          <section
+            className="workflow-group workflow-primary"
+            aria-labelledby="save-current-heading"
+          >
+            <h3 id="save-current-heading">現在の作業を保存</h3>
+            <p className="save-state" data-unsaved={view?.unsavedChanges}>
+              {!view
+                ? '保存状態を読み込み中です。'
+                : view.unsavedChanges
+                  ? '作業状態には未保存の変更があります。'
+                  : '現在の作業状態は保存済みです。'}
+            </p>
+            <div className="world-controls">
+              <button
+                disabled={disabled || Boolean(resumeNotice)}
+                aria-describedby="manual-save-hint"
+                onClick={() => send({ kind: 'save' })}
+              >
+                世界を手動保存
+              </button>
+            </div>
+            <p className="action-hint" id="manual-save-hint">
+              {resumeNotice
+                ? resumeNotice
+                : running || busy
+                  ? '処理が終わるか、進行を一時停止してから保存できます。'
+                  : '現在の状態で手動保存枠を更新します。自動保存の枠はそのまま残ります。'}
+            </p>
+          </section>
+
           {view && (
-            <BackupPanel
+            <SavedPlayPicker
               view={view}
               plays={plays}
               importedId={importedId}
               disabled={disabled}
-              exportFile={exportFile}
-              importFile={importFile}
               openPlay={openPlay}
               refresh={refreshPlays}
+            />
+          )}
+
+          <section className="workflow-group" aria-labelledby="restore-heading">
+            <h3 id="restore-heading">このプレイの保存時点に戻る</h3>
+            <p className="hint" id="restore-hint">
+              読み込むと、現在の作業を選んだ保存時点に戻します。残したい変更は先に手動保存してください。
+              {(running || busy) && ' 処理が終わるか、進行を一時停止してから読み込めます。'}
+            </p>
+            <div className="save-slot-grid">
+              {(
+                [
+                  ['manual', '手動保存を読み込む', '自分で保存した時点'],
+                  ['auto', '自動保存を読み込む', '最新の自動保存時点'],
+                  ['previousAuto', '直前の自動保存を読み込む', 'ひとつ前の自動保存時点'],
+                ] as const
+              ).map(([slot, label, description]) => (
+                <div className="save-slot" key={slot}>
+                  <h4>{description}</h4>
+                  <p id={`slot-${slot}-hint`}>
+                    {view?.slots[slot] ? (
+                      <>
+                        ゲーム内日付：<time>{view.slots[slot].gameDate}</time>
+                      </>
+                    ) : (
+                      '保存がないため、まだ読み込めません。'
+                    )}
+                  </p>
+                  <button
+                    className="secondary"
+                    disabled={disabled || !view?.slots[slot]}
+                    aria-describedby={`restore-hint slot-${slot}-hint`}
+                    onClick={() => send({ kind: 'load', slot })}
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {view && (
+            <BackupPanel
+              view={view}
+              disabled={disabled}
+              exportFile={exportFile}
+              importFile={importFile}
             />
           )}
           <StorageInspectionPanel
@@ -925,43 +1040,8 @@ export function WorldApp({
             disabled={disabled}
             inspect={inspectStorage}
           />
-          <p>
-            {view?.unsavedChanges
-              ? '作業状態には未保存の変更があります。'
-              : '現在の作業状態は保存済みです。'}
-          </p>
-          <div className="world-controls">
-            <button disabled={disabled} onClick={() => send({ kind: 'save' })}>
-              世界を手動保存
-            </button>
-            <button
-              className="secondary"
-              disabled={disabled || !view?.slots.manual}
-              onClick={() => send({ kind: 'load', slot: 'manual' })}
-            >
-              手動保存を読み込む
-            </button>
-            <button
-              className="secondary"
-              disabled={disabled || !view?.slots.auto}
-              onClick={() => send({ kind: 'load', slot: 'auto' })}
-            >
-              自動保存を読み込む
-            </button>
-            <button
-              className="secondary"
-              disabled={disabled || !view?.slots.previousAuto}
-              onClick={() => send({ kind: 'load', slot: 'previousAuto' })}
-            >
-              直前の自動保存を読み込む
-            </button>
-          </div>
           <p className="hint">
-            自動保存の日付：{view?.slots.auto?.gameDate ?? '保存なし'} / 手動保存の日付：
-            {view?.slots.manual?.gameDate ?? '保存なし'}
-          </p>
-          <p className="hint">
-            手動保存は一時停止後に利用できます。ブラウザのサイトデータを削除すると保存も消えます。
+            ブラウザのサイトデータを削除すると保存も消えます。保管用にはファイルのバックアップをご利用ください。
           </p>
         </section>
       </>
@@ -1070,6 +1150,7 @@ export function WorldApp({
         error={error || view?.storageError || resumeNotice}
         notice={notification}
         hasSavedPlays={plays.length > 0}
+        formationPending={formationPending}
         onPause={() => {
           auto.current = false;
           setRunning(false);

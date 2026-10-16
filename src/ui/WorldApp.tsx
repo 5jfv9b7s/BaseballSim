@@ -482,7 +482,7 @@ export function WorldApp({
       ),
     progress: (
       <>
-        <section className="panel" aria-label="日次進行">
+        <section className="panel" aria-label="日次進行" id="world-progress">
           <h2>
             現在日：<time data-testid="world-date">{view?.currentDate ?? '準備中'}</time>
           </h2>
@@ -726,6 +726,20 @@ export function WorldApp({
             scope={displayScope}
             selectedDate={selectedDate}
             canAdvance={!disabled && canRun}
+            onOpenGame={(date, gameId) => {
+              setSelectedDate(date);
+              setSelectedGame(gameId);
+              if (!development) navigate('results');
+              else
+                requestAnimationFrame(() => {
+                  resultsRef.current?.focus();
+                  resultsRef.current?.scrollIntoView({ block: 'start' });
+                });
+            }}
+            onToday={() => {
+              if (!development) navigate('today');
+              else document.getElementById('world-progress')?.scrollIntoView({ block: 'start' });
+            }}
             onAdvanceTo={(date) => {
               setTargetDate(date);
               startProgress(date, 'afterDay');

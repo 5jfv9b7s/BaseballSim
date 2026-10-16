@@ -23,31 +23,6 @@
   box-shadow: none;
   font-size: 17px;
 }
-.uniform-graphic {
-  flex: none;
-  width: 68px;
-  height: 72px;
-  overflow: visible;
-}
-.uniform-body {
-  fill: #fff9e7;
-  stroke: #c3cfc6;
-  stroke-width: 1.5;
-}
-.uniform-trim {
-  fill: var(--club-color);
-}
-.uniform-seam {
-  fill: none;
-  stroke: #c4c9bd;
-  stroke-width: 1;
-}
-.uniform-graphic text {
-  fill: var(--club-color);
-  font:
-    700 36px / 1 ui-monospace,
-    monospace;
-}
 .match-score {
   display: flex;
   justify-content: center;

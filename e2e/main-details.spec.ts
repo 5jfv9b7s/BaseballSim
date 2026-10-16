@@ -76,9 +76,9 @@ for (const width of [1280, 390]) {
     await chart
       .getByRole('combobox', { name: 'グラフで確認する日', exact: true })
       .selectOption('2026-09-24');
-    await expect(page.getByRole('region', { name: '日別の試合結果', exact: true })).toContainText(
-      '表示している結果：2026-09-24',
-    );
+    await expect(
+      page.getByRole('complementary', { name: '選択日の詳細', exact: true }),
+    ).toContainText('選択日：2026-09-24');
     const firstValues = await balance.locator('tbody tr').allTextContents();
     await expect(balance.locator('[data-own-club="true"]')).toHaveCount(1);
     await chart.screenshot({ path: `.tmp/main-details-qa/balance-${width}.png` });
@@ -92,9 +92,14 @@ for (const width of [1280, 390]) {
       .selectOption('firstRegular');
     expect(await balance.locator('tbody tr').allTextContents()).toEqual(firstValues);
     expect(await page.evaluate(() => Reflect.get(window, 'detailCommands'))).toBe(commands);
-    await expect(
-      page.getByRole('region', { name: '日別の試合結果', exact: true }).locator('.player-link'),
-    ).toHaveCount(0);
+    await page
+      .getByRole('complementary', { name: '選択日の詳細', exact: true })
+      .getByRole('button', { name: '試合詳細へ', exact: true })
+      .click();
+    const results = page.getByRole('region', { name: '日別の試合結果', exact: true });
+    await expect(results).toContainText('表示している結果：2026-09-24');
+    // 過去試合は保存内の当時の選手表示を維持し、現在選手のリンクへ置換しない。
+    await expect(results.locator('.player-link')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

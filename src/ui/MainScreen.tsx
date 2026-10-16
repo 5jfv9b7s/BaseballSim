@@ -280,8 +280,7 @@ export function MainScreen({
             ) : (
               <>
                 {panels.competition}
-                {page === 'schedule' && panels.calendar}
-                {panels.results}
+                {page === 'schedule' ? panels.calendar : panels.results}
               </>
             )}
           </>

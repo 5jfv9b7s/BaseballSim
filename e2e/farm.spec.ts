@@ -22,7 +22,10 @@ for (const width of [1280, 390]) {
       '0 / 4',
     );
     await scope.selectOption('farmRegular');
-    await expect(calendar.getByRole('button', { name: /^09-26/ })).toContainText(
+    await expect(
+      calendar.getByRole('button', { name: /^09-26/ }).locator('.calendar-match'),
+    ).toHaveCount(1);
+    await expect(calendar.getByRole('button', { name: /^09-26/ })).not.toContainText(
       '星原フォックス 二軍',
     );
     await farm.getByText('今日の二軍オーダーを確認', { exact: true }).click();

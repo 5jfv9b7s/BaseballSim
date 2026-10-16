@@ -6,7 +6,7 @@ import {
   formatStatValue,
   STAT_METRICS,
 } from '../world/leaderboard.ts';
-import { ClubMark, MatchScore, UniformGraphic } from './visuals/BaseballVisuals.tsx';
+import { ClubMark, MatchScore } from './visuals/BaseballVisuals.tsx';
 import { GAME_STATUS_LABELS, homeStarter } from './home-view.ts';
 import './home-dashboard.css';
 
@@ -122,7 +122,6 @@ export function HomeDashboard({
               </div>
               <div className="match-starters">
                 {(['away', 'home'] as const).map((side) => {
-                  const team = squadById(side === 'away' ? today.awaySquadId : today.homeSquadId);
                   const starter = homeStarter(
                     today,
                     side,
@@ -131,7 +130,6 @@ export function HomeDashboard({
                   );
                   return (
                     <div className="match-starter" key={side} data-side={side}>
-                      <UniformGraphic clubId={team?.team.clubId} />
                       <div>
                         <span className="starter-label">{starter.label}</span>
                         {starter.playerId && playerById(starter.playerId) ? (
@@ -145,7 +143,6 @@ export function HomeDashboard({
                         ) : (
                           <strong className="starter-unset">—</strong>
                         )}
-                        <span className="jersey-note">背番号 未登録</span>
                       </div>
                     </div>
                   );
@@ -368,10 +365,10 @@ export function HomeDashboard({
         <summary>日程・表示について</summary>
         <p>
           {view?.definitions.name ?? '日程を読み込み中'}
-          。球団の文字マーク・配色・ユニフォームは識別用の簡略図です。
+          。球団の文字マーク・配色は識別用の簡略図です。
         </p>
         <p>
-          先発候補は現在の起用設定による予測です。試合開始時に確定します。球場・開始時刻・背番号はデータ未登録です。育成・補強などの未実装機能は「工事中」と表示しています。
+          先発候補は現在の起用設定による予測です。試合開始時に確定します。球場・開始時刻はデータ未登録です。育成・補強などの未実装機能は「工事中」と表示しています。
         </p>
       </details>
     </div>

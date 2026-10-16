@@ -75,26 +75,6 @@
   gap: 0.75rem;
 }
 
-.season-calendar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-  gap: 0.65rem;
-  margin-top: 1rem;
-}
-
-.calendar-day {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  white-space: normal;
-  text-align: left;
-}
-
-.calendar-day[aria-current='date'] {
-  outline: 2px solid #287653;
-}
-
 /* 氏名を省略しすぎず、小画面では表の中だけを横スクロールする。 */
 .world-page .roster-player-select {
   min-width: 8rem;
@@ -191,58 +171,6 @@
 .action-hint {
   margin: 8px 0;
 }
-
-/* 曜日を崩さず、選択・今日・勝敗を色以外でも識別する。 */
-.season-calendar {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-}
-.calendar-weekday,
-.calendar-outside {
-  text-align: center;
-  padding: 8px 2px;
-}
-.calendar-outside {
-  color: #687363;
-}
-.calendar-day {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 0.8rem;
-}
-.calendar-day[aria-current='date'] {
-  border: 4px double #355b29;
-}
-.calendar-day[aria-pressed='true'] {
-  outline: 3px solid #25491b;
-  outline-offset: 1px;
-}
-.calendar-venue {
-  font-size: 0.7rem;
-  font-weight: bold;
-}
-.calendar-day[data-result='勝'] .calendar-venue {
-  color: #235b2b;
-}
-.calendar-day[data-result='敗'] .calendar-venue {
-  color: #983c30;
-}
-.calendar-selection {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  margin: 16px 0;
-  border: 2px solid #758a65;
-  border-radius: 8px;
-  background: #f6f8ef;
-}
-.calendar-selection p {
-  margin: 0;
-  font-size: 0.85rem;
-}
-.calendar-selection button {
-  justify-self: start;
-}
 .progress-estimate {
   display: block;
   color: #465643;
@@ -273,54 +201,4 @@
   font-weight: bold;
   border-color: #365d24;
   background: #e8efdf;
-}
-@media (max-width: 600px) {
-  .season-calendar {
-    gap: 4px;
-  }
-  .calendar-day {
-    padding: 6px 2px;
-    font-size: 0.68rem;
-  }
-  .calendar-day > span:not(.calendar-venue):not(.calendar-no-games) {
-    display: none;
-  }
-  .calendar-day > strong {
-    font-size: 0.7rem;
-  }
-  .calendar-venue {
-    font-size: 0.6rem;
-  }
-  .calendar-selection[data-selected='true'] {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: var(--menu-clearance, 12px);
-    z-index: 4;
-    margin: 0;
-    box-shadow: 0 4px 20px #182b222b;
-  }
-  .calendar-selection .world-controls {
-    margin: 0;
-  }
-  .calendar-selection .world-controls button {
-    font-size: 0.75rem;
-    padding: 6px;
-  }
-}
-
-.calendar-scroll {
-  overflow-x: auto;
-  padding: 4px;
-}
-.season-calendar {
-  min-width: 332px;
-}
-.calendar-day {
-  min-height: 64px;
-}
-
-.calendar-selection > button:enabled {
-  background: #365d46;
-  color: #fff;
 }

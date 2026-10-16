@@ -697,12 +697,6 @@
 .main-screen :is(button, input, select, summary) {
   scroll-margin-bottom: calc(var(--menu-clearance, 120px) + 240px);
 }
-@media (max-width: 600px) {
-  .main-screen:has(.calendar-selection[data-selected='true']) {
-    padding-bottom: calc(var(--menu-clearance, 180px) + 280px);
-  }
-}
-
 /* 狭い画面の固定メニューはアイコンと文字を横並びにし、本文の表示面積を確保する。 */
 @media (max-width: 600px) {
   .main-navigation button {

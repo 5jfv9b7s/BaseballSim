@@ -159,8 +159,7 @@
 .match-starter > div {
   min-width: 0;
 }
-.starter-label,
-.jersey-note {
+.starter-label {
   display: block;
   color: #d3ded0;
   font-size: 12px;
@@ -446,18 +445,10 @@
   .match-starter + .match-starter {
     padding-left: 10px;
   }
-  .match-starter .uniform-graphic {
-    width: 46px;
-    height: 56px;
-  }
 }
 @media (max-width: 800px) {
   .home-overview {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .match-starter .uniform-graphic {
-    width: 64px;
-    height: 70px;
   }
   .match-score {
     font-size: 40px;
@@ -592,11 +583,6 @@
   .match-starter {
     gap: 7px;
     align-items: flex-start;
-  }
-  .match-starter .uniform-graphic {
-    width: 40px;
-    height: 50px;
-    margin-top: 8px;
   }
   .match-starter + .match-starter {
     padding-left: 9px;

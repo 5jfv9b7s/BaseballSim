@@ -54,7 +54,7 @@ for (const width of [1280, 390, 320]) {
     await expect(starterLink).toBeVisible();
     await expect(hero.locator('.match-starter[data-side="away"]')).toContainText('先発候補');
     await expect(hero.locator('.match-starter[data-side="home"]')).toContainText('先発未確定');
-    await expect(hero.locator('.uniform-graphic text')).toHaveText(['—', '—']);
+    await expect(hero.locator('.uniform-graphic')).toHaveCount(0);
     await expect(hero.locator('.match-team-away')).toContainText('自球団');
     const action = hero.getByRole('button', { name: /^今日の試合へ/ });
     const actionBox = (await action.boundingBox())!;

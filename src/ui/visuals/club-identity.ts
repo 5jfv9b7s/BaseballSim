@@ -1,5 +1,5 @@
 /**
- * ホームから共用する表示用の配色。正式な球団ロゴ・ユニフォーム設定ではない。
+ * ホームから共用する表示用の配色。正式な球団ロゴ設定ではない。
  * clubIdに結び付け、名簿順・戦力・勝敗から色を作らない。保存・試合計算には使わない。
  */
 export const CLUB_IDENTITIES: Readonly<Record<string, { mark: string; color: string }>> = {

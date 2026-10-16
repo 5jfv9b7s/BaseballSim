@@ -12,8 +12,12 @@ async function openCalendar(page: Page) {
         constructor(url: string | URL, options?: WorkerOptions) {
           super(url, options);
           if (url.toString().includes('world-worker')) {
+            Reflect.set(window, 'calendarWorker', this);
             this.addEventListener('message', ({ data }) => {
-              if (data?.view) Reflect.set(window, 'calendarView', data.view);
+              if (data?.view) {
+                Reflect.set(window, 'calendarView', data.view);
+                Reflect.set(window, 'calendarResponse', data);
+              }
             });
           }
         }
@@ -49,6 +53,8 @@ for (const width of [1280, 390, 320]) {
     const calendar = page.getByRole('region', { name: '月別カレンダー', exact: true });
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     const today = calendar.getByRole('button', { name: /^09-24/ });
+    await expect(today).toHaveAttribute('data-completed', 'false');
+    await expect(today.locator('.calendar-result')).toHaveCount(0);
     await expect(today.locator('.calendar-match')).toHaveCount(1);
     await expect(today).toContainText('青凪ハーバーズ');
     await expect(today).not.toContainText('朝霧フォックス');
@@ -197,7 +203,26 @@ test('カレンダー：当日の全試合まで進行し、過去日の自チ�
     );
     const cell = calendar.getByRole('button', { name: new RegExp(`^${date.slice(5)}`) });
     await cell.click();
-    await expect(cell).toContainText(`${expected.ours} − ${expected.theirs}`);
+    const symbol =
+      expected.ours > expected.theirs ? '○' : expected.ours < expected.theirs ? '●' : '△';
+    const label =
+      expected.ours > expected.theirs ? '勝' : expected.ours < expected.theirs ? '敗' : '分';
+    await expect(cell).toHaveAttribute('data-completed', 'true');
+    await expect(cell).toBeEnabled();
+    await expect(cell.locator('.calendar-day-done')).toHaveText('済');
+    await expect(cell.locator('.calendar-result')).toHaveText(symbol);
+    await expect(cell.locator('.calendar-result')).toHaveAttribute(
+      'aria-label',
+      `${label} ${expected.ours} − ${expected.theirs}`,
+    );
+    await expect(cell.locator('.calendar-score')).toHaveCount(0);
+    await expect(calendar.getByRole('complementary')).toContainText(
+      `${label} ${expected.ours} − ${expected.theirs}`,
+    );
+    await expect(calendar.getByRole('button', { name: /^09-26/ })).toHaveAttribute(
+      'data-completed',
+      'false',
+    );
     const menu = calendar.getByRole('dialog');
     await expect(
       menu.getByRole('button', { name: 'この日の終了まで進める', exact: true }),
@@ -267,3 +292,101 @@ test('カレンダー：別の担当球団の年間日程と月変更、今日�
   expect(await page.evaluate(() => Reflect.get(window, 'calendarCommands'))).toBe(commands);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-03-27');
 });
+
+for (const width of [1280, 390, 320]) {
+  test(`カレンダー表示用応答：○●△・完了日の濃淡・選択と今日 (${width}px)`, async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width, height: 900 });
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await openCalendar(page);
+    await page.getByRole('button', { name: '今日の試合へ', exact: true }).click();
+    await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
+    await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-25', {
+      timeout: 45000,
+    });
+    await page
+      .getByRole('navigation', { name: 'メインメニュー', exact: true })
+      .getByRole('button', { name: '日程', exact: true })
+      .click();
+    // 実応答の複製だけを表示する。Worker正本・保存への書き戻しは行わない。
+    await page.evaluate(() => {
+      const response = structuredClone(Reflect.get(window, 'calendarResponse')) as {
+        view: WorldView;
+      };
+      const view = response.view;
+      const club = view.definitions.squads.find(
+        (s) => s.squadId === view.management!.controlledSquadId,
+      )!;
+      const farm = view.definitions.farm!.squads.find((s) => s.team.clubId === club.team.clubId)!;
+      const ownIds = [club.squadId, farm.squadId];
+      const fixtures = view.games.filter((g) => g.date === '2026-09-24');
+      const scores = [
+        [4, 1],
+        [1, 4],
+        [2, 2],
+      ] as const;
+      view.games = scores
+        .flatMap(([ours, theirs], day) =>
+          fixtures.map((source, index) => {
+            const game = structuredClone(source);
+            game.gameId = `calendar-result-display-${day}-${index}`;
+            game.date = `2026-09-${24 + day}`;
+            if (ownIds.includes(game.homeSquadId) || ownIds.includes(game.awaySquadId)) {
+              const home = ownIds.includes(game.homeSquadId);
+              game.score = { home: home ? ours : theirs, away: home ? theirs : ours };
+              game.result!.score = { ...game.score };
+            }
+            return game;
+          }),
+        )
+        .concat(view.games.filter((g) => g.date === '2026-09-27'));
+      view.currentDate = '2026-09-27';
+      view.completedDates = ['2026-09-24', '2026-09-25', '2026-09-26'];
+      view.lastCompletedDate = '2026-09-26';
+      view.dayPlan = {
+        date: view.currentDate,
+        gameIds: view.games.filter((g) => g.date === view.currentDate).map((g) => g.gameId),
+        cursor: 0,
+      };
+      view.registrationPreview = null;
+      Reflect.get(window, 'calendarWorker').dispatchEvent(
+        new MessageEvent('message', { data: response }),
+      );
+    });
+    const calendar = page.getByRole('region', { name: '月別カレンダー', exact: true });
+    const commands = await page.evaluate(() => Reflect.get(window, 'calendarCommands'));
+    const today = calendar.getByRole('button', { name: /^09-27/ });
+    await expect(today).toHaveAttribute('aria-current', 'date');
+    await expect(today).toHaveAttribute('data-completed', 'false');
+    const todayBackground = await today.evaluate((el) => getComputedStyle(el).backgroundColor);
+    for (const [date, symbol, score] of [
+      ['09-24', '○', '勝 4 − 1'],
+      ['09-25', '●', '敗 1 − 4'],
+      ['09-26', '△', '分 2 − 2'],
+    ]) {
+      const cell = calendar.getByRole('button', { name: new RegExp(`^${date}`) });
+      await expect(cell).toHaveAttribute('data-completed', 'true');
+      await expect(cell.locator('.calendar-result')).toHaveText(symbol!);
+      await expect(cell.locator('.calendar-result')).toHaveAttribute('aria-label', score!);
+      expect(await cell.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
+        todayBackground,
+      );
+      await expect(cell).toBeEnabled();
+    }
+    const selected = calendar.getByRole('button', { name: /^09-25/ });
+    await selected.click();
+    await expect(selected).toHaveAttribute('aria-pressed', 'true');
+    await expect(selected).toHaveCSS('outline-style', 'solid');
+    await expect(calendar.getByRole('complementary')).toContainText('敗 1 − 4');
+    await page.keyboard.press('Escape');
+    // ポインター操作に戻し、選択枠とキーボードフォーカスを混同しない。
+    await calendar.getByRole('heading', { name: '月別カレンダー', exact: true }).click();
+    await calendar.screenshot({ path: `.tmp/calendar-completed-qa/calendar-${width}.png` });
+    expect(await page.evaluate(() => Reflect.get(window, 'calendarCommands'))).toBe(commands);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    expect(errors).toEqual([]);
+  });
+}

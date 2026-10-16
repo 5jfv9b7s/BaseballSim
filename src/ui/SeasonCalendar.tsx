@@ -68,19 +68,21 @@ export function SeasonCalendar({
         squad.squadId ===
         (game.homeSquadId === ownSquad?.squadId ? game.awaySquadId : game.homeSquadId),
     );
+  const gameOutcome = (game: WorldView['games'][number]) => {
+    if (game.status !== 'completed' || !game.score) return null;
+    const ownHome = game.homeSquadId === ownSquad?.squadId;
+    const ours = ownHome ? game.score.home : game.score.away;
+    const theirs = ownHome ? game.score.away : game.score.home;
+    if (ours > theirs) return { symbol: '○', label: '勝' };
+    if (ours < theirs) return { symbol: '●', label: '敗' };
+    return { symbol: '△', label: '分' };
+  };
   const resultText = (game: WorldView['games'][number]) => {
     if (!game.score) return GAME_STATUS_LABELS[game.status];
     const ownHome = game.homeSquadId === ownSquad?.squadId;
     const ours = ownHome ? game.score.home : game.score.away;
     const theirs = ownHome ? game.score.away : game.score.home;
-    const label =
-      game.status === 'completed'
-        ? ours > theirs
-          ? '勝'
-          : ours < theirs
-            ? '敗'
-            : '分'
-        : GAME_STATUS_LABELS[game.status];
+    const label = gameOutcome(game)?.label ?? GAME_STATUS_LABELS[game.status];
     return `${label} ${ours} − ${theirs}`;
   };
 
@@ -192,10 +194,8 @@ export function SeasonCalendar({
                   );
                 }
                 const games = ownGames.filter((game) => game.date === date);
-                const result =
-                  games.length === 1 && games[0]!.status === 'completed'
-                    ? resultText(games[0]!).slice(0, 1)
-                    : null;
+                // 自球団の試合だけが終わった段階では、日全体の完了表示にしない。
+                const completed = view.completedDates.includes(date);
                 return (
                   <button
                     key={date}
@@ -223,27 +223,48 @@ export function SeasonCalendar({
                     aria-haspopup={date !== view.currentDate ? 'dialog' : undefined}
                     aria-expanded={date !== view.currentDate ? menu?.date === date : undefined}
                     aria-controls={menu?.date === date ? menuId : undefined}
-                    data-result={result}
+                    data-completed={completed}
                     aria-current={date === view.currentDate ? 'date' : undefined}
                   >
-                    <strong>
-                      {date.slice(5)} {date === view.currentDate ? '今日' : ''}{' '}
-                      {view.completedDates.includes(date) ? '確定済み' : ''}
+                    <strong className="calendar-day-heading">
+                      <span>
+                        {date.slice(5)} {date === view.currentDate ? '今日' : ''}
+                      </span>
+                      {completed && (
+                        <span className="calendar-day-done" aria-label="日次処理完了">
+                          済
+                        </span>
+                      )}
                     </strong>
                     {games.length === 0 ? (
                       <span className="calendar-no-games">試合なし</span>
                     ) : (
-                      games.map((game) => (
-                        <span className="calendar-match" key={game.gameId}>
-                          <span className="calendar-venue">
-                            {game.homeSquadId === ownSquad?.squadId ? 'HOME' : 'VISITOR'}
+                      games.map((game) => {
+                        const outcome = gameOutcome(game);
+                        return (
+                          <span className="calendar-match" key={game.gameId}>
+                            <span className="calendar-venue">
+                              {game.homeSquadId === ownSquad?.squadId ? 'HOME' : 'VISITOR'}
+                            </span>
+                            <span className="calendar-opponent">
+                              {opponent(game)?.team.name ?? '対戦相手未設定'}
+                            </span>
+                            {outcome ? (
+                              <span
+                                className="calendar-result"
+                                data-result={outcome.label}
+                                role="img"
+                                aria-label={resultText(game)}
+                                title={resultText(game)}
+                              >
+                                {outcome.symbol}
+                              </span>
+                            ) : (
+                              <span className="calendar-score">{resultText(game)}</span>
+                            )}
                           </span>
-                          <span className="calendar-opponent">
-                            {opponent(game)?.team.name ?? '対戦相手未設定'}
-                          </span>
-                          <span className="calendar-score">{resultText(game)}</span>
-                        </span>
-                      ))
+                        );
+                      })
                     )}
                   </button>
                 );
@@ -253,7 +274,12 @@ export function SeasonCalendar({
               ))}
             </div>
           </div>
-          <p className="calendar-caption">担当球団の試合のみ表示 ／ 得点は自球団 − 相手</p>
+          <p className="calendar-caption calendar-result-legend">
+            <span>○ 勝</span>
+            <span>● 敗</span>
+            <span>△ 分</span>
+            <span>薄い背景・済：日次処理完了</span>
+          </p>
           {menu && (
             <CalendarDayMenu
               id={menuId}

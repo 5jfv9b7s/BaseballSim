@@ -50,7 +50,14 @@ for (const width of [1280, 390]) {
         '2026-09-26の終了まで進めて停止しました',
       );
       await expect(daily).toContainText('0 / 2 完了');
-      await expect(calendar.getByRole('button', { name: /^09-26/ })).toContainText('確定済み');
+      const completedDay = calendar.getByRole('button', { name: /^09-26/ });
+      await expect(completedDay).toHaveAttribute('data-completed', 'true');
+      await expect(completedDay.locator('.calendar-day-done')).toHaveText('済');
+      await expect(completedDay.locator('.calendar-match')).toHaveCount(0);
+      await expect(calendar.getByRole('button', { name: /^09-27/ })).toHaveAttribute(
+        'data-completed',
+        'false',
+      );
       await expect(daily.locator('p').filter({ hasText: /・\s*試合前$/ })).toHaveCount(2);
       await expect(
         page.getByRole('button', { name: '日次進行を一時停止', exact: true }),

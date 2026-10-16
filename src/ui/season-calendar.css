@@ -84,6 +84,24 @@
   white-space: normal;
   overflow-wrap: normal;
 }
+.calendar-panel .season-calendar .calendar-day[data-completed='true'] {
+  background: #edf0e9;
+  color: #4f5f54;
+}
+.calendar-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.calendar-day-done {
+  padding: 1px 4px;
+  background: #dce3d5;
+  color: #4f5f54;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .calendar-day > strong {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
@@ -134,15 +152,24 @@
   outline: 3px solid #9a4e12;
   outline-offset: -3px;
 }
-.calendar-day[data-result='勝'] .calendar-score {
-  white-space: nowrap;
-  color: #236044;
+.calendar-result {
+  font-size: 22px;
   font-weight: 700;
+  line-height: 1.15;
 }
-.calendar-day[data-result='敗'] .calendar-score {
-  white-space: nowrap;
+.calendar-result[data-result='勝'] {
+  color: #236044;
+}
+.calendar-result[data-result='敗'] {
   color: #993e32;
-  font-weight: 700;
+}
+.calendar-result[data-result='分'] {
+  color: #70601d;
+}
+.calendar-result-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
 }
 .calendar-details {
   padding: 16px;

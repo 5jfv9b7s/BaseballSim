@@ -73,8 +73,8 @@ export function SeasonCalendar({
     const ownHome = game.homeSquadId === ownSquad?.squadId;
     const ours = ownHome ? game.score.home : game.score.away;
     const theirs = ownHome ? game.score.away : game.score.home;
-    if (ours > theirs) return { symbol: '○', label: '勝' };
-    if (ours < theirs) return { symbol: '●', label: '敗' };
+    if (ours > theirs) return { symbol: '〇', label: '勝' };
+    if (ours < theirs) return { symbol: '✕', label: '敗' };
     return { symbol: '△', label: '分' };
   };
   const resultText = (game: WorldView['games'][number]) => {
@@ -275,10 +275,9 @@ export function SeasonCalendar({
             </div>
           </div>
           <p className="calendar-caption calendar-result-legend">
-            <span>○ 勝</span>
-            <span>● 敗</span>
+            <span>〇 勝</span>
+            <span>✕ 敗</span>
             <span>△ 分</span>
-            <span>薄い背景・済：日次処理完了</span>
           </p>
           {menu && (
             <CalendarDayMenu

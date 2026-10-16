@@ -152,19 +152,13 @@
   outline: 3px solid #9a4e12;
   outline-offset: -3px;
 }
+/* 勝敗は色で区別せず、大きな〇・✕・△の形で見分ける。 */
 .calendar-result {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-}
-.calendar-result[data-result='勝'] {
-  color: #236044;
-}
-.calendar-result[data-result='敗'] {
-  color: #993e32;
-}
-.calendar-result[data-result='分'] {
-  color: #70601d;
+  color: inherit;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-align: center;
 }
 .calendar-result-legend {
   display: flex;

@@ -5,6 +5,14 @@ export const APP_VERSION = packageInfo.version;
 /** 利用者向けの変更点。版を上げるときは保存への影響も一緒に更新する。 */
 export const RELEASE_NOTES = [
   {
+    version: '0.30.3',
+    changes: [
+      'カレンダーの結果を〇（勝）・✕（敗）・△（分）に変更しました。',
+      '勝敗の色分けを外し、同じ文字色の記号を大きく中央へ配置しました。',
+    ],
+    saveImpact: '保存形式・試合計算・カレンダーの日付操作は同じです。',
+  },
+  {
     version: '0.30.2',
     changes: [
       'カレンダーの日次処理が完了した日を、薄い背景と「済」で区別しました。',

@@ -204,7 +204,7 @@ test('カレンダー：当日の全試合まで進行し、過去日の自チ�
     const cell = calendar.getByRole('button', { name: new RegExp(`^${date.slice(5)}`) });
     await cell.click();
     const symbol =
-      expected.ours > expected.theirs ? '○' : expected.ours < expected.theirs ? '●' : '△';
+      expected.ours > expected.theirs ? '〇' : expected.ours < expected.theirs ? '✕' : '△';
     const label =
       expected.ours > expected.theirs ? '勝' : expected.ours < expected.theirs ? '敗' : '分';
     await expect(cell).toHaveAttribute('data-completed', 'true');
@@ -294,7 +294,7 @@ test('カレンダー：別の担当球団の年間日程と月変更、今日�
 });
 
 for (const width of [1280, 390, 320]) {
-  test(`カレンダー表示用応答：○●△・完了日の濃淡・選択と今日 (${width}px)`, async ({ page }) => {
+  test(`カレンダー表示用応答：〇✕△・完了日の濃淡・選択と今日 (${width}px)`, async ({ page }) => {
     test.setTimeout(90000);
     await page.setViewportSize({ width, height: 900 });
     const errors: string[] = [];
@@ -361,14 +361,18 @@ for (const width of [1280, 390, 320]) {
     await expect(today).toHaveAttribute('data-completed', 'false');
     const todayBackground = await today.evaluate((el) => getComputedStyle(el).backgroundColor);
     for (const [date, symbol, score] of [
-      ['09-24', '○', '勝 4 − 1'],
-      ['09-25', '●', '敗 1 − 4'],
+      ['09-24', '〇', '勝 4 − 1'],
+      ['09-25', '✕', '敗 1 − 4'],
       ['09-26', '△', '分 2 − 2'],
     ]) {
       const cell = calendar.getByRole('button', { name: new RegExp(`^${date}`) });
       await expect(cell).toHaveAttribute('data-completed', 'true');
       await expect(cell.locator('.calendar-result')).toHaveText(symbol!);
       await expect(cell.locator('.calendar-result')).toHaveAttribute('aria-label', score!);
+      // 勝敗ごとの色付けが再び入らず、同じ文字色と形だけで区別できること。
+      const color = await cell.evaluate((el) => getComputedStyle(el).color);
+      await expect(cell.locator('.calendar-result')).toHaveCSS('color', color);
+      await expect(cell.locator('.calendar-result')).toHaveCSS('text-align', 'center');
       expect(await cell.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
         todayBackground,
       );
@@ -382,7 +386,7 @@ for (const width of [1280, 390, 320]) {
     await page.keyboard.press('Escape');
     // ポインター操作に戻し、選択枠とキーボードフォーカスを混同しない。
     await calendar.getByRole('heading', { name: '月別カレンダー', exact: true }).click();
-    await calendar.screenshot({ path: `.tmp/calendar-completed-qa/calendar-${width}.png` });
+    await calendar.screenshot({ path: `.tmp/calendar-symbols-qa/calendar-${width}.png` });
     expect(await page.evaluate(() => Reflect.get(window, 'calendarCommands'))).toBe(commands);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

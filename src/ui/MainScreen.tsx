@@ -3,12 +3,7 @@ import { PlayerDetails } from './PlayerDetails.tsx';
 import { PlayerDirectory } from './PlayerDirectory.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { WorldView } from '../world/controller.ts';
-import {
-  playerLeaderboard,
-  statValue,
-  formatStatValue,
-  STAT_METRICS,
-} from '../world/leaderboard.ts';
+import { HomeDashboard } from './HomeDashboard.tsx';
 import { AppInfo } from './AppInfo.tsx';
 import './main-screen.css';
 
@@ -148,16 +143,12 @@ export function MainScreen({
     view?.definitions.squads.find((item) => item.squadId === view.management?.controlledSquadId) ??
     view?.definitions.squads[0];
   const standing = view?.standings.find((item) => item.squadId === squad?.squadId);
-  const clubName = (id: string) =>
-    view?.definitions.squads.find((item) => item.squadId === id)?.team.name ?? id;
   const ownGames =
     view?.games.filter(
       (game) =>
         game.statScope === 'firstRegular' &&
         (game.homeSquadId === squad?.squadId || game.awaySquadId === squad?.squadId),
     ) ?? [];
-  const today = ownGames.find((game) => game.date === view?.currentDate);
-  const home = today?.homeSquadId === squad?.squadId;
   const completed = ownGames.filter((game) => game.status === 'completed').length;
   const total = ownGames.length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
@@ -169,38 +160,6 @@ export function MainScreen({
         timeZone: 'UTC',
       }).format(new Date(view.currentDate + 'T00:00:00Z'))
     : '準備中';
-  const playerName = (id: string) => {
-    const player = view?.definitions.squads
-      .flatMap((item) => item.players)
-      .find((player) => player.playerId === id);
-    return player ? `${player.familyName} ${player.givenName}` : id;
-  };
-  const starters = today?.startingPitchers;
-  const cardTitles = [
-    '直近の予定・結果',
-    'リーグ順位',
-    '球団収支',
-    '安打ランキング',
-    '奪三振ランキング',
-  ];
-  const category = card === 4 ? 'pitching' : 'batting';
-  const metric = card === 4 ? 'strikeouts' : 'hits';
-  const leaderMetric = STAT_METRICS[category].find((item) => item.key === metric)!;
-  const leaders =
-    view && card >= 3
-      ? playerLeaderboard(view.stats, {
-          seasonId: view.definitions.seasonId,
-          competitionId: view.definitions.competitionId,
-          statScope: 'firstRegular',
-          category,
-          metric,
-          direction: 'descending',
-        }).slice(0, 3)
-      : [];
-  const nearby = [...ownGames].sort((a, b) => a.date.localeCompare(b.date));
-  const nextIndex = nearby.findIndex((game) => game.date >= (view?.currentDate ?? ''));
-  const nearbyStart = nextIndex < 0 ? Math.max(0, nearby.length - 3) : Math.max(0, nextIndex - 1);
-
   function submenu(items: { page: MainPage; label: string }[]) {
     return (
       <nav className="main-subnav" aria-label="サブメニュー">
@@ -218,7 +177,7 @@ export function MainScreen({
   }
 
   return (
-    <div className="main-shell">
+    <div className="main-shell" data-page={page}>
       <div className="main-brand">
         <span>
           <b>BS</b> BASEBALL SIMULATOR
@@ -293,201 +252,14 @@ export function MainScreen({
                 <button onClick={() => onNavigate('save')}>セーブから再開 →</button>
               </div>
             )}
-            <div className="home-grid">
-              <section className="today-card" aria-label="今日の対戦">
-                <div className="today-kicker">
-                  <span>TODAY’S GAME</span>
-                  <span className="venue-badge">
-                    {today ? (home ? 'HOME' : 'VISITOR') : 'OFF DAY'}
-                  </span>
-                </div>
-                <div className="field-mark" aria-hidden="true">
-                  <span />
-                  <i />
-                </div>
-                {today ? (
-                  <>
-                    <p className="match-status">
-                      {today.status === 'completed'
-                        ? '試合終了'
-                        : today.status === 'playing'
-                          ? '進行中'
-                          : today.status === 'aborted'
-                            ? '異常停止'
-                            : '一軍公式戦'}
-                    </p>
-                    <div className="home-matchup">
-                      <div>
-                        <small>自球団</small>
-                        <h3>{squad?.team.name}</h3>
-                      </div>
-                      <strong>
-                        {today.score
-                          ? `${home ? today.score.home : today.score.away} : ${home ? today.score.away : today.score.home}`
-                          : 'VS'}
-                      </strong>
-                      <div>
-                        <small>対戦相手</small>
-                        <h3>{clubName(home ? today.awaySquadId : today.homeSquadId)}</h3>
-                      </div>
-                    </div>
-                    <div className="starter-row">
-                      <span>先発投手</span>
-                      <p>
-                        {starters
-                          ? `${playerName(home ? starters.home : starters.away)} ／ ${playerName(home ? starters.away : starters.home)}`
-                          : '試合開始時に確定'}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="off-day">
-                    <p>
-                      {view?.phase === 'scheduleComplete' ? 'SEASON COMPLETE' : 'REST & PREPARE'}
-                    </p>
-                    <h3>
-                      {view?.phase === 'scheduleComplete'
-                        ? '今季の日程が終了しました'
-                        : '今日は一軍の試合がありません'}
-                    </h3>
-                    <p>成績や選手を確認して、次の一日に備えましょう。</p>
-                  </div>
-                )}
-                <button
-                  className="today-action"
-                  disabled={!view}
-                  onClick={
-                    view?.phase === 'scheduleComplete' ? () => onNavigate('summary') : onToday
-                  }
-                >
-                  {view?.phase === 'scheduleComplete'
-                    ? 'シーズン総括へ'
-                    : today
-                      ? today.status === 'completed'
-                        ? '今日の結果・進行へ'
-                        : '今日の試合へ'
-                      : '翌日への進行を確認'}
-                  <span>→</span>
-                </button>
-                <p className="today-note">
-                  {view?.phase === 'scheduleComplete'
-                    ? '確定したシーズンの記録を確認できます。'
-                    : '進行画面を開きます。試合を始めるには、次の画面で「1日を自動進行」を押してください。'}
-                </p>
-              </section>
-              <section
-                className="home-info"
-                aria-label="球団情報カード"
-                aria-roledescription="カルーセル"
-              >
-                <div className="info-heading">
-                  <span>CLUB REPORT</span>
-                  <span>{String(card + 1).padStart(2, '0')} / 05</span>
-                </div>
-                <div className="info-body" aria-live="polite">
-                  <h3>{cardTitles[card]}</h3>
-                  {card === 0 && (
-                    <>
-                      <ul className="nearby-games">
-                        {nearby.slice(nearbyStart, nearbyStart + 3).map((game) => (
-                          <li key={game.gameId}>
-                            <time>{game.date.slice(5).replace('-', '/')}</time>
-                            <span>
-                              {clubName(
-                                game.homeSquadId === squad?.squadId
-                                  ? game.awaySquadId
-                                  : game.homeSquadId,
-                              )}
-                              <small>
-                                {game.homeSquadId === squad?.squadId ? 'HOME' : 'VISITOR'} /{' '}
-                                {game.status === 'completed' ? '終了' : '予定'}
-                              </small>
-                            </span>
-                            <b>{game.score ? `${game.score.away} − ${game.score.home}` : '—'}</b>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="hint">スコアはビジター − ホームの順です。</p>
-                      <button className="text-action" onClick={() => onNavigate('schedule')}>
-                        日程・結果を見る →
-                      </button>
-                    </>
-                  )}
-                  {card === 1 && (
-                    <>
-                      <ol className="mini-standing">
-                        {view?.standings.map((row) => (
-                          <li key={row.squadId} data-own={row.squadId === squad?.squadId}>
-                            <b>{row.rank ?? '—'}</b>
-                            <span>{clubName(row.squadId)}</span>
-                            <small>
-                              {row.wins}勝 {row.losses}敗 {row.draws}分
-                            </small>
-                          </li>
-                        ))}
-                      </ol>
-                      <button className="text-action" onClick={() => onNavigate('standings')}>
-                        順位表を見る →
-                      </button>
-                    </>
-                  )}
-                  {card === 2 && (
-                    <Construction title="収支サマリー">
-                      財務モデルは未実装です。予算・収支は実装後に表示します。
-                    </Construction>
-                  )}
-                  {card >= 3 && (
-                    <>
-                      <ol className="mini-standing">
-                        {leaders.map((row) => (
-                          <li key={row.playerId}>
-                            <b>{row.rank ?? '—'}</b>
-                            <span>{playerName(row.playerId)}</span>
-                            <strong>
-                              {formatStatValue(statValue(row, leaderMetric), leaderMetric)}
-                            </strong>
-                          </li>
-                        ))}
-                      </ol>
-                      {leaders.length === 0 && (
-                        <p className="empty-message">確定した試合の成績がまだありません。</p>
-                      )}
-                      <p className="hint">一軍・確定試合のみ。同順位を含む先頭3名。</p>
-                      <button className="text-action" onClick={() => onNavigate('stats')}>
-                        個人成績を見る →
-                      </button>
-                    </>
-                  )}
-                </div>
-                <div className="card-navigation">
-                  <button aria-label="前の情報カード" onClick={() => setCard((card + 4) % 5)}>
-                    前へ
-                  </button>
-                  <div>
-                    {cardTitles.map((title, index) => (
-                      <button
-                        key={title}
-                        aria-label={`${title}のカード`}
-                        aria-pressed={card === index}
-                        onClick={() => setCard(index)}
-                      >
-                        {title}
-                      </button>
-                    ))}
-                  </div>
-                  <button aria-label="次の情報カード" onClick={() => setCard((card + 1) % 5)}>
-                    次へ
-                  </button>
-                </div>
-              </section>
-            </div>
-            <aside className="home-notes">
-              <span>INFORMATION</span>
-              <p>
-                {view?.definitions.name ?? '日程を読み込んでいます。'}
-                。育成・補強など準備中の機能には「工事中」を表示しています。
-              </p>
-            </aside>
+            <HomeDashboard
+              view={view}
+              card={card}
+              setCard={setCard}
+              onNavigate={onNavigate}
+              onToday={onToday}
+              onSelectPlayer={onSelectPlayer}
+            />
           </>
         )}
         {section === 'schedule' && (

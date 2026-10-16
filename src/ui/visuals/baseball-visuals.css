@@ -1,0 +1,71 @@
+/* 野球の識別表示。数値は入力データをそのまま表示する。 */
+.club-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 78px;
+  height: 86px;
+  color: white;
+  background: var(--club-color);
+  border: 3px solid #ffffffb8;
+  border-radius: 8px 8px 28px 28px;
+  box-shadow: 0 2px 0 #00000024;
+  font:
+    800 38px / 1 ui-serif,
+    'Yu Mincho',
+    serif;
+}
+.club-mark[data-small='true'] {
+  width: 26px;
+  height: 30px;
+  border-width: 1px;
+  border-radius: 3px 3px 9px 9px;
+  box-shadow: none;
+  font-size: 17px;
+}
+.uniform-graphic {
+  flex: none;
+  width: 68px;
+  height: 72px;
+  overflow: visible;
+}
+.uniform-body {
+  fill: #fff9e7;
+  stroke: #c3cfc6;
+  stroke-width: 1.5;
+}
+.uniform-trim {
+  fill: var(--club-color);
+}
+.uniform-seam {
+  fill: none;
+  stroke: #c4c9bd;
+  stroke-width: 1;
+}
+.uniform-graphic text {
+  fill: var(--club-color);
+  font:
+    700 36px / 1 ui-monospace,
+    monospace;
+}
+.match-score {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font:
+    700 clamp(28px, 3.5vw, 48px) / 1.15 ui-monospace,
+    monospace;
+  font-variant-numeric: tabular-nums;
+  color: #f7dfa0;
+}
+.match-score > span:not(.score-divider) {
+  min-width: 1.3ch;
+  padding: 6px 3px;
+  background: #0c261e;
+  border-block: 1px solid #4d695e;
+  text-align: center;
+}
+.match-score .score-divider {
+  font-size: 0.65em;
+}

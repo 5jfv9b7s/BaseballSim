@@ -26,6 +26,7 @@ test('本画面：新規プレイ・休養日・記録達成試合・年度末',
   await expect(page.getByRole('region', { name: '今日の対戦' })).toContainText(
     '今日は一軍の試合がありません',
   );
+  await expect(page.getByRole('region', { name: '今日の対戦' })).toContainText('次戦 09/27');
   await nav.getByRole('button', { name: '成績', exact: true }).click();
   await page.getByRole('button', { name: 'メモリアル', exact: true }).click();
   await page

@@ -347,7 +347,6 @@ export function SeasonCalendar({
       <WinBalanceChart
         view={view}
         scope={scope}
-        month={month}
         selectedDate={selectedDate}
         onSelect={(date) => {
           setMenu(null);

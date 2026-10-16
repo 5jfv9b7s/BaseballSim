@@ -123,7 +123,7 @@ for (const width of [1280, 390]) {
   });
 }
 
-test('年間表示：未来月を予測で埋めず、進行中の選手タブを保持する', async ({ page }) => {
+test('年間表示：未確定のグラフを月変更で補完せず、進行中の選手タブを保持する', async ({ page }) => {
   test.setTimeout(90000);
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });

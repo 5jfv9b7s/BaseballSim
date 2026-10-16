@@ -57,7 +57,8 @@ test('球種入力：辞書だけの球種・欠損・非有限係数・不正�
     assert.throws(() => validatePitchProfiles(c));
   }
   const fixture = createPitchProfileFixture();
-  fixture.pitches[0]!.pitchTypeCode = 'knuckleball';
+  // 名前だけ登録され、特性が未定義の球種で拒否を確認する。
+  fixture.pitches[0]!.pitchTypeCode = 'slurve';
   assert.throws(() => createGame(1, fixture, 'game-prototype-v11'), /未対応の球種/);
   assert.throws(() => createGame(1, createPitchProfileFixture(), 'game-prototype-v10'), /版が一致/);
   const old = createBullpenWorld();

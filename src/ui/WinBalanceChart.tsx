@@ -1,7 +1,8 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import type { StatKey } from '../world/types.ts';
 import { winBalanceSeries } from '../world/win-balance.ts';
+import { BALANCE_WINDOW_DAYS, recentBalanceWindow } from './balance-chart-view.ts';
 import './win-balance.css';
 
 const COLORS = ['#286b49', '#a04424', '#3865a0', '#83588e', '#89700d', '#226d76'];
@@ -10,13 +11,11 @@ const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 export function WinBalanceChart({
   view,
   scope,
-  month,
   selectedDate,
   onSelect,
 }: {
   view: WorldView;
   scope: StatKey['statScope'];
-  month: string;
   selectedDate: string;
   onSelect: (date: string) => void;
 }) {
@@ -26,11 +25,12 @@ export function WinBalanceChart({
   const ownClub = view.definitions.squads.find(
     (s) => s.squadId === view.management?.controlledSquadId,
   )?.team.clubId;
-  const visible = series.map((row) => ({
-    ...row,
-    points: row.points.filter((point) => point.date.startsWith(month)),
-  }));
-  const dates = visible[0]?.points.map((point) => point.date) ?? [];
+  const { rows: visible, positions, ticks } = recentBalanceWindow(series);
+  const dates = positions.map((point) => point.date);
+  const start = dates[0];
+  const end = dates.at(-1);
+  // 範囲が流れた後に、以前の位置でホバーした日付を残さない。
+  useEffect(() => setHovered(''), [start, end, scope, view.worldId]);
   const selected = dates.includes(hovered)
     ? hovered
     : dates.includes(selectedDate)
@@ -41,10 +41,7 @@ export function WinBalanceChart({
     ...visible.flatMap((row) => row.points.map((point) => Math.abs(point.balance))),
   );
   const bound = Math.ceil(extent / 5) * 5;
-  const days = new Date(
-    Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0),
-  ).getUTCDate();
-  const x = (date: string) => 48 + ((Number(date.slice(8)) - 1) / (days - 1)) * 664;
+  const x = (date: string) => positions.find((point) => point.date === date)!.x;
   const y = (value: number) => 130 - (value / bound) * 100;
   const rows = visible.map((row, index) => ({ ...row, index, own: row.clubId === ownClub }));
   // 自球団を最後に描画し、重なる線でも埋もれにくくする。
@@ -53,13 +50,16 @@ export function WinBalanceChart({
   return (
     <section className="balance-chart" aria-label="貯金・借金の推移">
       <h3>貯金・借金の推移</h3>
-      <p>
-        {month} ／ {scope === 'firstRegular' ? '一軍公式戦' : '二軍公式戦'} ／
-        当日の全試合終了後に更新
+      <p className="balance-range">
+        <strong>直近{BALANCE_WINDOW_DAYS}日</strong>
+        {start && end && (
+          <span>
+            <time dateTime={start}>{start}</time> ～ <time dateTime={end}>{end}</time>
+          </span>
+        )}
+        <span>{scope === 'firstRegular' ? '一軍公式戦' : '二軍公式戦'}</span>
       </p>
-      <p className="hint">
-        貯金＝勝数−敗数。0が中央線です。一軍・二軍を含む全試合が終わるまでは前日までの結果を表示します。日付の選択や線の確認だけでは試合は進みません。
-      </p>
+      <p className="hint">貯金＝勝数−敗数。一軍・二軍の全試合終了後に更新します。</p>
       <div className="balance-legend">
         {rows.map((row) => (
           <span key={row.squadId}>
@@ -70,31 +70,32 @@ export function WinBalanceChart({
         ))}
       </div>
       {dates.length === 0 ? (
-        <p>この月の確定試合を表示できる日付はまだありません。</p>
+        <p>確定済みの結果を表示できる日付はまだありません。</p>
       ) : (
         <>
           <div className="balance-scroll">
-            <svg viewBox="0 0 760 266" role="img" aria-labelledby={titleId}>
+            <svg viewBox="0 0 760 312" role="img" aria-labelledby={titleId}>
               <title id={titleId}>
-                {month}の勝数と敗数の差。日付別の数値は下の表で確認できます。
+                {start}から{end}
+                までの勝数と敗数の差。最新日を右端に表示しています。日付別の数値は下の表で確認できます。
               </title>
               {[-bound, 0, bound].map((value) => (
                 <g key={value}>
                   <line
-                    x1="48"
-                    x2="712"
+                    x1="90"
+                    x2="690"
                     y1={y(value)}
                     y2={y(value)}
                     className={value === 0 ? 'balance-zero' : 'balance-grid'}
                   />
-                  <text x="37" y={y(value) + 4} textAnchor="end">
+                  <text x="75" y={y(value) + 4} textAnchor="end">
                     {signed(value)}
                   </text>
                 </g>
               ))}
-              {[1, Math.ceil(days / 2), days].map((day) => (
-                <text key={day} x={48 + ((day - 1) / (days - 1)) * 664} y="254" textAnchor="middle">
-                  {day}日
+              {ticks.map((point) => (
+                <text key={point.date} x={point.x} y="300" textAnchor="middle">
+                  {point.date.slice(5).replace('-', '/')}
                 </text>
               ))}
               {selected && (
@@ -130,12 +131,12 @@ export function WinBalanceChart({
                     ))}
                 </g>
               ))}
-              {dates.map((date) => (
+              {positions.map(({ date, hitLeft, hitWidth }) => (
                 <rect
                   key={date}
-                  x={x(date) - 332 / days}
+                  x={hitLeft}
                   y="22"
-                  width={664 / days}
+                  width={hitWidth}
                   height="216"
                   fill="transparent"
                   onMouseEnter={() => setHovered(date)}

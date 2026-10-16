@@ -28,6 +28,19 @@ for (const width of [1280, 390]) {
     await expect(
       page.getByRole('button', { name: '日次進行を一時停止', exact: true }),
     ).toBeDisabled();
+    const chart = page.getByRole('region', { name: '貯金・借金の推移', exact: true });
+    await expect(chart.locator('.balance-range time').first()).toHaveAttribute(
+      'datetime',
+      '2026-03-27',
+    );
+    await expect(chart.locator('.balance-range time').last()).toHaveAttribute(
+      'datetime',
+      '2026-04-01',
+    );
+    await expect(chart.getByRole('combobox').locator('option')).toHaveCount(6);
+    const line = chart.locator('[data-own="true"] polyline');
+    const points = (await line.getAttribute('points'))!;
+    expect(points.trim().split(' ').at(-1)!.split(',')[0]).toBe('690');
     const standings = await page.getByRole('region', { name: '順位表', exact: true }).innerText();
     await page.getByRole('button', { name: '世界を手動保存', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('世界全体を手動保存', { timeout: 30000 });
@@ -43,6 +56,11 @@ for (const width of [1280, 390]) {
     ).toBeDisabled();
     await expect(calendar.locator('input[type="month"]')).toHaveValue('2026-04');
     await calendar.getByRole('button', { name: '前月', exact: true }).click();
+    await expect(line).toHaveAttribute('points', points);
+    await expect(chart.locator('.balance-range time').last()).toHaveAttribute(
+      'datetime',
+      '2026-04-01',
+    );
     await calendar.getByRole('button').filter({ hasText: '03-28' }).click();
     await expect(page.getByRole('region', { name: '日別の試合結果', exact: true })).toContainText(
       '2026-03-28',

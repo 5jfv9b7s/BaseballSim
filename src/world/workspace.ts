@@ -1,7 +1,5 @@
-import {
-  createLeagueStructureDefinitions,
-  createNewPlayOptions,
-} from '../data/world/league-structure.ts';
+import { createTwoLeagueDefinitions } from '../data/world/two-leagues.ts';
+import { createNewPlayOptions } from '../data/world/new-play-options.ts';
 import type { NewPlayOptions } from './league-structure-types.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
@@ -87,7 +85,7 @@ export class WorldWorkspace {
     const world = createPitchProfileWorld(
       request.seed,
       request.controlledSquadId,
-      createLeagueStructureDefinitions(request.calendar),
+      createTwoLeagueDefinitions(request.calendar),
     );
     const nextStorage = new DexieWorldStorage(this.storage.database, localWorldId);
     const nextRevision = before.revision + 1;

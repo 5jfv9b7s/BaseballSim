@@ -1,3 +1,5 @@
+import { createTwoLeagueWorld } from '../src/world/engine.ts';
+import { createTwoLeagueDefinitions } from '../src/data/world/two-leagues.ts';
 import { createLeagueStructureWorld } from '../src/world/engine.ts';
 import { createLeagueStructureDefinitions } from '../src/data/world/league-structure.ts';
 import { createPlayerProfileWorld } from '../src/world/engine.ts';
@@ -219,5 +221,18 @@ for (const calendar of ['short', 'annual'] as const) {
   );
   console.log(
     `大会参加・本拠地: ${world.definitions.leagueStructure!.participations.length}チーム / ${world.definitions.leagueStructure!.stadiums.length}球場 / ${calendar}（検査成功）`,
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createTwoLeagueWorld(undefined, undefined, createTwoLeagueDefinitions(calendar));
+  console.log(
+    '複数リーグ定義v18: ' +
+      world.definitions.leagueStructure!.leagues.filter((l) => l.level === 'first').length +
+      '一軍リーグ / ' +
+      world.definitions.squads.length +
+      '球団 / ' +
+      calendar +
+      '（検査成功）',
   );
 }

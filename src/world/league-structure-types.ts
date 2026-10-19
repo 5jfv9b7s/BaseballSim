@@ -18,7 +18,7 @@ export interface StadiumDefinition extends StadiumRef {
   };
 }
 export interface LeagueStructure {
-  version: 'league-structure-v1';
+  version: 'league-structure-v1' | 'league-structure-v2';
   regions: { regionId: string; displayName: string }[];
   leagues: {
     leagueId: string;

@@ -1,3 +1,4 @@
+import { createTwoLeagueDefinitions } from '../data/world/two-leagues.ts';
 import { createLeagueStructureDefinitions } from '../data/world/league-structure.ts';
 import { validateLeagueStructure } from './league-structure.ts';
 import { createPlayerProfileDefinitions } from '../data/world/player-profiles.ts';
@@ -110,6 +111,7 @@ export function scheduledFixture(
           'world-definitions-v15',
           'world-definitions-v16',
           'world-definitions-v17',
+          'world-definitions-v18',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -142,6 +144,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -194,6 +197,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v15',
         'world-definitions-v16',
         'world-definitions-v17',
+        'world-definitions-v18',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -226,6 +230,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v15',
           'world-definitions-v16',
           'world-definitions-v17',
+          'world-definitions-v18',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -278,6 +283,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
@@ -324,6 +330,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -348,6 +355,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -369,6 +377,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validatePhysicalDefinitions(definitions);
@@ -390,6 +399,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateRestDefinitions(definitions);
@@ -409,6 +419,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateConditionDefinitions(definitions);
@@ -428,6 +439,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validatePerformanceConfig(definitions.performanceConfig!);
@@ -441,6 +453,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateFielderRestDefinitions(definitions);
@@ -458,6 +471,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateReliefDefinitions(definitions);
@@ -473,6 +487,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validateBullpenDefinitions(definitions);
@@ -487,6 +502,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version)
   )
     validatePitchProfiles(definitions.pitchProfiles!);
@@ -921,6 +937,7 @@ export function createPitchProfileWorld(
       'world-definitions-v15',
       'world-definitions-v16',
       'world-definitions-v17',
+      'world-definitions-v18',
     ].includes(definitions.version),
     '球種特性対応の初期定義が必要です',
   );
@@ -949,6 +966,16 @@ export function createPlayerProfileWorld(
   definitions = createPlayerProfileDefinitions(),
 ) {
   ensure(definitions.version === 'world-definitions-v16', 'プロフィール対応の定義が必要です');
+  return createPitchProfileWorld(seed, controlledSquadId, definitions);
+}
+
+/** 複数リーグ対応の新規プレイ。試合計算はv15、年度集計は定義v18で識別。 */
+export function createTwoLeagueWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createTwoLeagueDefinitions(),
+) {
+  ensure(definitions.version === 'world-definitions-v18', '複数リーグ対応の定義が必要です');
   return createPitchProfileWorld(seed, controlledSquadId, definitions);
 }
 

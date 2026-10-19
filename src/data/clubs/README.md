@@ -1,20 +1,28 @@
-# リーグ・球団所在地・球場の編集（0.32.0）
+# リーグ・球団所在地・球場の編集（0.33.0）
 
-現行4球団・一軍/二軍各4チームの検証用データです。正式な一軍2リーグ12球団や完成済みの興行モデルではありません。全120選手は既存のplayers/・farm/・profiles/を使います。
+現行4球団・一軍/二軍各4チームの検証用データです。一軍は2リーグ各2球団、二軍は1リーグ4チームです。正式な一軍2リーグ12球団や完成済みの興行モデルではありません。全120選手は既存のplayers/・farm/・profiles/を使います。
 
-| 編集内容                           | ファイル                                                  |
-| ---------------------------------- | --------------------------------------------------------- |
-| 一軍/二軍それぞれのリーグ名・ID    | [competitions/leagues.ts](../competitions/leagues.ts)     |
-| 星原の所在地・本拠地参照           | [hoshihara.ts](hoshihara.ts)                              |
-| 青凪の所在地・本拠地参照           | [aonagi.ts](aonagi.ts)                                    |
-| 湖白の所在地・本拠地参照           | [kohaku.ts](kohaku.ts)                                    |
-| 朝霧の所在地・本拠地参照           | [asagiri.ts](asagiri.ts)                                  |
-| 球場名・所在地・収容人数           | [stadiums/](../stadiums/index.ts)の球団別ファイル         |
-| 球場の基準形状                     | [stadiums/geometry.ts](../stadiums/geometry.ts)           |
-| 架空の所在地辞書                   | [regions/club-regions.ts](../regions/club-regions.ts)     |
-| 新規定義と確認情報を組み立てる入口 | [world/league-structure.ts](../world/league-structure.ts) |
+| 編集内容                           | ファイル                                                      |
+| ---------------------------------- | ------------------------------------------------------------- |
+| 一軍/二軍それぞれのリーグ名・ID    | [competitions/two-leagues.ts](../competitions/two-leagues.ts) |
+| 星原の所在地・本拠地参照           | [hoshihara.ts](hoshihara.ts)                                  |
+| 青凪の所在地・本拠地参照           | [aonagi.ts](aonagi.ts)                                        |
+| 湖白の所在地・本拠地参照           | [kohaku.ts](kohaku.ts)                                        |
+| 朝霧の所在地・本拠地参照           | [asagiri.ts](asagiri.ts)                                      |
+| 球場名・所在地・収容人数           | [stadiums/](../stadiums/index.ts)の球団別ファイル             |
+| 球場の基準形状                     | [stadiums/geometry.ts](../stadiums/geometry.ts)               |
+| 架空の所在地辞書                   | [regions/club-regions.ts](../regions/club-regions.ts)         |
+| 新規定義と確認情報を組み立てる入口 | [world/two-leagues.ts](../world/two-leagues.ts)               |
 
 球団名・一軍編成は既存のteams/、二軍名・二軍編成はfarm/を編集します。新しいクラブ情報はそこから球団名/チーム名を取得して保存するため、別名の正本を増やしません。改名・昇降格でclubId/squadId/playerIdを変えません。新しい球場を加える場合は、球団別ファイルへの定義とclubs/の本拠地IDを対応させます。
+
+## リーグ所属を変える入口
+
+`competitions/two-leagues.ts`の`twoLeagueCatalog`が現行のリーグ名・ID、`firstLeagueMemberships`が一軍チームIDと所属リーグの対応です。初期所属はスカイ＝星原・湖白、オーシャン＝青凪・朝霧。編集は新規プレイへだけ反映され、開始済みの保存は変えません。名前や配列位置から所属を決めないでください。
+
+現行定義v18は`world/two-leagues.ts`、確認欄は`world/new-play-options.ts`で作ります。旧定義v17の`competitions/leagues.ts`・`world/league-structure.ts`は1リーグ構成を再現する入口です。v18の大会構造v2は一軍2・二軍1リーグを要求し、各リーグに2チーム以上の参加情報が必要です。IDの重複・欠落・別階級・空リーグは拒否します。参加情報・球場参照・順位・年度要約は保存内の情報で再現します。
+
+交流戦は同じ一軍大会の通常成績へ含め、順位だけ所属別に分けます。交流戦のための別集計を加算しません。既存の短期/年間日程は変更せず、対戦する2チームの所属から区分を導出します。正式12球団・143試合制・2026年日程への対応は別工程です。
 
 ## 保存される参照
 
@@ -30,6 +38,6 @@
 
 形状は共通の対称モデルだけです。距離はmm整数で、初期値は中堅120000mm・両翼100000mm・高さ3000mmです。実際の計算設定config/match.tsの120m・100m・3mと一致する必要があり、個別球場の差として編集しても現行モデルは受け付けません。共通形状を変更する場合は両方を整合させます。個別形状、非対称フェンス、開閉屋根、天候、観客数、開始時刻、地方開催・日程変更は未実装です。
 
-[config/league-structure.ts](../../../config/league-structure.ts)は固定読込範囲（文字列200文字・収容人数1～200000人・距離1～1000000mm）です。推奨規模・生成分布・現実の限界ではありません。同じ構造版の許容範囲を狭めず、構造・規則を変える場合は版を分けます。現行のleague-structure-v1は一軍/二軍各1リーグ・1大会を要求し、一軍のリーグ分割を対応済みとして受け付けません。
+[config/league-structure.ts](../../../config/league-structure.ts)は固定読込範囲（文字列200文字・収容人数1～200000人・距離1～1000000mm）です。推奨規模・生成分布・現実の限界ではありません。同じ構造版の許容範囲を狭めず、構造・規則を変える場合は版を分けます。旧定義v17のleague-structure-v1は一軍/二軍各1リーグ・1大会を要求します。現行v18のleague-structure-v2は一軍2リーグ・二軍1リーグで、大会自体は一軍/二軍各1つです。旧版の許容範囲は変更しません。
 
 編集後は`npm.cmd run data:check`で短期・年間を検査し、**新規プレイ**で適用します。旧定義v16以前へ本拠地情報を補完しません。開始時点の設定を残すため、旧プレイの名前や球場を現在の編集内容へ一括置換しません。

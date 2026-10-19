@@ -202,3 +202,19 @@
   border-color: #365d24;
   background: #e8efdf;
 }
+
+/* 球団名と文字でも自球団を識別する。色だけを手がかりにしない。 */
+.world-table tr[data-own-club='true'] > * {
+  background: var(--team-tint, #edf4ee);
+}
+
+.standings-scroll-hint {
+  display: none;
+}
+@media (max-width: 600px) {
+  .standings-scroll-hint {
+    display: block;
+    margin: 0.5rem 0;
+    color: #50665c;
+  }
+}

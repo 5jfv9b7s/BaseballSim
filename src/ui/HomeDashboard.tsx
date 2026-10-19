@@ -1,3 +1,4 @@
+import { leagueStandings, gameLeagueKind } from '../world/league-standings.ts';
 import { gameStadium } from '../world/league-structure.ts';
 import type { WorldView } from '../world/controller.ts';
 import type { MainPage } from './MainScreen.tsx';
@@ -37,6 +38,11 @@ export function HomeDashboard({
   const squad =
     view?.definitions.squads.find((item) => item.squadId === view.management?.controlledSquadId) ??
     view?.definitions.squads[0];
+  const ownLeague = view
+    ? leagueStandings(view.definitions, view.stats).find((g) =>
+        g.clubs.some((r) => r.squadId === squad?.squadId),
+      )
+    : undefined;
   const squadById = (id: string) => view?.definitions.squads.find((item) => item.squadId === id);
   const clubName = (id: string) => squadById(id)?.team.name ?? id;
   const playerById = (id: string) =>
@@ -82,7 +88,13 @@ export function HomeDashboard({
         <section className="match-day" aria-label="今日の対戦">
           <header className="match-day-heading">
             <h3>{seasonComplete ? 'シーズン終了' : '今日の対戦'}</h3>
-            <span>{today ? '一軍公式戦' : 'OFF DAY'}</span>
+            <span>
+              {today
+                ? gameLeagueKind(view!.definitions, today) === 'interleague'
+                  ? '一軍公式戦・交流戦'
+                  : '一軍公式戦'
+                : 'OFF DAY'}
+            </span>
           </header>
           {today ? (
             <>
@@ -274,7 +286,7 @@ export function HomeDashboard({
                     </tr>
                   </thead>
                   <tbody>
-                    {view?.standings.map((row) => (
+                    {ownLeague?.clubs.map((row) => (
                       <tr key={row.squadId} data-own={row.squadId === squad?.squadId}>
                         <th scope="row" className="report-number">
                           {row.rank ?? '—'}
@@ -295,7 +307,7 @@ export function HomeDashboard({
                     ))}
                   </tbody>
                 </table>
-                <p className="report-caption">一軍・確定試合</p>
+                <p className="report-caption">{ownLeague?.displayName} ／ 一軍・確定試合</p>
                 <button className="report-link" onClick={() => onNavigate('standings')}>
                   順位表を見る →
                 </button>

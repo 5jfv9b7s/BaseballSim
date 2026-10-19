@@ -52,7 +52,8 @@ export function squadParticipation(definitions: WorldDefinitions, squadId: strin
 
 export function validateLeagueStructure(definitions: WorldDefinitions): void {
   const catalog = definitions.leagueStructure;
-  if (definitions.version !== 'world-definitions-v17') {
+  const multiLeague = definitions.version === 'world-definitions-v18';
+  if (definitions.version !== 'world-definitions-v17' && !multiLeague) {
     ensure(
       catalog === undefined && definitions.schedule.every((g) => g.stadiumRef === undefined),
       '旧定義へ大会・球場情報を追加できません',
@@ -69,7 +70,10 @@ export function validateLeagueStructure(definitions: WorldDefinitions): void {
     'participations',
     'stadiums',
   ]);
-  ensure(catalog!.version === 'league-structure-v1', '未対応の大会構造版です');
+  ensure(
+    catalog!.version === (multiLeague ? 'league-structure-v2' : 'league-structure-v1'),
+    '定義と大会構造の版が一致しません',
+  );
   for (const key of [
     'regions',
     'leagues',
@@ -90,21 +94,28 @@ export function validateLeagueStructure(definitions: WorldDefinitions): void {
     regions.add(region.regionId);
   }
   const leagues = new Map<string, (typeof data.leagues)[number]>();
-  ensure(data.leagues.length === 2, '現行モデルは一軍・二軍各1リーグです');
+  ensure(data.leagues.length === (multiLeague ? 3 : 2), 'リーグ数が構造版と一致しません');
   for (const league of data.leagues) {
     fields(league, ['leagueId', 'displayName', 'level', 'rankingRuleRef']);
     identifier(league.leagueId);
     text(league.displayName);
     ensure(
       ['first', 'farm'].includes(league.level) &&
-        ![...leagues.values()].some((l) => l.level === league.level),
-      '現行モデルは各階級1リーグです',
+        (multiLeague || ![...leagues.values()].some((l) => l.level === league.level)),
+      'リーグの階級または階級ごとのリーグ数が不正です',
     );
     ensure(
       !leagues.has(league.leagueId) && league.rankingRuleRef === definitions.standingsRule,
       'リーグIDまたは順位規則が不正です',
     );
     leagues.set(league.leagueId, league);
+  }
+  if (multiLeague) {
+    ensure(
+      data.leagues.filter((l) => l.level === 'first').length === 2 &&
+        data.leagues.filter((l) => l.level === 'farm').length === 1,
+      '大会構造v2は一軍2リーグ・二軍1リーグです',
+    );
   }
   const clubs = new Map<string, (typeof data.clubs)[number]>();
   ensure(data.clubs.length === definitions.squads.length, '全球団の所在地情報が必要です');
@@ -227,6 +238,14 @@ export function validateLeagueStructure(definitions: WorldDefinitions): void {
       '大会参加の階級が不正です',
     );
     participations.set(p.squadId, p);
+  }
+  if (multiLeague) {
+    for (const league of data.leagues) {
+      ensure(
+        data.participations.filter((p) => p.leagueId === league.leagueId).length >= 2,
+        '各リーグに2チーム以上の年度参加情報が必要です',
+      );
+    }
   }
   for (const game of definitions.schedule) {
     validateRef(game.stadiumRef!);

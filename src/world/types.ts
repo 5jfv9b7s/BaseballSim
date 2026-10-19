@@ -51,7 +51,8 @@ export interface WorldDefinitions {
     | 'world-definitions-v14'
     | 'world-definitions-v15'
     | 'world-definitions-v16'
-    | 'world-definitions-v17';
+    | 'world-definitions-v17'
+    | 'world-definitions-v18';
   leagueStructure?: import('./league-structure-types.ts').LeagueStructure;
   playerProfiles?: import('./player-profile-types.ts').PlayerProfileCatalog;
   pitchProfiles?: import('../engine/pitch-profile-types.ts').PitchProfileConfig;
@@ -325,8 +326,7 @@ export type WorldRecord = WorldState &
   );
 export type ManagedWorld = Extract<WorldRecord, { management: ClubManagement }>;
 
-export interface SeasonSummary {
-  version: 'season-summary-v1';
+export interface SeasonSummaryBase {
   seasonId: string;
   competitionId: string;
   statScope: StatKey['statScope'];
@@ -335,5 +335,15 @@ export interface SeasonSummary {
   standingsRule: WorldDefinitions['standingsRule'];
   clubs: ReturnType<typeof import('./stats.ts').standings>;
   stats: SeasonStats;
-  title: { status: 'decided'; squadId: string } | { status: 'unresolved'; squadIds: string[] };
 }
+export type LeagueTitle =
+  { status: 'decided'; squadId: string } | { status: 'unresolved'; squadIds: string[] };
+export type SeasonSummary = SeasonSummaryBase &
+  (
+    | { version: 'season-summary-v1'; title: LeagueTitle }
+    | {
+        version: 'season-summary-v2';
+        title: { status: 'byLeague' };
+        leagues: (import('./league-standings.ts').LeagueStandings & { title: LeagueTitle })[];
+      }
+  );

@@ -14,7 +14,8 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createLeagueStructureWorld, worldPhase } from './engine.ts';
+import { advanceWorld, completeDay, createTwoLeagueWorld, worldPhase } from './engine.ts';
+import { leagueStandings } from './league-standings.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -107,7 +108,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createLeagueStructureWorld();
+  private world: WorldRecord = createTwoLeagueWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -207,7 +208,9 @@ export class WorldController {
         'farmSummary' in world
           ? {
               stats: statsForScope(world.stats, 'farmRegular'),
-              standings: standings(world.stats, 'farmRegular'),
+              standings: leagueStandings(world.definitions, world.stats, 'farmRegular').flatMap(
+                (l) => l.clubs,
+              ),
               summary: world.farmSummary,
               preview: controlledFarm ? registrationPreview(world, controlledFarm.squadId) : null,
             }
@@ -248,7 +251,7 @@ export class WorldController {
         };
       }),
       stats: statsForScope(world.stats, 'firstRegular'),
-      standings: standings(world.stats),
+      standings: leagueStandings(world.definitions, world.stats).flatMap((l) => l.clubs),
       slots: this.slots,
       storageError: this.storageError,
       unsavedChanges: this.unsavedChanges,

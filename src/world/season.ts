@@ -1,3 +1,4 @@
+import { leagueStandings } from './league-standings.ts';
 import { gameScope } from './squads.ts';
 import { ensure } from '../engine/validation.ts';
 import { standings, statsForScope } from './stats.ts';
@@ -21,6 +22,31 @@ export function summarizeSeason(
     ),
     '未完了の試合・成績があります',
   );
+  if (world.definitions.version === 'world-definitions-v18') {
+    const leagues = leagueStandings(world.definitions, stats, scope).map((league) => {
+      const leaders = league.clubs.filter((row) => row.rank === 1);
+      return {
+        ...league,
+        title:
+          leaders.length === 1
+            ? { status: 'decided' as const, squadId: leaders[0]!.squadId }
+            : { status: 'unresolved' as const, squadIds: leaders.map((row) => row.squadId) },
+      };
+    });
+    return structuredClone({
+      version: 'season-summary-v2',
+      seasonId: world.definitions.seasonId,
+      competitionId: competition.competitionId,
+      statScope: scope,
+      completedOn: competition.endDate,
+      games: games.length,
+      standingsRule: world.definitions.standingsRule,
+      clubs: leagues.flatMap((league) => league.clubs),
+      stats,
+      title: { status: 'byLeague' },
+      leagues,
+    });
+  }
   const finalStandings = standings(stats, scope);
   const leaders = finalStandings.filter((row) => row.rank === 1);
   return structuredClone({

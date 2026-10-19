@@ -1,3 +1,4 @@
+import { leagueStandings } from '../src/world/league-standings.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 
@@ -69,8 +70,11 @@ for (const width of [1280, 390, 320]) {
 
     await page.getByRole('button', { name: 'リーグ順位のカード', exact: true }).click();
     const table = page.getByRole('table', { name: 'リーグ順位', exact: true });
-    await expect(table.locator('tbody tr')).toHaveCount(view.standings.length);
-    for (const [index, row] of view.standings.entries()) {
+    const ownRows = leagueStandings(view.definitions, view.stats).find((g) =>
+      g.clubs.some((r) => r.squadId === view.management!.controlledSquadId),
+    )!.clubs;
+    await expect(table.locator('tbody tr')).toHaveCount(ownRows.length);
+    for (const [index, row] of ownRows.entries()) {
       await expect(table.locator('tbody tr').nth(index).locator('td.report-number')).toHaveText([
         String(row.wins),
         String(row.losses),

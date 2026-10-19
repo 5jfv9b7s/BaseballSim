@@ -1,3 +1,4 @@
+import { gameLeagueKind } from '../world/league-standings.ts';
 import { gameStadium } from '../world/league-structure.ts';
 import { ProgressEstimate } from './ProgressEstimate.tsx';
 import { WinBalanceChart } from './WinBalanceChart.tsx';
@@ -246,6 +247,8 @@ export function SeasonCalendar({
                           <span className="calendar-match" key={game.gameId}>
                             <span className="calendar-venue">
                               {game.homeSquadId === ownSquad?.squadId ? 'HOME' : 'VISITOR'}
+                              {gameLeagueKind(view.definitions, game) === 'interleague' &&
+                                ' ／ 交流戦'}
                             </span>
                             <span className="calendar-opponent">
                               {opponent(game)?.team.name ?? '対戦相手未設定'}
@@ -346,6 +349,7 @@ export function SeasonCalendar({
               <div className="calendar-detail-game" key={game.gameId}>
                 <span className="calendar-venue">
                   {game.homeSquadId === ownSquad?.squadId ? 'HOME' : 'VISITOR'}
+                  {gameLeagueKind(view.definitions, game) === 'interleague' && ' ／ 交流戦'}
                 </span>
                 <div className="calendar-detail-opponent">
                   <ClubMark clubId={opponent(game)?.team.clubId} small />

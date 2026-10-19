@@ -1,3 +1,6 @@
+import { leagueStandings } from '../world/league-standings.ts';
+import { LeagueStandingsPanel } from './LeagueStandingsPanel.tsx';
+import { SeasonSummaryPanel } from './SeasonSummaryPanel.tsx';
 import { gameStadium } from '../world/league-structure.ts';
 import type { NewPlayOptions } from '../world/league-structure-types.ts';
 import { NewPlayClubPreview } from './NewPlayClubPreview.tsx';
@@ -434,8 +437,15 @@ export function WorldApp({
   const pausedTarget = !running && canRun ? progressTarget.current : null;
   const resultDate = selectedDate || view?.lastCompletedDate || view?.currentDate || '';
   const displayScope = view?.farm ? scope : 'firstRegular';
+  const controlledClubId = view?.definitions.squads.find(
+    (s) => s.squadId === view.management?.controlledSquadId,
+  )?.team.clubId;
+  const displayOwnSquadId =
+    displayScope === 'farmRegular'
+      ? view?.definitions.farm?.squads.find((s) => s.team.clubId === controlledClubId)?.squadId
+      : view?.management?.controlledSquadId;
+
   const displayStats = displayScope === 'farmRegular' ? view?.farm?.stats : view?.stats;
-  const displayStandings = displayScope === 'farmRegular' ? view?.farm?.standings : view?.standings;
   const displaySummary = displayScope === 'farmRegular' ? view?.farm?.summary : view?.seasonSummary;
   const games =
     view?.games.filter((game) => game.date === resultDate && game.statScope === displayScope) ?? [];
@@ -763,22 +773,11 @@ export function WorldApp({
       </>
     ),
     summary: displaySummary && (
-      <section className="panel" aria-label="シーズン終了要約">
-        <h2>{displayScope === 'farmRegular' ? '二軍シーズン終了' : 'シーズン終了'}</h2>
-        <p>
-          {displaySummary.completedOn}までの全{displaySummary.games}
-          試合を確定し、年度要約を保存しました。
-        </p>
-        <p>
-          {displaySummary.title.status === 'decided'
-            ? '試作リーグ優勝：' + squadName(displaySummary.title.squadId)
-            : '同率首位の決着規則が未定のため、優勝は未確定です。'}
-        </p>
-        <p>
-          {development ? '下の順位表・累計個人成績' : '成績メニューのチーム成績・個人成績'}
-          が今季の確定記録です。翌年度への更新と表彰は未対応です。
-        </p>
-      </section>
+      <SeasonSummaryPanel
+        summary={displaySummary}
+        squadName={squadName}
+        ownSquadId={displayOwnSquadId}
+      />
     ),
     management: (
       <>
@@ -846,47 +845,18 @@ export function WorldApp({
         {view?.farm && <FarmRoster view={view} />}
       </>
     ),
-    standings: (
-      <>
-        <section className="panel" aria-label="順位表">
-          <h2>順位表</h2>
-          <p className="hint">
-            確定済み試合の累計。勝率は引分を除き、同率は同順位とする試作規則です。
-          </p>
-          <div className="world-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>順位</th>
-                  <th>球団</th>
-                  <th>試合</th>
-                  <th>勝</th>
-                  <th>敗</th>
-                  <th>分</th>
-                  <th>勝率</th>
-                  <th>得点</th>
-                  <th>失点</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayStandings?.map((row) => (
-                  <tr key={row.squadId}>
-                    <td>{row.rank ?? '-'}</td>
-                    <th>{squadName(row.squadId)}</th>
-                    <td>{row.games}</td>
-                    <td>{row.wins}</td>
-                    <td>{row.losses}</td>
-                    <td>{row.draws}</td>
-                    <td>{row.winPercentage?.toFixed(3) ?? '-'}</td>
-                    <td>{row.runsFor}</td>
-                    <td>{row.runsAgainst}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </>
+    standings: view && (
+      <LeagueStandingsPanel
+        key={JSON.stringify([view.worldId, displayScope])}
+        groups={leagueStandings(
+          view.definitions,
+          displayScope === 'farmRegular' ? view.farm!.stats : view.stats,
+          displayScope,
+        )}
+        squadName={squadName}
+        ownSquadId={displayOwnSquadId}
+        confirmedThrough={view.lastCompletedDate}
+      />
     ),
     memorial: (
       <>

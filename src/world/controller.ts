@@ -14,7 +14,7 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createPlayerProfileWorld, worldPhase } from './engine.ts';
+import { advanceWorld, completeDay, createLeagueStructureWorld, worldPhase } from './engine.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
   emptyWorldSlots,
@@ -107,7 +107,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createPlayerProfileWorld();
+  private world: WorldRecord = createLeagueStructureWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;

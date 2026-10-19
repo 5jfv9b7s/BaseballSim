@@ -1,3 +1,5 @@
+import { createLeagueStructureWorld } from '../src/world/engine.ts';
+import { createLeagueStructureDefinitions } from '../src/data/world/league-structure.ts';
 import { createPlayerProfileWorld } from '../src/world/engine.ts';
 import { createPlayerProfileDefinitions } from '../src/data/world/player-profiles.ts';
 import { createPitchProfileWorld } from '../src/world/engine.ts';
@@ -206,5 +208,16 @@ for (const calendar of ['short', 'annual'] as const) {
   const world = createPlayerProfileWorld(1, undefined, createPlayerProfileDefinitions(calendar));
   console.log(
     `選手プロフィール: ${world.definitions.playerProfiles!.players.length}人 / ${calendar}（検査成功）`,
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createLeagueStructureWorld(
+    1,
+    undefined,
+    createLeagueStructureDefinitions(calendar),
+  );
+  console.log(
+    `大会参加・本拠地: ${world.definitions.leagueStructure!.participations.length}チーム / ${world.definitions.leagueStructure!.stadiums.length}球場 / ${calendar}（検査成功）`,
   );
 }

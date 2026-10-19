@@ -1,4 +1,8 @@
-import { createPlayerProfileDefinitions } from '../data/world/player-profiles.ts';
+import {
+  createLeagueStructureDefinitions,
+  createNewPlayOptions,
+} from '../data/world/league-structure.ts';
+import type { NewPlayOptions } from './league-structure-types.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import { createPitchProfileWorld } from './engine.ts';
@@ -20,6 +24,7 @@ export type WorkspaceRequest =
   | (Context & { kind: 'openPlay'; targetLocalWorldId: string; slot: WorldSlotKind });
 export type WorkspaceResponse = ({ ok: true } | { ok: false; error: string }) & {
   view: WorldView;
+  newPlayOptions: NewPlayOptions;
   plays: StoredPlay[];
   playListError?: string;
   inspection?: StorageInspection;
@@ -30,6 +35,7 @@ export type WorkspaceResponse = ({ ok: true } | { ok: false; error: string }) & 
 
 /** Workerの直列キューから呼ぶ。切替の検証が失敗した場合は現行の正本を保持する。 */
 export class WorldWorkspace {
+  private readonly newPlayOptions = createNewPlayOptions();
   private storage: DexieWorldStorage;
   private controller: WorldController;
   private plays: StoredPlay[] = [];
@@ -81,7 +87,7 @@ export class WorldWorkspace {
     const world = createPitchProfileWorld(
       request.seed,
       request.controlledSquadId,
-      createPlayerProfileDefinitions(request.calendar),
+      createLeagueStructureDefinitions(request.calendar),
     );
     const nextStorage = new DexieWorldStorage(this.storage.database, localWorldId);
     const nextRevision = before.revision + 1;
@@ -184,6 +190,7 @@ export class WorldWorkspace {
         ok: true,
         view: dispatched ?? this.controller.query(),
         plays: this.plays,
+        newPlayOptions: structuredClone(this.newPlayOptions),
         ...(this.playListError ? { playListError: this.playListError } : {}),
         ...(inspection ? { inspection } : {}),
         ...(backup ? { backup } : {}),
@@ -196,6 +203,7 @@ export class WorldWorkspace {
         error: error instanceof Error ? error.message : '保存の処理に失敗しました',
         view: this.controller.query(),
         plays: this.plays,
+        newPlayOptions: structuredClone(this.newPlayOptions),
       };
     }
   }

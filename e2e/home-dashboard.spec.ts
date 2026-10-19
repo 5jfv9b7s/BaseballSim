@@ -44,7 +44,7 @@ for (const width of [1280, 390, 320]) {
     const hero = page.getByRole('region', { name: '今日の対戦', exact: true });
     await expect(hero.getByRole('img', { name: '試合前・得点なし' })).toBeVisible();
     await expect(hero).toContainText('開始時刻 未設定');
-    await expect(hero).toContainText('球場 未設定');
+    await expect(hero).toContainText('球場 青凪スタジアム');
     const view = await page.evaluate(() => Reflect.get(window, 'homeResponse').view as WorldView);
     const starter = view.definitions.squads
       .flatMap((squad) => squad.players)

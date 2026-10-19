@@ -1,3 +1,4 @@
+import { gameStadium } from '../world/league-structure.ts';
 import { ProgressEstimate } from './ProgressEstimate.tsx';
 import { WinBalanceChart } from './WinBalanceChart.tsx';
 import { CalendarDayMenu } from './CalendarDayMenu.tsx';
@@ -350,6 +351,7 @@ export function SeasonCalendar({
                   <ClubMark clubId={opponent(game)?.team.clubId} small />
                   <strong>{opponent(game)?.team.name}</strong>
                 </div>
+                <p>球場：{gameStadium(view.definitions, game.gameId)?.displayName ?? '記録なし'}</p>
                 <p className="calendar-detail-score">{resultText(game)}</p>
                 {game.result && (
                   <button className="secondary" onClick={() => openGame(game.gameId)}>

@@ -26,6 +26,7 @@ export interface WorldSquad {
 }
 
 export interface ScheduledGame {
+  stadiumRef?: import('./league-structure-types.ts').StadiumRef;
   gameId: string;
   date: string;
   awaySquadId: string;
@@ -49,7 +50,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v13'
     | 'world-definitions-v14'
     | 'world-definitions-v15'
-    | 'world-definitions-v16';
+    | 'world-definitions-v16'
+    | 'world-definitions-v17';
+  leagueStructure?: import('./league-structure-types.ts').LeagueStructure;
   playerProfiles?: import('./player-profile-types.ts').PlayerProfileCatalog;
   pitchProfiles?: import('../engine/pitch-profile-types.ts').PitchProfileConfig;
   bullpenConfig?: import('../game/bullpen-types.ts').BullpenConfig;

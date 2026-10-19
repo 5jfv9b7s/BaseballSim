@@ -183,3 +183,7 @@ relief.tsに条件が重なる役割の優先順と、役割を追加する際�
 ## 選手プロフィールの入力範囲（0.31.0）
 
 [player-profiles.ts](player-profiles.ts)は生年・身長・体重の読込検査用の範囲です。生成分布や計算係数ではありません。実データは[src/data/profiles/](../src/data/profiles/README.md)で編集します。同じプロフィール版の検査範囲を狭めず、旧保存を読める状態を保ちます。
+
+## 大会・球場の入力範囲（0.32.0）
+
+[league-structure.ts](league-structure.ts)は球場収容人数・距離・文字列の固定読込範囲です。興行の計算係数ではありません。[編集ガイド](../src/data/clubs/README.md)を参照してください。現行の形状はmatch.tsと同じ共通モデルを要求し、未対応の個別形状を黙って無視しません。

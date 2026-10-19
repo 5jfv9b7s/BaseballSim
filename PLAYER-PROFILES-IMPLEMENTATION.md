@@ -32,3 +32,5 @@ v1.0の補強・育成に先立ち、データ設計5.1/5.2と画面設計S08/S0
 - `npm.cmd run data:check`：短期・年間の名簿・プロフィール整合。
 - `npm.cmd run typecheck` / `npm.cmd run check`：型検査、全Nodeテスト、ビルド。
 - `npm.cmd run test:ui -- e2e/player-profiles.spec.ts e2e/main-details.spec.ts e2e/main-screen.spec.ts`：PC/狭幅での一覧・詳細・検索・保存復帰と既存導線。
+
+0.32.0の新規プレイは`createLeagueStructureWorld` / `createLeagueStructureDefinitions`から定義v17を作成し、v16のプロフィールを継承します。v16の入口は保存再現と検証のため維持しています。

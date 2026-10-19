@@ -1,3 +1,4 @@
+import { gameStadium } from '../world/league-structure.ts';
 import type { WorldView } from '../world/controller.ts';
 import type { MainPage } from './MainScreen.tsx';
 import {
@@ -91,7 +92,8 @@ export function HomeDashboard({
                   開始時刻 <b>未設定</b>
                 </span>
                 <span>
-                  球場 <b>未設定</b>
+                  球場{' '}
+                  <b>{gameStadium(view!.definitions, today.gameId)?.displayName ?? '記録なし'}</b>
                 </span>
               </div>
               <div className="match-teams">

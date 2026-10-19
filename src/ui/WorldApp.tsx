@@ -1,3 +1,6 @@
+import { gameStadium } from '../world/league-structure.ts';
+import type { NewPlayOptions } from '../world/league-structure-types.ts';
+import { NewPlayClubPreview } from './NewPlayClubPreview.tsx';
 import { ProgressEstimate } from './ProgressEstimate.tsx';
 import { FormationEditor } from './FormationEditor.tsx';
 import {
@@ -50,6 +53,7 @@ export function WorldApp({
   const formationDestination = useRef<MainPage | 'tools' | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [page, setPage] = useState<MainPage>('home');
+  const [newPlayOptions, setNewPlayOptions] = useState<NewPlayOptions | null>(null);
   const [plays, setPlays] = useState<StoredPlay[]>([]);
   const [importedId, setImportedId] = useState('');
   const [view, setView] = useState<WorldView | null>(null);
@@ -220,6 +224,7 @@ export function WorldApp({
       setBusy(false);
       latest.current = data.view;
       setView(data.view);
+      setNewPlayOptions(data.newPlayOptions);
       setPlays(data.plays ?? []);
       if (!data.ok) {
         formationDestination.current = null;
@@ -377,6 +382,11 @@ export function WorldApp({
     continueDay();
   }
 
+  const setup = newPlayOptions?.[calendar];
+  const setupClub =
+    setup?.clubs.find((c) => c.squadId === controlledSquadId) ??
+    setup?.clubs.find((c) => c.squadId === view?.management?.controlledSquadId) ??
+    setup?.clubs[0];
   const squadName = (squadId: string) =>
     (view
       ? allWorldSquads(view.definitions).find((squad) => squad.squadId === squadId)?.team.name
@@ -945,6 +955,10 @@ export function WorldApp({
           )}
           {result && view && pickedGame && (
             <>
+              <p>
+                開催球場：
+                {gameStadium(view.definitions, pickedGame.gameId)?.displayName ?? '記録なし'}
+              </p>
               <div className="world-table">
                 <table aria-label="日次のイニング別スコア">
                   <thead>
@@ -1130,22 +1144,18 @@ export function WorldApp({
           <label>
             新規プレイの担当球団
             <select
-              value={
-                controlledSquadId ||
-                view?.management?.controlledSquadId ||
-                view?.definitions.squads[0]?.squadId ||
-                ''
-              }
+              value={setupClub?.squadId ?? ''}
               disabled={disabled}
               onChange={(event) => setControlledSquadId(event.target.value)}
             >
-              {view?.definitions.squads.map((squad) => (
+              {setup?.clubs.map((squad) => (
                 <option key={squad.squadId} value={squad.squadId}>
-                  {squad.team.name}
+                  {squad.displayName}
                 </option>
               ))}
             </select>
           </label>
+          <NewPlayClubPreview calendar={setup} club={setupClub} />
           <label>
             世界seed{' '}
             <input
@@ -1156,7 +1166,7 @@ export function WorldApp({
             />
           </label>
           <button
-            disabled={disabled || (!!view?.unsavedChanges && view.revision > 0)}
+            disabled={disabled || !setupClub || (!!view?.unsavedChanges && view.revision > 0)}
             onClick={() => {
               if (
                 !/^\d+$/.test(seed) ||
@@ -1171,10 +1181,7 @@ export function WorldApp({
                 kind: 'new',
                 calendar,
                 seed: Number(seed),
-                controlledSquadId:
-                  controlledSquadId ||
-                  view?.management?.controlledSquadId ||
-                  view?.definitions.squads[0]?.squadId,
+                controlledSquadId: setupClub?.squadId,
               });
             }}
           >

@@ -162,3 +162,7 @@ bullpen/の球団別ファイルに、一軍・二軍それぞれのenabledを�
 ## プロフィール（0.31.0）
 
 生年月日・出身地・身長体重・代表守備位置は [profiles/README.md](profiles/README.md) を参照してください。基礎・二軍の全120人を球団別ファイルに分けています。名簿へ選手を追加するときは同じplayerIdのプロフィールも必要です。新規日程の入口は [world/player-profiles.ts](world/player-profiles.ts) です。過去版の入口は保存再現用に維持しています。
+
+## リーグ・球団所在地・球場（0.32.0）
+
+[clubs/README.md](clubs/README.md)が編集の入口です。球団の本拠地参照をclubs/、架空球場をstadiums/、リーグをcompetitions/、所在地辞書をregions/へ分けています。現在の新規プレイは[world/league-structure.ts](world/league-structure.ts)でプロフィールを含む初期定義v17を作ります。旧版の入口は保存再現のため維持します。

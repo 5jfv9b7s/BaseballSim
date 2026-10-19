@@ -91,9 +91,12 @@ function validateWithCache(
   integer(actions.length, 0, 'seasonSummary' in candidate ? 2048 : 256, '編成履歴の件数');
   ensure(
     candidate.version === 'world-prototype-v15'
-      ? ['world-definitions-v14', 'world-definitions-v15', 'world-definitions-v16'].includes(
-          candidate.definitions.version,
-        )
+      ? [
+          'world-definitions-v14',
+          'world-definitions-v15',
+          'world-definitions-v16',
+          'world-definitions-v17',
+        ].includes(candidate.definitions.version)
       : candidate.definitions.version ===
           (candidate.version === 'world-prototype-v14'
             ? 'world-definitions-v13'

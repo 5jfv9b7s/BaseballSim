@@ -12,7 +12,8 @@ export function validatePhysicalDefinitions(definitions: WorldDefinitions): void
     config?.version ===
       (definitions.version === 'world-definitions-v13' ||
       definitions.version === 'world-definitions-v14' ||
-      definitions.version === 'world-definitions-v15'
+      definitions.version === 'world-definitions-v15' ||
+      definitions.version === 'world-definitions-v16'
         ? 'physical-load-v2'
         : 'physical-load-v1'),
     '身体モデルの設定が必要です',

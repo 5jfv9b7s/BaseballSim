@@ -158,3 +158,7 @@ relief-policies/{hoshihara,aonagi,kohaku,asagiri}.tsに4球団・一軍二軍の
 bullpen/の球団別ファイルに、一軍・二軍それぞれのenabledを明示しています。全4球団8チームを必須入力として検査します。新しいチームには対応する設定を追加してください。選手ごとの状態は試合開始時の救援候補から生成し、選手プロフィールへ混在させません。
 
 共通の球数設定はconfig/bullpen.ts、準備負荷はconfig/physical.tsです。data:check後、新しい日程で適用を確認してください。旧保存は変更しません。詳細は[BULLPEN-IMPLEMENTATION.md](../../BULLPEN-IMPLEMENTATION.md)。
+
+## プロフィール（0.31.0）
+
+生年月日・出身地・身長体重・代表守備位置は [profiles/README.md](profiles/README.md) を参照してください。基礎・二軍の全120人を球団別ファイルに分けています。名簿へ選手を追加するときは同じplayerIdのプロフィールも必要です。新規日程の入口は [world/player-profiles.ts](world/player-profiles.ts) です。過去版の入口は保存再現用に維持しています。

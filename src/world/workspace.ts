@@ -1,4 +1,4 @@
-import { createIndividualPitchDefinitions } from '../data/world/individual-pitches.ts';
+import { createPlayerProfileDefinitions } from '../data/world/player-profiles.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import { createPitchProfileWorld } from './engine.ts';
@@ -81,7 +81,7 @@ export class WorldWorkspace {
     const world = createPitchProfileWorld(
       request.seed,
       request.controlledSquadId,
-      createIndividualPitchDefinitions(request.calendar),
+      createPlayerProfileDefinitions(request.calendar),
     );
     const nextStorage = new DexieWorldStorage(this.storage.database, localWorldId);
     const nextRevision = before.revision + 1;

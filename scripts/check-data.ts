@@ -1,3 +1,5 @@
+import { createPlayerProfileWorld } from '../src/world/engine.ts';
+import { createPlayerProfileDefinitions } from '../src/data/world/player-profiles.ts';
 import { createPitchProfileWorld } from '../src/world/engine.ts';
 import { createPitchProfileDefinitions } from '../src/data/world/pitch-profiles.ts';
 import { createBullpenWorld } from '../src/world/engine.ts';
@@ -197,5 +199,12 @@ for (const calendar of ['short', 'annual'] as const) {
   const pitches = world.definitions.squads.flatMap((squad) => squad.pitches);
   console.log(
     `個人別球質: ${new Set(pitches.map((p) => p.playerId)).size}投手 / ${pitches.length}持ち球 / ${calendar}（検査成功）`,
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createPlayerProfileWorld(1, undefined, createPlayerProfileDefinitions(calendar));
+  console.log(
+    `選手プロフィール: ${world.definitions.playerProfiles!.players.length}人 / ${calendar}（検査成功）`,
   );
 }

@@ -1,3 +1,5 @@
+import { playerProfile, playerAge } from '../world/player-profiles.ts';
+import { PROFILE_POSITIONS } from '../world/player-profile-types.ts';
 import { useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import './player-details.css';
@@ -14,6 +16,7 @@ export function PlayerDirectory({
   const [category, setCategory] = useState('all');
   const [role, setRole] = useState('all');
   const [order, setOrder] = useState('name');
+  const [position, setPosition] = useState('all');
   const squad =
     view.definitions.squads.find((s) => s.squadId === club) ??
     view.definitions.squads.find((s) => s.squadId === view.management?.controlledSquadId) ??
@@ -22,20 +25,39 @@ export function PlayerDirectory({
     value.normalize('NFKC').replace(/\s/g, '').toLocaleLowerCase('ja');
   const statusOf = (id: string) => view.playerStatuses?.find((row) => row.playerId === id);
   const isPitcher = (id: string) => squad.pitches.some((pitch) => pitch.playerId === id);
+  const profileOf = (id: string) => playerProfile(view.definitions, id);
+  const ageOf = (id: string) => {
+    const p = profileOf(id);
+    return p ? playerAge(p.birthDate, view.currentDate) : null;
+  };
+  const nameOf = (p: (typeof squad.players)[number]) =>
+    profileOf(p.playerId)?.displayName ?? p.familyName + ' ' + p.givenName;
   const players = squad.players
     .filter((player) => {
       const state = statusOf(player.playerId);
       return (
-        normalize(player.familyName + player.givenName).includes(normalize(search)) &&
+        normalize(nameOf(player)).includes(normalize(search)) &&
         (category === 'all' || state?.registration === category) &&
-        (role === 'all' || isPitcher(player.playerId) === (role === 'pitcher'))
+        (role === 'all' || isPitcher(player.playerId) === (role === 'pitcher')) &&
+        (position === 'all' ||
+          (position === 'unknown'
+            ? !profileOf(player.playerId)
+            : profileOf(player.playerId)?.primaryPosition === position))
       );
     })
-    .sort((a, b) =>
-      order === 'name'
-        ? (a.familyName + a.givenName).localeCompare(b.familyName + b.givenName, 'ja')
-        : a.playerId.localeCompare(b.playerId),
-    );
+    .sort((a, b) => {
+      const tie = a.playerId.localeCompare(b.playerId);
+      if (order === 'name') return nameOf(a).localeCompare(nameOf(b), 'ja') || tie;
+      if (order === 'ageAsc' || order === 'ageDesc') {
+        const x = ageOf(a.playerId),
+          y = ageOf(b.playerId);
+        // 未記録を0歳にせず、どちらの順でも末尾へ置く。
+        if (x === null) return y === null ? tie : 1;
+        if (y === null) return -1;
+        return (order === 'ageAsc' ? x - y : y - x) || tie;
+      }
+      return tie;
+    });
 
   return (
     <section className="panel" aria-label="選手一覧">
@@ -73,10 +95,24 @@ export function PlayerDirectory({
           </select>
         </label>
         <label>
+          代表守備位置
+          <select value={position} onChange={(event) => setPosition(event.target.value)}>
+            <option value="all">すべて</option>
+            {PROFILE_POSITIONS.map((p) => (
+              <option value={p} key={p}>
+                {p}
+              </option>
+            ))}
+            <option value="unknown">記録なし</option>
+          </select>
+        </label>
+        <label>
           選手の並び順
           <select value={order} onChange={(event) => setOrder(event.target.value)}>
             <option value="name">氏名順</option>
             <option value="id">選手ID順</option>
+            <option value="ageAsc">年齢の低い順</option>
+            <option value="ageDesc">年齢の高い順</option>
           </select>
         </label>
       </div>
@@ -85,24 +121,46 @@ export function PlayerDirectory({
         {squad.players.length}名）
       </p>
       <p className="hint">
-        名前を選ぶと詳細を開きます。投手は持ち球のある選手で分類しています。背番号・年齢・守備適性は未実装です。
+        名前を選ぶと詳細を開きます。年齢はゲーム内日付の満年齢、代表位置は守備適性とは別です。投手は持ち球で分類し、背番号・守備適性は工事中です。
       </p>
-      <div className="player-grid">
-        {players.map((player) => (
-          <div key={player.playerId}>
-            <button className="player-link" onClick={() => onSelect(player.playerId)}>
-              {player.familyName} {player.givenName}
-            </button>
-            <small>
-              {isPitcher(player.playerId) ? '投手' : '野手'} ／{' '}
-              {statusOf(player.playerId)?.registration === 'first'
-                ? '一軍'
-                : statusOf(player.playerId)?.registration === 'farm'
-                  ? '二軍'
-                  : '登録記録なし'}
-            </small>
-          </div>
-        ))}
+      <div className="world-table">
+        <table aria-label="選手プロフィール一覧">
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>年齢</th>
+              <th>代表位置</th>
+              <th>投打</th>
+              <th>登録</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((player) => (
+              <tr key={player.playerId}>
+                <td>
+                  <button className="player-link" onClick={() => onSelect(player.playerId)}>
+                    {nameOf(player)}
+                  </button>
+                </td>
+                <td>
+                  {ageOf(player.playerId) === null ? '記録なし' : `${ageOf(player.playerId)}歳`}
+                </td>
+                <td>{profileOf(player.playerId)?.primaryPosition ?? '記録なし'}</td>
+                <td>
+                  {player.throwingHand === 'R' ? '右' : '左'}投
+                  {player.battingHand === 'R' ? '右' : player.battingHand === 'L' ? '左' : '両'}打
+                </td>
+                <td>
+                  {statusOf(player.playerId)?.registration === 'first'
+                    ? '一軍'
+                    : statusOf(player.playerId)?.registration === 'farm'
+                      ? '二軍'
+                      : '記録なし'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       {players.length === 0 && <p>条件に合う選手がいません。</p>}
     </section>

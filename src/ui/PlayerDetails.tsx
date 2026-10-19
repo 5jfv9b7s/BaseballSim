@@ -1,3 +1,5 @@
+import { playerProfile, playerAge, profileBirthplace } from '../world/player-profiles.ts';
+import { BACKGROUND_NAMES } from '../world/player-profile-types.ts';
 import { PitchCharacteristics } from './PitchCharacteristics.tsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
@@ -49,6 +51,8 @@ export function PlayerDetails({
   }, [playerId, resolvedId, inline]);
 
   if (!player || !squad) return null;
+  const profile = playerProfile(view.definitions, playerId);
+  const age = profile ? playerAge(profile.birthDate, view.currentDate) : null;
   const state = view.playerStatuses?.find((item) => item.playerId === playerId);
   const registration = registrationDraft ?? state?.registration;
   const physical = squad.physicalInputs?.find((item) => item.playerId === playerId)?.physical;
@@ -83,11 +87,12 @@ export function PlayerDetails({
         <div>
           <p>PLAYER PROFILE ／ {view.currentDate}現在</p>
           <h2 id={headingId}>
-            {player.familyName} {player.givenName}
+            {profile?.displayName ?? `${player.familyName} ${player.givenName}`}
           </h2>
           {inline && (
             <p>
-              年齢：記録なし ／ 調子：{state?.condition ?? '記録なし'} ／ 疲労：
+              年齢：{age === null ? '記録なし' : `${age}歳`} ／ 調子：
+              {state?.condition ?? '記録なし'} ／ 疲労：
               {statusPoints(state?.fatigueMilli)}
             </p>
           )}
@@ -97,6 +102,12 @@ export function PlayerDetails({
             {registration === 'first' ? '一軍' : registration === 'farm' ? '二軍' : '登録記録なし'}
             {registrationDraft && '（編集案）'}
           </p>
+          {!inline && (
+            <p>
+              {age === null ? '年齢：記録なし' : `${age}歳`} ／ 代表守備位置：
+              {profile?.primaryPosition ?? '記録なし'}
+            </p>
+          )}
         </div>
         {!inline && (
           <button autoFocus onClick={close} aria-label="選手詳細を閉じる">
@@ -235,7 +246,48 @@ export function PlayerDetails({
           </p>
         </>
       )}
-      {tab === 'contract' && <p>契約・年俸・所属履歴・背番号・年齢のプロフィールは工事中です。</p>}
+      {tab === 'contract' && (
+        <>
+          <h3>プロフィール</h3>
+          {profile ? (
+            <dl className="player-profile-facts">
+              <div>
+                <dt>生年月日</dt>
+                <dd>
+                  {profile.birthDate}（{age}歳）
+                </dd>
+              </div>
+              <div>
+                <dt>出身地</dt>
+                <dd>{profileBirthplace(view.definitions, profile)}</dd>
+              </div>
+              <div>
+                <dt>出身区分</dt>
+                <dd>{BACKGROUND_NAMES[profile.background]}</dd>
+              </div>
+              <div>
+                <dt>身長・体重</dt>
+                <dd>
+                  {profile.heightMm / 10}cm ／ {profile.weightGrams / 1000}kg
+                </dd>
+              </div>
+              <div>
+                <dt>代表守備位置</dt>
+                <dd>{profile.primaryPosition}</dd>
+              </div>
+              <div>
+                <dt>プロ入り年</dt>
+                <dd>{profile.firstProYear ?? '記録なし'}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p>この保存にはプロフィールの記録がありません。</p>
+          )}
+          <p className="hint">
+            契約・年俸・所属履歴・背番号は工事中です。代表位置は守備適性とは別の項目です。
+          </p>
+        </>
+      )}
     </>
   );
   return inline ? (

@@ -48,7 +48,9 @@ for (const width of [1280, 390]) {
     await nav.getByRole('button', { name: '編成', exact: true }).click();
     await expect(page.getByRole('region', { name: '編成の編集', exact: true })).toBeVisible();
     await nav.getByRole('button', { name: 'チーム', exact: true }).click();
-    await expect(page.locator('.player-grid > div')).toHaveCount(30);
+    await expect(
+      page.getByRole('table', { name: '選手プロフィール一覧' }).locator('tbody tr'),
+    ).toHaveCount(30);
     await expect(page.getByRole('button', { name: /育成・練習\s*工事中/ })).toBeDisabled();
     await nav.getByRole('button', { name: '日程', exact: true }).click();
     await expect(page.getByRole('region', { name: '月別カレンダー' })).toBeVisible();

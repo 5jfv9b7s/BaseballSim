@@ -83,3 +83,26 @@
     gap: 8px;
   }
 }
+
+.player-profile-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+.player-profile-facts > div {
+  padding: 12px 0;
+  border-bottom: 1px solid #dadfd4;
+}
+.player-profile-facts dt {
+  font-size: 13px;
+  color: #53665b;
+}
+.player-profile-facts dd {
+  margin: 6px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  .player-profile-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

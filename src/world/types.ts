@@ -52,7 +52,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v15'
     | 'world-definitions-v16'
     | 'world-definitions-v17'
-    | 'world-definitions-v18';
+    | 'world-definitions-v18'
+    | 'world-definitions-v19';
+  playerDevelopment?: import('./player-development-types.ts').PlayerDevelopmentCatalog;
   leagueStructure?: import('./league-structure-types.ts').LeagueStructure;
   playerProfiles?: import('./player-profile-types.ts').PlayerProfileCatalog;
   pitchProfiles?: import('../engine/pitch-profile-types.ts').PitchProfileConfig;

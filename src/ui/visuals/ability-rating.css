@@ -1,0 +1,34 @@
+.ability-rating {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 5rem;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.ability-rating-value {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.ability-rating-rank {
+  min-width: 2ch;
+}
+
+.ability-rating meter {
+  width: 100%;
+  height: 9px;
+  accent-color: #366947;
+}
+
+.ability-rating meter::-webkit-meter-bar {
+  background: #dfe6dc;
+  border: 0;
+}
+
+.ability-rating meter::-webkit-meter-optimum-value {
+  background: #366947;
+}

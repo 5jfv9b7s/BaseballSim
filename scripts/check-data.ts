@@ -1,3 +1,7 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { createPlayerDevelopmentWorld } from '../src/world/engine.ts';
+import { createPlayerDevelopmentDefinitions } from '../src/data/world/player-development.ts';
+import { playerBaseAbilities } from '../src/world/player-development.ts';
 import { createInitial2026PitchProfiles } from '../src/data/pitch-types/initial-2026.ts';
 import { createSeibuCandidateDataset } from '../src/data/initial-2026/seibu/index.ts';
 import { previewCandidatePitch } from '../src/initial-data/preview.ts';
@@ -265,3 +269,42 @@ for (const player of candidates.players) {
 console.log(
   `初期候補: ${candidates.players.length}人・22能力・9位置・${candidates.players.flatMap((p) => p.pitchRepertoires).length}持ち球の入力、${previewed}件の単球検査成功（正式名簿へは未投入）`,
 );
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createPlayerDevelopmentWorld(
+    undefined,
+    undefined,
+    createPlayerDevelopmentDefinitions(calendar),
+  );
+  const ids = world.definitions.squads.flatMap((squad) => squad.players.map((p) => p.playerId));
+  for (const playerId of ids)
+    if (Object.keys(playerBaseAbilities(world.definitions, playerId)!).length !== 22)
+      throw new Error('共通能力が22項目ではありません');
+  console.log(`22能力・適性（${calendar}）: ${ids.length}選手 / 9位置 / 定義v19（検査成功）`);
+}
+
+// index.tsに登録されていないJSONや、名前を取り違えた編集ファイルを見落とさない。
+const developmentRoot = new URL('../src/data/development/', import.meta.url);
+const developmentIds = new Set(
+  createPlayerDevelopmentDefinitions().playerDevelopment!.players.map((p) => p.playerId),
+);
+const fileIds = new Set<string>();
+for (const club of readdirSync(developmentRoot, { withFileTypes: true }).filter((entry) =>
+  entry.isDirectory(),
+)) {
+  const folder = new URL(club.name + '/', developmentRoot);
+  for (const file of readdirSync(folder).filter((name) => name.endsWith('.json'))) {
+    const input = JSON.parse(readFileSync(new URL(file, folder), 'utf8'));
+    if (
+      file !== input.playerId + '.json' ||
+      !developmentIds.has(input.playerId) ||
+      fileIds.has(input.playerId)
+    )
+      throw new Error(
+        '追加能力JSONのファイル名・登録・選手IDが不正です: ' + club.name + '/' + file,
+      );
+    fileIds.add(input.playerId);
+  }
+}
+if (fileIds.size !== developmentIds.size) throw new Error('追加能力JSONに不足があります');
+console.log(`追加能力JSONの登録照合: ${fileIds.size}人（検査成功）`);

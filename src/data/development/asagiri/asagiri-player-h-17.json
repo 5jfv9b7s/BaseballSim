@@ -1,0 +1,122 @@
+{
+  "playerId": "asagiri-player-h-17",
+  "additionalAbilities": {
+    "batting.bunting": {
+      "valueMilli": 58000,
+      "ceilingMilli": 110000
+    },
+    "running.stealing": {
+      "valueMilli": 58000,
+      "ceilingMilli": 110000
+    },
+    "running.baserunning": {
+      "valueMilli": 63000,
+      "ceilingMilli": 110000
+    },
+    "fielding.throwing": {
+      "valueMilli": 63000,
+      "ceilingMilli": 110000
+    },
+    "fielding.positioning": {
+      "valueMilli": 63000,
+      "ceilingMilli": 110000
+    },
+    "catching.gameCalling": {
+      "valueMilli": 38000,
+      "ceilingMilli": 110000
+    },
+    "catching.blocking": {
+      "valueMilli": 38000,
+      "ceilingMilli": 110000
+    },
+    "catching.framing": {
+      "valueMilli": 38000,
+      "ceilingMilli": 110000
+    },
+    "physical.injuryResistance": {
+      "valueMilli": 73000,
+      "ceilingMilli": 110000
+    },
+    "pitching.quickDelivery": {
+      "valueMilli": 38000,
+      "ceilingMilli": 110000
+    },
+    "pitching.pickoff": {
+      "valueMilli": 38000,
+      "ceilingMilli": 110000
+    }
+  },
+  "positionSkills": {
+    "P": {
+      "aptitudeMilli": 38000,
+      "familiarity": {
+        "valueMilli": 28000,
+        "ceilingMilli": 110000
+      }
+    },
+    "C": {
+      "aptitudeMilli": 38000,
+      "familiarity": {
+        "valueMilli": 28000,
+        "ceilingMilli": 110000
+      }
+    },
+    "1B": {
+      "aptitudeMilli": 63000,
+      "familiarity": {
+        "valueMilli": 48000,
+        "ceilingMilli": 110000
+      }
+    },
+    "2B": {
+      "aptitudeMilli": 63000,
+      "familiarity": {
+        "valueMilli": 48000,
+        "ceilingMilli": 110000
+      }
+    },
+    "3B": {
+      "aptitudeMilli": 63000,
+      "familiarity": {
+        "valueMilli": 48000,
+        "ceilingMilli": 110000
+      }
+    },
+    "SS": {
+      "aptitudeMilli": 88000,
+      "familiarity": {
+        "valueMilli": 78000,
+        "ceilingMilli": 110000
+      }
+    },
+    "LF": {
+      "aptitudeMilli": 38000,
+      "familiarity": {
+        "valueMilli": 28000,
+        "ceilingMilli": 110000
+      }
+    },
+    "CF": {
+      "aptitudeMilli": 38000,
+      "familiarity": {
+        "valueMilli": 28000,
+        "ceilingMilli": 110000
+      }
+    },
+    "RF": {
+      "aptitudeMilli": 38000,
+      "familiarity": {
+        "valueMilli": 28000,
+        "ceilingMilli": 110000
+      }
+    }
+  },
+  "pitchingAptitudes": {
+    "starterMilli": 28000,
+    "relieverMilli": 28000
+  },
+  "growthProfile": {
+    "talentMilli": 58000,
+    "ambitionMilli": 57000
+  }
+}

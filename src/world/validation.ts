@@ -97,6 +97,7 @@ function validateWithCache(
           'world-definitions-v16',
           'world-definitions-v17',
           'world-definitions-v18',
+          'world-definitions-v19',
         ].includes(candidate.definitions.version)
       : candidate.definitions.version ===
           (candidate.version === 'world-prototype-v14'

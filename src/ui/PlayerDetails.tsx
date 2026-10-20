@@ -1,9 +1,11 @@
+import { PlayerAbilities } from './PlayerAbilities.tsx';
+import { AbilityRating } from './visuals/AbilityRating.tsx';
+import { playerDevelopment } from '../world/player-development.ts';
 import { playerProfile, playerAge, profileBirthplace } from '../world/player-profiles.ts';
 import { BACKGROUND_NAMES } from '../world/player-profile-types.ts';
 import { PitchCharacteristics } from './PitchCharacteristics.tsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
-import type { Ability } from '../engine/types.ts';
 import { pitchNames } from '../data/pitch-types/index.ts';
 import { WorldStats } from './WorldStats.tsx';
 import './player-details.css';
@@ -55,20 +57,7 @@ export function PlayerDetails({
   const age = profile ? playerAge(profile.birthDate, view.currentDate) : null;
   const state = view.playerStatuses?.find((item) => item.playerId === playerId);
   const registration = registrationDraft ?? state?.registration;
-  const physical = squad.physicalInputs?.find((item) => item.playerId === playerId)?.physical;
-  const abilities: [string, Ability | undefined][] = [
-    ['右投手へのミート', player.batting.contactVsRight],
-    ['左投手へのミート', player.batting.contactVsLeft],
-    ['選球眼', player.batting.plateDiscipline],
-    ['右投手へのパワー', player.powerVsRight],
-    ['左投手へのパワー', player.powerVsLeft],
-    ['走力', player.runningSpeed],
-    ['守備範囲', player.fieldingRange],
-    ['肩力', player.armStrength],
-    ['捕球', player.fielding?.catching],
-    ['基礎スタミナ', physical?.stamina],
-    ['回復能力', physical?.recovery],
-  ];
+  const development = playerDevelopment(view.definitions, playerId);
   const pitches = squad.pitches.filter((pitch) => pitch.playerId === playerId);
   const stats =
     scope === 'farmRegular' && view.farm
@@ -133,27 +122,7 @@ export function PlayerDetails({
       </nav>
       {tab === 'ability' && (
         <>
-          <p>現在の基本能力です。調子・体力による試合時の一時補正とは区別します。</p>
-          <div className="world-table">
-            <table aria-label="選手の基本能力">
-              <thead>
-                <tr>
-                  <th>項目</th>
-                  <th>現在値</th>
-                  <th>成長上限</th>
-                </tr>
-              </thead>
-              <tbody>
-                {abilities.map(([label, ability]) => (
-                  <tr key={label}>
-                    <th>{label}</th>
-                    <td>{ability ? points(ability.valueMilli) : '記録なし'}</td>
-                    <td>{ability ? points(ability.ceilingMilli) : '記録なし'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PlayerAbilities key={playerId} definitions={view.definitions} playerId={playerId} />
           <h3>持ち球</h3>
           {pitches.length === 0 ? (
             <p>持ち球の登録がありません。</p>
@@ -198,7 +167,9 @@ export function PlayerDetails({
               side={player.throwingHand}
             />
           )}
-          <p className="hint">能力の値・上限は保存内の設定です。成長処理・守備適性は未実装です。</p>
+          <p className="hint">
+            能力・上限・適性は保存内の設定です。練習・恒久的成長と適性の計算接続は準備中です。
+          </p>
         </>
       )}
       {tab === 'stats' && (
@@ -240,6 +211,28 @@ export function PlayerDetails({
               <dd>{statusPoints(state?.fatigueMilli)} / 100</dd>
             </div>
           </dl>
+          {development && (
+            <>
+              <h3>成長特性</h3>
+              <div className="player-growth-traits" aria-label="才能と向上心">
+                <div>
+                  <span>才能</span>
+                  <AbilityRating valueMilli={development.growthProfile.talentMilli} label="才能" />
+                </div>
+                <div>
+                  <span>向上心</span>
+                  <AbilityRating
+                    valueMilli={development.growthProfile.ambitionMilli}
+                    label="向上心"
+                  />
+                </div>
+              </div>
+              <p className="hint">
+                架空の固定初期値です。成長量・機会への作用は未接続で、上限を持つ基本能力とは別に保存します。
+              </p>
+            </>
+          )}
+
           <p>体力は高いほど余力があり、疲労は高いほど蓄積しています。</p>
           <p className="hint">
             怪我・恒久的成長・成長履歴は工事中です。記録のない状態を健康・成長なしとは判定しません。

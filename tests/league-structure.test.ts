@@ -206,7 +206,7 @@ test('旧v16：球場情報を補完せず、同seedの試合・乱数・成績�
   }
 });
 
-test('新規確認：旧プレイ読込中も現行初期データを表示し、独立したv18保存を作成する', async () => {
+test('新規確認：旧プレイ読込中も現行初期データを表示し、独立した現行定義の保存を作成する', async () => {
   const db = new WorldDatabase('league-structure-new-play');
   const old = createPlayerProfileWorld(42);
   try {
@@ -239,7 +239,7 @@ test('新規確認：旧プレイ読込中も現行初期データを表示し�
       controlledSquadId: 'aonagi-first',
     });
     assert.equal(created.ok, true);
-    assert.equal(created.view.definitions.version, 'world-definitions-v18');
+    assert.equal(created.view.definitions.version, 'world-definitions-v19');
     assert.equal(created.view.management!.controlledSquadId, 'aonagi-first');
     const saved = (await new DexieWorldStorage(db, created.view.localWorldId).load('auto')).world;
     assert.deepEqual(saved.definitions.leagueStructure, created.view.definitions.leagueStructure);

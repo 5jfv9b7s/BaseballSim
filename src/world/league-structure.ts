@@ -52,7 +52,9 @@ export function squadParticipation(definitions: WorldDefinitions, squadId: strin
 
 export function validateLeagueStructure(definitions: WorldDefinitions): void {
   const catalog = definitions.leagueStructure;
-  const multiLeague = definitions.version === 'world-definitions-v18';
+  const multiLeague = ['world-definitions-v18', 'world-definitions-v19'].includes(
+    definitions.version,
+  );
   if (definitions.version !== 'world-definitions-v17' && !multiLeague) {
     ensure(
       catalog === undefined && definitions.schedule.every((g) => g.stadiumRef === undefined),

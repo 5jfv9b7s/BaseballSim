@@ -1,3 +1,5 @@
+import { createPlayerDevelopmentDefinitions } from '../data/world/player-development.ts';
+import { validatePlayerDevelopment } from './player-development.ts';
 import { createTwoLeagueDefinitions } from '../data/world/two-leagues.ts';
 import { createLeagueStructureDefinitions } from '../data/world/league-structure.ts';
 import { validateLeagueStructure } from './league-structure.ts';
@@ -112,6 +114,7 @@ export function scheduledFixture(
           'world-definitions-v16',
           'world-definitions-v17',
           'world-definitions-v18',
+          'world-definitions-v19',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -145,6 +148,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -198,6 +202,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v16',
         'world-definitions-v17',
         'world-definitions-v18',
+        'world-definitions-v19',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -231,6 +236,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v16',
           'world-definitions-v17',
           'world-definitions-v18',
+          'world-definitions-v19',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -284,6 +290,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
@@ -331,6 +338,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -356,6 +364,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -378,6 +387,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validatePhysicalDefinitions(definitions);
@@ -400,6 +410,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateRestDefinitions(definitions);
@@ -420,6 +431,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateConditionDefinitions(definitions);
@@ -440,6 +452,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validatePerformanceConfig(definitions.performanceConfig!);
@@ -454,6 +467,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateFielderRestDefinitions(definitions);
@@ -472,6 +486,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateReliefDefinitions(definitions);
@@ -488,6 +503,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validateBullpenDefinitions(definitions);
@@ -503,11 +519,13 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version)
   )
     validatePitchProfiles(definitions.pitchProfiles!);
   else ensure(definitions.pitchProfiles === undefined, '旧定義へ球種特性は追加できません');
   validatePlayerProfiles(definitions);
+  validatePlayerDevelopment(definitions);
   validateLeagueStructure(definitions);
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
@@ -938,6 +956,7 @@ export function createPitchProfileWorld(
       'world-definitions-v16',
       'world-definitions-v17',
       'world-definitions-v18',
+      'world-definitions-v19',
     ].includes(definitions.version),
     '球種特性対応の初期定義が必要です',
   );
@@ -986,5 +1005,15 @@ export function createLeagueStructureWorld(
   definitions = createLeagueStructureDefinitions(),
 ) {
   ensure(definitions.version === 'world-definitions-v17', '大会構造対応の定義が必要です');
+  return createPitchProfileWorld(seed, controlledSquadId, definitions);
+}
+
+/** 追加能力・適性を保持する新規世界。試合・日次の計算はv15を継承する。 */
+export function createPlayerDevelopmentWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createPlayerDevelopmentDefinitions(),
+) {
+  ensure(definitions.version === 'world-definitions-v19', '22能力対応の初期定義が必要です');
   return createPitchProfileWorld(seed, controlledSquadId, definitions);
 }

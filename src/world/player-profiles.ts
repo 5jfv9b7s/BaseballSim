@@ -45,9 +45,12 @@ function fields(value: unknown, keys: string[]): void {
 export function validatePlayerProfiles(definitions: WorldDefinitions): void {
   const catalog = definitions.playerProfiles;
   if (
-    !['world-definitions-v16', 'world-definitions-v17', 'world-definitions-v18'].includes(
-      definitions.version,
-    )
+    ![
+      'world-definitions-v16',
+      'world-definitions-v17',
+      'world-definitions-v18',
+      'world-definitions-v19',
+    ].includes(definitions.version)
   ) {
     ensure(catalog === undefined, '旧定義へプロフィールを追加できません');
     return;

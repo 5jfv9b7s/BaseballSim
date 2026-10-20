@@ -26,7 +26,13 @@
     "game": "node scripts/game.ts",
     "analyze:models": "node scripts/analyze-models.ts",
     "test:season": "npm run build && playwright test e2e/season-lifecycle.spec.ts",
-    "data:import-candidates": "node scripts/import-initial-candidates.ts"
+    "data:import-candidates": "node scripts/import-initial-candidates.ts",
+    "test:cloudflare": "node --test cloudflare-test/prep.test.mjs",
+    "test:cloudflare:ui": "playwright test --config cloudflare-test/playwright.config.mjs",
+    "cloudflare:prepare": "npm run build && node cloudflare-test/prepare.mjs && node cloudflare-test/check.mjs",
+    "cloudflare:check": "node cloudflare-test/check.mjs",
+    "cloudflare:dry-run": "node cloudflare-test/check.mjs && wrangler deploy --dry-run --config wrangler.test.jsonc",
+    "cloudflare:dev": "node cloudflare-test/check.mjs && wrangler dev --config wrangler.test.jsonc --ip 127.0.0.1 --port 8787 --local"
   },
   "dependencies": {
     "dexie": "4.4.6",
@@ -42,6 +48,7 @@
     "fake-indexeddb": "6.2.5",
     "prettier": "3.9.8",
     "typescript": "7.0.2",
-    "vite": "8.3.0"
+    "vite": "8.3.0",
+    "wrangler": "4.151.3"
   }
 }

@@ -14,3 +14,8 @@ coverage/
 playwright/.cache/
 playwright/.auth/
 package-lock.json
+
+# Cloudflare test build and local Wrangler state
+dist-cloudflare-test/
+.cloudflare-test-stage-*/
+.wrangler/

@@ -1,0 +1,19 @@
+{
+  "formatVersion": "initial-candidate-package-v1",
+  "datasetVersion": "initial-2026-seibu-pilot-v0.11",
+  "status": "review-projection-not-runtime-input",
+  "sourceDraft": "growthCompletionDraft",
+  "readyForGameImport": false,
+  "asOfDate": "2026-10-20",
+  "club": {
+    "clubId": "initial-saitama-2026",
+    "displayName": null,
+    "regionLabel": "埼玉県",
+    "nameStatus": "undecided"
+  },
+  "sourceHashes": {
+    "projection": "11bdb781291e30357766b50bdb31e2788c770c0015e700b91a9d09e77788a145",
+    "locations": "5aa402f40dc60cd793e64b630f2b87401fa5a90ed4c13475cafd182948e7d7e2",
+    "physicsRule": "4e05fa438a79ac46117de285463a57657a4170c421d739446dc551f2eba51ebb"
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "countries": [
+    {
+      "countryCode": "JP",
+      "name": "日本"
+    },
+    {
+      "countryCode": "US",
+      "name": "アメリカ合衆国"
+    },
+    {
+      "countryCode": "DO",
+      "name": "ドミニカ共和国"
+    },
+    {
+      "countryCode": "TW",
+      "name": "台湾"
+    }
+  ],
+  "regions": [
+    {
+      "regionId": "JP-01",
+      "countryCode": "JP",
+      "name": "北海道"
+    },
+    {
+      "regionId": "JP-02",
+      "countryCode": "JP",
+      "name": "青森県"
+    },
+    {
+      "regionId": "JP-03",
+      "countryCode": "JP",
+      "name": "岩手県"
+    },
+    {
+      "regionId": "JP-04",
+      "countryCode": "JP",
+      "name": "宮城県"
+    },
+    {
+      "regionId": "JP-05",
+      "countryCode": "JP",
+      "name": "秋田県"
+    },
+    {
+      "regionId": "JP-06",
+      "countryCode": "JP",
+      "name": "山形県"
+    },
+    {
+      "regionId": "JP-07",
+      "countryCode": "JP",
+      "name": "福島県"
+    },
+    {
+      "regionId": "JP-08",
+      "countryCode": "JP",
+      "name": "茨城県"
+    },
+    {
+      "regionId": "JP-09",
+      "countryCode": "JP",
+      "name": "栃木県"
+    },
+    {
+      "regionId": "JP-10",
+      "countryCode": "JP",
+      "name": "群馬県"
+    },
+    {
+      "regionId": "JP-11",
+      "countryCode": "JP",
+      "name": "埼玉県"
+    },
+    {
+      "regionId": "JP-12",
+      "countryCode": "JP",
+      "name": "千葉県"
+    },
+    {
+      "regionId": "JP-13",
+      "countryCode": "JP",
+      "name": "東京都"
+    },
+    {
+      "regionId": "JP-14",
+      "countryCode": "JP",
+      "name": "神奈川県"
+    },
+    {
+      "regionId": "JP-15",
+      "countryCode": "JP",
+      "name": "新潟県"
+    },
+    {
+      "regionId": "JP-16",
+      "countryCode": "JP",
+      "name": "富山県"
+    },
+    {
+      "regionId": "JP-17",
+      "countryCode": "JP",
+      "name": "石川県"
+    },
+    {
+      "regionId": "JP-18",
+      "countryCode": "JP",
+      "name": "福井県"
+    },
+    {
+      "regionId": "JP-19",
+      "countryCode": "JP",
+      "name": "山梨県"
+    },
+    {
+      "regionId": "JP-20",
+      "countryCode": "JP",
+      "name": "長野県"
+    },
+    {
+      "regionId": "JP-21",
+      "countryCode": "JP",
+      "name": "岐阜県"
+    },
+    {
+      "regionId": "JP-22",
+      "countryCode": "JP",
+      "name": "静岡県"
+    },
+    {
+      "regionId": "JP-23",
+      "countryCode": "JP",
+      "name": "愛知県"
+    },
+    {
+      "regionId": "JP-24",
+      "countryCode": "JP",
+      "name": "三重県"
+    },
+    {
+      "regionId": "JP-25",
+      "countryCode": "JP",
+      "name": "滋賀県"
+    },
+    {
+      "regionId": "JP-26",
+      "countryCode": "JP",
+      "name": "京都府"
+    },
+    {
+      "regionId": "JP-27",
+      "countryCode": "JP",
+      "name": "大阪府"
+    },
+    {
+      "regionId": "JP-28",
+      "countryCode": "JP",
+      "name": "兵庫県"
+    },
+    {
+      "regionId": "JP-29",
+      "countryCode": "JP",
+      "name": "奈良県"
+    },
+    {
+      "regionId": "JP-30",
+      "countryCode": "JP",
+      "name": "和歌山県"
+    },
+    {
+      "regionId": "JP-31",
+      "countryCode": "JP",
+      "name": "鳥取県"
+    },
+    {
+      "regionId": "JP-32",
+      "countryCode": "JP",
+      "name": "島根県"
+    },
+    {
+      "regionId": "JP-33",
+      "countryCode": "JP",
+      "name": "岡山県"
+    },
+    {
+      "regionId": "JP-34",
+      "countryCode": "JP",
+      "name": "広島県"
+    },
+    {
+      "regionId": "JP-35",
+      "countryCode": "JP",
+      "name": "山口県"
+    },
+    {
+      "regionId": "JP-36",
+      "countryCode": "JP",
+      "name": "徳島県"
+    },
+    {
+      "regionId": "JP-37",
+      "countryCode": "JP",
+      "name": "香川県"
+    },
+    {
+      "regionId": "JP-38",
+      "countryCode": "JP",
+      "name": "愛媛県"
+    },
+    {
+      "regionId": "JP-39",
+      "countryCode": "JP",
+      "name": "高知県"
+    },
+    {
+      "regionId": "JP-40",
+      "countryCode": "JP",
+      "name": "福岡県"
+    },
+    {
+      "regionId": "JP-41",
+      "countryCode": "JP",
+      "name": "佐賀県"
+    },
+    {
+      "regionId": "JP-42",
+      "countryCode": "JP",
+      "name": "長崎県"
+    },
+    {
+      "regionId": "JP-43",
+      "countryCode": "JP",
+      "name": "熊本県"
+    },
+    {
+      "regionId": "JP-44",
+      "countryCode": "JP",
+      "name": "大分県"
+    },
+    {
+      "regionId": "JP-45",
+      "countryCode": "JP",
+      "name": "宮崎県"
+    },
+    {
+      "regionId": "JP-46",
+      "countryCode": "JP",
+      "name": "鹿児島県"
+    },
+    {
+      "regionId": "JP-47",
+      "countryCode": "JP",
+      "name": "沖縄県"
+    }
+  ]
+}

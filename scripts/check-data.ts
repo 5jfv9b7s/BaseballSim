@@ -1,3 +1,6 @@
+import { createInitial2026PitchProfiles } from '../src/data/pitch-types/initial-2026.ts';
+import { createSeibuCandidateDataset } from '../src/data/initial-2026/seibu/index.ts';
+import { previewCandidatePitch } from '../src/initial-data/preview.ts';
 import { createTwoLeagueWorld } from '../src/world/engine.ts';
 import { createTwoLeagueDefinitions } from '../src/data/world/two-leagues.ts';
 import { createLeagueStructureWorld } from '../src/world/engine.ts';
@@ -236,3 +239,29 @@ for (const calendar of ['short', 'annual'] as const) {
       '（検査成功）',
   );
 }
+
+const candidates = createSeibuCandidateDataset();
+const previewCodes = new Set(createInitial2026PitchProfiles().profiles.map((p) => p.code));
+let previewed = 0;
+for (const player of candidates.players) {
+  for (const pitch of player.pitchRepertoires) {
+    // 候補の構造は全件検査済み。未習得・未対応の案は計算へ送らず保持する。
+    if (pitch.acquisitionProgressMilli !== 100000 || !previewCodes.has(pitch.pitchTypeCode))
+      continue;
+    const batter = candidates.players.find(
+      (p) => p.playerId !== player.playerId && p.profile.positionGroup !== 'P',
+    );
+    if (!batter) throw new Error('候補の単球検査には別の打者候補が必要です');
+    previewCandidatePitch(candidates, {
+      pitcherId: player.playerId,
+      pitchId: pitch.pitchId,
+      batterId: batter.playerId,
+      seed: 1,
+      count: { balls: 0, strikes: 0 },
+    });
+    previewed++;
+  }
+}
+console.log(
+  `初期候補: ${candidates.players.length}人・22能力・9位置・${candidates.players.flatMap((p) => p.pitchRepertoires).length}持ち球の入力、${previewed}件の単球検査成功（正式名簿へは未投入）`,
+);

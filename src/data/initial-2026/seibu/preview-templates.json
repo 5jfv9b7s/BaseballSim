@@ -1,0 +1,45 @@
+{
+  "generationVersion": "pitching-physics-generation-proposal-v0.5",
+  "templates": {
+    "twoSeamer": {
+      "name": "ツーシーム",
+      "spinRateRpm": 2000,
+      "spinSpreadRpm": 170,
+      "axisVector": [-0.75, 0.25, -0.61],
+      "velocitySpreadCentiKph": 500,
+      "controlOffsetMilli": 1000,
+      "repeatabilityOffsetMilli": 1000,
+      "status": "authored-not-measured"
+    },
+    "shuuto": {
+      "name": "シュート",
+      "spinRateRpm": 1900,
+      "spinSpreadRpm": 180,
+      "axisVector": [-0.4, 0.3, -0.86],
+      "velocitySpreadCentiKph": 500,
+      "controlOffsetMilli": 0,
+      "repeatabilityOffsetMilli": 0,
+      "status": "authored-not-measured"
+    },
+    "knuckleCurve": {
+      "name": "ナックルカーブ",
+      "spinRateRpm": 2500,
+      "spinSpreadRpm": 210,
+      "axisVector": [0.86, 0.22, 0.46],
+      "velocitySpreadCentiKph": 650,
+      "controlOffsetMilli": -2000,
+      "repeatabilityOffsetMilli": -2000,
+      "status": "authored-not-measured"
+    },
+    "palmBall": {
+      "name": "パームボール",
+      "spinRateRpm": 700,
+      "spinSpreadRpm": 210,
+      "axisVector": [-0.5, 0.65, -0.57],
+      "velocitySpreadCentiKph": 650,
+      "controlOffsetMilli": -3000,
+      "repeatabilityOffsetMilli": -3000,
+      "status": "authored-not-measured"
+    }
+  }
+}

@@ -1,0 +1,106 @@
+.initial-candidates {
+  min-width: 0;
+}
+.initial-candidates p,
+.initial-candidates td,
+.initial-candidates th {
+  font-size: 14px;
+}
+.initial-candidate-controls,
+.initial-candidate-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+.initial-candidate-controls label {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+.initial-candidate-controls input,
+.initial-candidate-controls select {
+  width: 100%;
+}
+.initial-candidate-tabs button {
+  width: auto;
+  flex: 1 1 160px;
+}
+.initial-candidate-tabs button[aria-pressed='true'] {
+  border: 2px solid #e9c47e;
+  background: #34594c;
+  color: #fff;
+}
+.initial-candidate-note {
+  border-left: 4px solid #e9c47e;
+  padding-left: 12px;
+}
+.initial-candidates meter {
+  width: 150px;
+  height: 16px;
+}
+.initial-candidates pre {
+  max-height: 420px;
+  overflow: auto;
+  font-size: 13px;
+}
+.initial-candidate-result {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #9ab8a9;
+}
+.initial-candidate-result > strong {
+  font-size: 32px;
+}
+.initial-candidate-result small {
+  font-size: 16px;
+}
+.initial-candidate-measurements {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+.initial-candidate-measurements svg {
+  max-width: 100%;
+}
+.initial-candidate-table-hint {
+  display: none;
+}
+.initial-candidate-measurements dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: baseline;
+  margin: 0;
+}
+.initial-candidate-measurements dt {
+  color: #b8cbbf;
+}
+.initial-candidate-measurements dd {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 18px;
+}
+@media (max-width: 600px) {
+  .initial-candidate-table-hint {
+    display: block;
+    color: #b8cbbf;
+  }
+  .initial-candidates {
+    padding: 28px 16px;
+  }
+  .initial-candidates .panel {
+    padding: 16px;
+  }
+  .initial-candidate-measurements {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .initial-candidate-controls label {
+    flex-basis: 100%;
+  }
+}

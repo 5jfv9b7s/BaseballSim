@@ -1,6 +1,6 @@
 {
   "name": "baseball-sim",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -25,7 +25,8 @@
     "format:check": "prettier --check .",
     "game": "node scripts/game.ts",
     "analyze:models": "node scripts/analyze-models.ts",
-    "test:season": "npm run build && playwright test e2e/season-lifecycle.spec.ts"
+    "test:season": "npm run build && playwright test e2e/season-lifecycle.spec.ts",
+    "data:import-candidates": "node scripts/import-initial-candidates.ts"
   },
   "dependencies": {
     "dexie": "4.4.6",

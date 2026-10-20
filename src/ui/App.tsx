@@ -23,7 +23,7 @@ const name = (playerId: string) => {
   return `${p.familyName} ${p.givenName}`;
 };
 
-function Zone({ pitch }: { pitch?: PitchRecord }) {
+export function Zone({ pitch }: { pitch?: PitchRecord }) {
   const px = (mm: number) => 180 + mm * 0.44;
   const pz = (mm: number) => 354 - mm * 0.25;
   return (

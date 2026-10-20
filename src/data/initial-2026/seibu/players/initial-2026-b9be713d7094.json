@@ -1,0 +1,518 @@
+{
+  "playerId": "initial-2026-b9be713d7094",
+  "profile": {
+    "playerId": "initial-2026-b9be713d7094",
+    "familyName": "須藤",
+    "givenName": "陸斗",
+    "displayName": null,
+    "birthDate": "1994-10-10",
+    "birthplace": {
+      "countryCode": "JP",
+      "regionId": "JP-14"
+    },
+    "throwingHand": "R",
+    "battingHand": "L",
+    "heightMm": 1800,
+    "weightGrams": 87000,
+    "positionGroup": "P",
+    "primaryPosition": "P",
+    "careerStage": "active",
+    "generationBatchId": "initial-2026-seibu-pilot-v0.1",
+    "profileStatus": "draft-primary-position-and-career-pending",
+    "foreignPlayerEligibility": null
+  },
+  "primaryPositionCandidate": null,
+  "commonAbilities": {
+    "batting.contactVsRight": {
+      "valueMilli": 24998,
+      "ceilingMilli": 68463,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "completionDraft.batting.abilities.batting.contactVsRight",
+      "candidateKind": "fictional-completion",
+      "generationVersion": "batting-stealing-completion-proposal-v0.8",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.batting.contactVsRight"
+    },
+    "batting.contactVsLeft": {
+      "valueMilli": 24998,
+      "ceilingMilli": 98781,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "completionDraft.batting.abilities.batting.contactVsLeft",
+      "candidateKind": "fictional-completion",
+      "generationVersion": "batting-stealing-completion-proposal-v0.8",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.batting.contactVsLeft"
+    },
+    "batting.powerVsRight": {
+      "valueMilli": 28294,
+      "ceilingMilli": 68028,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "completionDraft.batting.abilities.batting.powerVsRight",
+      "candidateKind": "fictional-completion",
+      "generationVersion": "batting-stealing-completion-proposal-v0.8",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.batting.powerVsRight"
+    },
+    "batting.powerVsLeft": {
+      "valueMilli": 28294,
+      "ceilingMilli": 65501,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "completionDraft.batting.abilities.batting.powerVsLeft",
+      "candidateKind": "fictional-completion",
+      "generationVersion": "batting-stealing-completion-proposal-v0.8",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.batting.powerVsLeft"
+    },
+    "batting.plateDiscipline": {
+      "valueMilli": 33981,
+      "ceilingMilli": 100032,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "completionDraft.batting.abilities.batting.plateDiscipline",
+      "candidateKind": "fictional-completion",
+      "generationVersion": "batting-stealing-completion-proposal-v0.8",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.batting.plateDiscipline"
+    },
+    "batting.bunting": {
+      "valueMilli": 40568,
+      "ceilingMilli": 89862,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "physicalSmallSkillsDraft.abilities.batting.bunting",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "physical-small-skills-generation-proposal-v0.7",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.batting.bunting"
+    },
+    "running.speed": {
+      "valueMilli": 56322,
+      "ceilingMilli": 63509,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.running.speed",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.running.speed"
+    },
+    "running.stealing": {
+      "valueMilli": 46172,
+      "ceilingMilli": 114825,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "completionDraft.stealing",
+      "candidateKind": "fictional-completion",
+      "generationVersion": "batting-stealing-completion-proposal-v0.8",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.running.stealing"
+    },
+    "running.baserunning": {
+      "valueMilli": 48654,
+      "ceilingMilli": 78372,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.running.baserunning",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.running.baserunning"
+    },
+    "fielding.range": {
+      "valueMilli": 57987,
+      "ceilingMilli": 104353,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.fielding.range",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.fielding.range"
+    },
+    "fielding.catching": {
+      "valueMilli": 66371,
+      "ceilingMilli": 100952,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.fielding.catching",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.fielding.catching"
+    },
+    "fielding.armStrength": {
+      "valueMilli": 68465,
+      "ceilingMilli": 68465,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.fielding.armStrength",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.fielding.armStrength"
+    },
+    "fielding.throwing": {
+      "valueMilli": 57266,
+      "ceilingMilli": 84577,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.fielding.throwing",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.fielding.throwing"
+    },
+    "fielding.positioning": {
+      "valueMilli": 48115,
+      "ceilingMilli": 86992,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.fielding.positioning",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.fielding.positioning"
+    },
+    "catching.gameCalling": {
+      "valueMilli": 29525,
+      "ceilingMilli": 61997,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.catching.gameCalling",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.catching.gameCalling"
+    },
+    "catching.blocking": {
+      "valueMilli": 31013,
+      "ceilingMilli": 94462,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.catching.blocking",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.catching.blocking"
+    },
+    "catching.framing": {
+      "valueMilli": 14517,
+      "ceilingMilli": 47439,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "movementDefenseDraft.abilities.catching.framing",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "movement-defense-generation-proposal-v0.6",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.catching.framing"
+    },
+    "physical.stamina": {
+      "valueMilli": 59353,
+      "ceilingMilli": 59358,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "physicalSmallSkillsDraft.abilities.physical.stamina",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "physical-small-skills-generation-proposal-v0.7",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.physical.stamina"
+    },
+    "physical.recovery": {
+      "valueMilli": 58725,
+      "ceilingMilli": 106887,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "physicalSmallSkillsDraft.abilities.physical.recovery",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "physical-small-skills-generation-proposal-v0.7",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.physical.recovery"
+    },
+    "physical.injuryResistance": {
+      "valueMilli": 71016,
+      "ceilingMilli": 71016,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "physicalSmallSkillsDraft.abilities.physical.injuryResistance",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "physical-small-skills-generation-proposal-v0.7",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.physical.injuryResistance"
+    },
+    "pitching.quickDelivery": {
+      "valueMilli": 72723,
+      "ceilingMilli": 92670,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "physicalSmallSkillsDraft.abilities.pitching.quickDelivery",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "physical-small-skills-generation-proposal-v0.7",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.pitching.quickDelivery"
+    },
+    "pitching.pickoff": {
+      "valueMilli": 53248,
+      "ceilingMilli": 89548,
+      "status": "generated-proposal-not-calibrated",
+      "candidateSource": "physicalSmallSkillsDraft.abilities.pitching.pickoff",
+      "candidateKind": "generated-proposal",
+      "generationVersion": "physical-small-skills-generation-proposal-v0.7",
+      "ceilingCandidateSource": "growthCompletionDraft.commonCeilings.pitching.pickoff"
+    }
+  },
+  "positionSkills": [
+    {
+      "positionCode": "P",
+      "aptitudeMilli": 80314,
+      "familiarity": {
+        "valueMilli": 73414,
+        "ceilingMilli": 90601
+      }
+    },
+    {
+      "positionCode": "C",
+      "aptitudeMilli": 82866,
+      "familiarity": {
+        "valueMilli": 20969,
+        "ceilingMilli": 96936
+      }
+    },
+    {
+      "positionCode": "1B",
+      "aptitudeMilli": 61400,
+      "familiarity": {
+        "valueMilli": 14680,
+        "ceilingMilli": 98995
+      }
+    },
+    {
+      "positionCode": "2B",
+      "aptitudeMilli": 54753,
+      "familiarity": {
+        "valueMilli": 20677,
+        "ceilingMilli": 80374
+      }
+    },
+    {
+      "positionCode": "3B",
+      "aptitudeMilli": 61384,
+      "familiarity": {
+        "valueMilli": 12322,
+        "ceilingMilli": 45653
+      }
+    },
+    {
+      "positionCode": "SS",
+      "aptitudeMilli": 68934,
+      "familiarity": {
+        "valueMilli": 25731,
+        "ceilingMilli": 49098
+      }
+    },
+    {
+      "positionCode": "LF",
+      "aptitudeMilli": 77031,
+      "familiarity": {
+        "valueMilli": 26844,
+        "ceilingMilli": 64830
+      }
+    },
+    {
+      "positionCode": "CF",
+      "aptitudeMilli": 73818,
+      "familiarity": {
+        "valueMilli": 20430,
+        "ceilingMilli": 105295
+      }
+    },
+    {
+      "positionCode": "RF",
+      "aptitudeMilli": 83453,
+      "familiarity": {
+        "valueMilli": 13928,
+        "ceilingMilli": 108409
+      }
+    }
+  ],
+  "pitchingAptitudes": {
+    "starterMilli": 81256,
+    "relieverMilli": 69476
+  },
+  "growthProfile": {
+    "talentMilli": 83023,
+    "ambitionMilli": 78343
+  },
+  "pitchRepertoires": [
+    {
+      "pitchId": "initial-2026-b9be713d7094-cutter",
+      "playerId": "initial-2026-b9be713d7094",
+      "pitchTypeCode": "cutter",
+      "control": {
+        "valueMilli": 64632,
+        "ceilingMilli": 95666
+      },
+      "repeatability": {
+        "valueMilli": 75866,
+        "ceilingMilli": 75866
+      },
+      "velocity": {
+        "typicalCentiKph": 13653,
+        "maxCentiKph": 13953,
+        "spreadCentiKph": 498,
+        "maxCeilingCentiKph": 15160,
+        "provenance": "fictional-basic-parameters-from-published-reference"
+      },
+      "delivery": {
+        "spinRateRpm": 2085,
+        "spinSpreadRpm": 172,
+        "spinAxis": {
+          "xPpm": -663104,
+          "yPpm": 477885,
+          "zPpm": 576123
+        },
+        "release": {
+          "heightMm": 1721,
+          "lateralMm": -442,
+          "extensionMm": 1648
+        }
+      },
+      "inputCoordinateConvention": "right-handed-reference",
+      "acquisitionProgressMilli": 100000,
+      "acquiredOn": null,
+      "selectionWeight": 500,
+      "engineSupport": "supported-profile",
+      "requiresRarePitchReview": true
+    },
+    {
+      "pitchId": "initial-2026-b9be713d7094-fastball",
+      "playerId": "initial-2026-b9be713d7094",
+      "pitchTypeCode": "fastball",
+      "control": {
+        "valueMilli": 65200,
+        "ceilingMilli": 65200
+      },
+      "repeatability": {
+        "valueMilli": 78914,
+        "ceilingMilli": 88726
+      },
+      "velocity": {
+        "typicalCentiKph": 14893,
+        "maxCentiKph": 15193,
+        "spreadCentiKph": 564,
+        "maxCeilingCentiKph": 15589,
+        "provenance": "fictional-basic-parameters-from-published-reference"
+      },
+      "delivery": {
+        "spinRateRpm": 2101,
+        "spinSpreadRpm": 131,
+        "spinAxis": {
+          "xPpm": -973440,
+          "yPpm": 118406,
+          "zPpm": -195945
+        },
+        "release": {
+          "heightMm": 1713,
+          "lateralMm": -436,
+          "extensionMm": 1626
+        }
+      },
+      "inputCoordinateConvention": "right-handed-reference",
+      "acquisitionProgressMilli": 100000,
+      "acquiredOn": null,
+      "selectionWeight": 33200,
+      "engineSupport": "supported-profile",
+      "requiresRarePitchReview": false
+    },
+    {
+      "pitchId": "initial-2026-b9be713d7094-fork",
+      "playerId": "initial-2026-b9be713d7094",
+      "pitchTypeCode": "fork",
+      "control": {
+        "valueMilli": 58134,
+        "ceilingMilli": 97008
+      },
+      "repeatability": {
+        "valueMilli": 73348,
+        "ceilingMilli": 73348
+      },
+      "velocity": {
+        "typicalCentiKph": 13806,
+        "maxCentiKph": 14107,
+        "spreadCentiKph": 546,
+        "maxCeilingCentiKph": 14279,
+        "provenance": "fictional-basic-parameters-from-published-reference"
+      },
+      "delivery": {
+        "spinRateRpm": 480,
+        "spinSpreadRpm": 274,
+        "spinAxis": {
+          "xPpm": -898927,
+          "yPpm": 411876,
+          "zPpm": -149292
+        },
+        "release": {
+          "heightMm": 1724,
+          "lateralMm": -451,
+          "extensionMm": 1652
+        }
+      },
+      "inputCoordinateConvention": "right-handed-reference",
+      "acquisitionProgressMilli": 100000,
+      "acquiredOn": null,
+      "selectionWeight": 31300,
+      "engineSupport": "supported-profile",
+      "requiresRarePitchReview": false
+    },
+    {
+      "pitchId": "initial-2026-b9be713d7094-knuckleCurve",
+      "playerId": "initial-2026-b9be713d7094",
+      "pitchTypeCode": "knuckleCurve",
+      "control": {
+        "valueMilli": 58342,
+        "ceilingMilli": 66068
+      },
+      "repeatability": {
+        "valueMilli": 72104,
+        "ceilingMilli": 78661
+      },
+      "velocity": {
+        "typicalCentiKph": 12347,
+        "maxCentiKph": 12647,
+        "spreadCentiKph": 656,
+        "maxCeilingCentiKph": 12702,
+        "provenance": "fictional-basic-parameters-from-published-reference"
+      },
+      "delivery": {
+        "spinRateRpm": 2362,
+        "spinSpreadRpm": 216,
+        "spinAxis": {
+          "xPpm": 885092,
+          "yPpm": 208140,
+          "zPpm": 416281
+        },
+        "release": {
+          "heightMm": 1740,
+          "lateralMm": -436,
+          "extensionMm": 1625
+        }
+      },
+      "inputCoordinateConvention": "right-handed-reference",
+      "acquisitionProgressMilli": 100000,
+      "acquiredOn": null,
+      "selectionWeight": 2800,
+      "engineSupport": "profile-required",
+      "requiresRarePitchReview": false
+    },
+    {
+      "pitchId": "initial-2026-b9be713d7094-slider",
+      "playerId": "initial-2026-b9be713d7094",
+      "pitchTypeCode": "slider",
+      "control": {
+        "valueMilli": 62483,
+        "ceilingMilli": 78208
+      },
+      "repeatability": {
+        "valueMilli": 73215,
+        "ceilingMilli": 74245
+      },
+      "velocity": {
+        "typicalCentiKph": 13381,
+        "maxCentiKph": 13792,
+        "spreadCentiKph": 518,
+        "maxCeilingCentiKph": 13792,
+        "provenance": "fictional-basic-parameters-from-published-reference"
+      },
+      "delivery": {
+        "spinRateRpm": 2254,
+        "spinSpreadRpm": 223,
+        "spinAxis": {
+          "xPpm": 167025,
+          "yPpm": 654444,
+          "zPpm": 737432
+        },
+        "release": {
+          "heightMm": 1732,
+          "lateralMm": -449,
+          "extensionMm": 1615
+        }
+      },
+      "inputCoordinateConvention": "right-handed-reference",
+      "acquisitionProgressMilli": 100000,
+      "acquiredOn": null,
+      "selectionWeight": 32200,
+      "engineSupport": "supported-profile",
+      "requiresRarePitchReview": false
+    }
+  ],
+  "blockers": [
+    "draft-values-and-growth-model-require-review",
+    "foreign-player-eligibility-undecided",
+    "individual-pitch-selection-weights-not-implemented",
+    "missing-pitch-profile:knuckleCurve",
+    "not-connected-to-runtime",
+    "rare-pitch-adoption-review:initial-2026-b9be713d7094-cutter"
+  ],
+  "readyForGameImport": false
+}

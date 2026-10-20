@@ -1,7 +1,7 @@
 import { AppInfo } from './AppInfo.tsx';
 import { WorldApp } from './WorldApp.tsx';
 import { CURRENT_GAME_MODEL, type GameModelVersion } from '../game/model-registry.ts';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { App as PitchLab } from './App.tsx';
 import type { GameCommand, GameView } from '../game/controller.ts';
 import type { GameWorkerResponse } from '../game-worker.ts';
@@ -9,6 +9,10 @@ import type { AppearanceOutcome, GameEvent, GameFixture, TeamSide } from '../gam
 import { playerName } from '../game/fixture.ts';
 import { createCurrentFixture } from '../data/datasets/current.ts';
 import { battingAverage, earnedRunAverage, inningsPitched } from '../game/results.ts';
+
+const InitialCandidates = lazy(() =>
+  import('./InitialCandidatesApp.tsx').then((m) => ({ default: m.InitialCandidatesApp })),
+);
 
 const initialFixture = createCurrentFixture();
 const labels: Record<AppearanceOutcome, string> = {
@@ -583,7 +587,7 @@ export function GameApp() {
   const [toolsOpen, setToolsOpen] = useState(
     () => new URLSearchParams(location.search).get('tools') === '1',
   );
-  const [tab, setTab] = useState<'game' | 'lab' | 'world'>('game');
+  const [tab, setTab] = useState<'game' | 'lab' | 'world' | 'candidates'>('game');
   const [worldOpened, setWorldOpened] = useState(!toolsOpen);
   const [matchOpened, setMatchOpened] = useState(toolsOpen);
 
@@ -620,6 +624,9 @@ export function GameApp() {
             <button aria-pressed={tab === 'lab'} onClick={() => setTab('lab')}>
               1球の検証
             </button>
+            <button aria-pressed={tab === 'candidates'} onClick={() => setTab('candidates')}>
+              初期データ候補
+            </button>
           </nav>
           <AppInfo />
         </>
@@ -635,6 +642,11 @@ export function GameApp() {
         </div>
       )}
       {toolsOpen && tab === 'lab' && <PitchLab />}
+      {toolsOpen && tab === 'candidates' && (
+        <Suspense fallback={<p role="status">初期候補画面を読み込んでいます…</p>}>
+          <InitialCandidates />
+        </Suspense>
+      )}
     </>
   );
 }

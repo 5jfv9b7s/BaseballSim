@@ -331,3 +331,189 @@ test('成績順位：実試合・休養日・今季確定・保存復元で同�
   const legacy = finishDay(createWorld());
   assert.ok(get(legacy, 'firstRegular').length > 0);
 });
+
+function display(
+  row: ReturnType<typeof playerLeaderboard>[number],
+  category: 'batting' | 'pitching' | 'fielding',
+  key: string,
+) {
+  const metric = STAT_METRICS[category].find((entry) => entry.key === key)!;
+  return formatStatValue(statValue(row, metric), metric);
+}
+
+test('追加率：塁打と出塁率を記録から導出し、OPSは表示丸め前に加算する', () => {
+  const data = stats();
+  data.batting = [
+    batting('mixed', {
+      plateAppearances: 50,
+      atBats: 40,
+      hits: 10,
+      doubles: 2,
+      triples: 1,
+      homeRuns: 2,
+      walks: 6,
+      hitByPitch: 2,
+      sacrificeFlies: 2,
+    }),
+  ];
+  const before = structuredClone(data);
+  const [row] = playerLeaderboard(data, { ...query, metric: 'ops', qualifiedOnly: true });
+  assert.equal(display(row!, 'batting', 'onBasePercentage'), '.360');
+  assert.equal(display(row!, 'batting', 'sluggingPercentage'), '.500');
+  assert.equal(display(row!, 'batting', 'ops'), '.860');
+  assert.equal(Object.hasOwn(row!.counters, 'ops'), false);
+  assert.deepEqual(data, before);
+
+  data.batting = [
+    batting('third', {
+      plateAppearances: 3,
+      atBats: 3,
+      hits: 1,
+      walks: 0,
+      sacrificeFlies: 0,
+    }),
+  ];
+  const [third] = playerLeaderboard(data, { ...query, metric: 'ops', qualifiedOnly: true });
+  assert.equal(third!.qualification!.reached, false); // OPSに未決定の規定を作らない。
+  assert.equal(display(third!, 'batting', 'onBasePercentage'), '.333');
+  assert.equal(display(third!, 'batting', 'sluggingPercentage'), '.333');
+  assert.equal(display(third!, 'batting', 'ops'), '.667');
+});
+
+test('追加率：分母0・観測済み0・旧保存の犠飛欠落を混同しない', () => {
+  const data = stats();
+  data.batting = [
+    batting('walksOnly', { plateAppearances: 2, atBats: 0, hits: 0, walks: 2, sacrificeFlies: 0 }),
+    batting('zero', { atBats: 4, hits: 0, walks: 0, sacrificeFlies: 0 }),
+    batting('legacy'),
+  ];
+  const rows = playerLeaderboard(data, { ...query, metric: 'onBasePercentage' });
+  assert.deepEqual(
+    rows.map((row) => [row.playerId, row.rank]),
+    [
+      ['walksOnly', 1],
+      ['zero', 2],
+      ['legacy', null],
+    ],
+  );
+  assert.equal(display(rows[0]!, 'batting', 'onBasePercentage'), '1.000');
+  assert.equal(display(rows[0]!, 'batting', 'sluggingPercentage'), '—');
+  assert.equal(display(rows[0]!, 'batting', 'ops'), '—');
+  assert.equal(display(rows[1]!, 'batting', 'ops'), '.000');
+  assert.equal(display(rows[2]!, 'batting', 'sluggingPercentage'), '.333');
+  assert.equal(display(rows[2]!, 'batting', 'ops'), '—');
+  assert.equal(
+    playerLeaderboard(data, { ...query, metric: 'onBasePercentage', direction: 'ascending' }).at(
+      -1,
+    )!.rank,
+    null,
+  );
+  data.batting.push(batting('zero', { squadId: 'B' }));
+  const merged = playerLeaderboard(data, { ...query, metric: 'ops' }).find(
+    (row) => row.playerId === 'zero',
+  )!;
+  assert.equal(display(merged, 'batting', 'ops'), '—');
+});
+
+test('追加率：先に所属別カウンタを合算し、率の平均を取らない', () => {
+  const data = stats();
+  data.batting = [
+    batting('transfer', { atBats: 9, hits: 3, walks: 0, sacrificeFlies: 0 }),
+    batting('transfer', { squadId: 'B', atBats: 1, hits: 1, walks: 0, sacrificeFlies: 0 }),
+  ];
+  const [row] = playerLeaderboard(data, { ...query, metric: 'ops', squadId: 'B' });
+  assert.equal(display(row!, 'batting', 'onBasePercentage'), '.400');
+  assert.equal(display(row!, 'batting', 'sluggingPercentage'), '.400');
+  assert.equal(display(row!, 'batting', 'ops'), '.800');
+  assert.equal(row!.qualification, null);
+});
+
+test('追加率：投球アウトを使う奪三振率・WHIP・K/BBと、位置別守備機会', () => {
+  const data = stats();
+  data.pitching = [
+    pitching('twoOuts', { outsRecorded: 2, hitsAllowed: 1, strikeouts: 1, walks: 2 }),
+    pitching('noWalks', { outsRecorded: 3, strikeouts: 2, walks: 0 }),
+    pitching('noOuts', { outsRecorded: 0, strikeouts: 0, walks: 1 }),
+  ];
+  const rows = playerLeaderboard(data, { ...query, category: 'pitching', metric: 'whip' });
+  const row = rows.find((row) => row.playerId === 'twoOuts')!;
+  assert.equal(display(row, 'pitching', 'strikeoutsPerNine'), '13.50');
+  assert.equal(display(row, 'pitching', 'whip'), '4.50');
+  assert.equal(display(row, 'pitching', 'strikeoutWalkRatio'), '0.50');
+  assert.equal(
+    display(
+      rows.find((row) => row.playerId === 'noWalks')!,
+      'pitching',
+      'strikeoutWalkRatio',
+    ),
+    '—',
+  );
+  assert.equal(rows.at(-1)!.playerId, 'noOuts');
+  const field = (playerId: string, putouts: number, assists: number, errors?: number) => ({
+    ...scope,
+    playerId,
+    position: 'C' as const,
+    gamesAtPosition: 1,
+    fieldingOuts: 3,
+    putouts,
+    assists,
+    doublePlayParticipations: 0,
+    errors,
+  });
+  data.fielding = [
+    field('good', 7, 2, 1),
+    field('zero', 0, 0, 1),
+    field('noChance', 0, 0, 0),
+    field('old', 1, 0),
+  ];
+  const fieldRows = playerLeaderboard(data, {
+    ...query,
+    category: 'fielding',
+    metric: 'fieldingPercentage',
+  });
+  assert.equal(display(fieldRows[0]!, 'fielding', 'fieldingPercentage'), '.900');
+  assert.equal(display(fieldRows[1]!, 'fielding', 'fieldingPercentage'), '.000');
+  assert.equal(fieldRows[2]!.rank, null);
+  assert.equal(fieldRows[3]!.rank, null);
+});
+
+test('追加率：大きなカウンタでも率の交差積・加算と同順位を保つ', () => {
+  const data = stats();
+  const max = Number.MAX_SAFE_INTEGER;
+  data.batting = [
+    batting('a', {
+      plateAppearances: max,
+      atBats: max,
+      hits: max - 1,
+      walks: 0,
+      sacrificeFlies: 0,
+    }),
+    batting('b', {
+      plateAppearances: max,
+      atBats: max - 1,
+      hits: max - 2,
+      walks: 0,
+      sacrificeFlies: 0,
+    }),
+    batting('tie', {
+      plateAppearances: max,
+      atBats: max,
+      hits: max - 1,
+      walks: 0,
+      sacrificeFlies: 0,
+    }),
+  ];
+  const rows = playerLeaderboard(data, { ...query, metric: 'ops' });
+  assert.deepEqual(
+    rows.map((row) => [row.playerId, row.rank]),
+    [
+      ['a', 1],
+      ['tie', 1],
+      ['b', 3],
+    ],
+  );
+  assert.ok(rows.every((row) => display(row, 'batting', 'ops') === '2.000'));
+  data.pitching = [pitching('large', { hitsAllowed: max, walks: max, outsRecorded: max })];
+  const [pitcher] = playerLeaderboard(data, { ...query, category: 'pitching', metric: 'whip' });
+  assert.equal(display(pitcher!, 'pitching', 'whip'), '6.00');
+});

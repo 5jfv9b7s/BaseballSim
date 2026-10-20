@@ -1,10 +1,16 @@
 # 野球シミュレーションゲーム（v1.0開発中）
 
-実装版0.34.0です。本画面の「システム」→「ヘルプ」にある「開発版・利用案内」で、現在の版、最近の更新、保存への影響と再開手順を確認できます。
+実装版0.35.0です。本画面の「システム」→「ヘルプ」にある「開発版・利用案内」で、現在の版、最近の更新、保存への影響と再開手順を確認できます。
 
 ## Cloudflareのテスト公開準備
 
-最新版0.34.0から、通常distを保ったテスト用配信物を作れます。`npm.cmd run cloudflare:prepare` → `npm.cmd run cloudflare:dry-run` → `npm.cmd run test:cloudflare:ui`で確認します。ローカルで触る場合は`npm.cmd run cloudflare:dev`です。[導入済みの設定・実行手順・検証結果](CLOUDFLARE-TEST.md)を参照してください。実際のCloudflareログイン・公開・URL取得は後の工程です。セーブはURLごとに分かれ、移動には`.bssave`を使います。
+現在の開発版から、通常distを保ったテスト用配信物を作れます。`npm.cmd run cloudflare:prepare` → `npm.cmd run cloudflare:dry-run` → `npm.cmd run test:cloudflare:ui`で確認します。ローカルで触る場合は`npm.cmd run cloudflare:dev`です。[導入済みの設定・実行手順・検証結果](CLOUDFLARE-TEST.md)を参照してください。実際のCloudflareログイン・公開・URL取得は後の工程です。セーブはURLごとに分かれ、移動には`.bssave`を使います。
+
+## 0.35.0：リーグ別の個人成績と追加率
+
+「成績」→「個人成績」にリーグ切替を追加しました。自リーグから表示し、球団で絞ってもリーグ内の順位を保ちます。全リーグを合算した比較も選べます。出塁率・長打率・OPS・奪三振率・WHIP・K/BB・守備率を追加し、表の見出しから並べ替えできます。[操作・計算式・未観測値・確認方法](LEADERBOARD-IMPLEMENTATION.md)を参照してください。
+
+試合計算・係数・保存形式は同じです。記録のない旧保存の出塁率や、分母0の率を0で補いません。表彰・タイトルの確定は未実装です。Cloudflare用の配信物は、更新後に`cloudflare:prepare`で再作成します。
 
 ## 0.34.0：提供された初期候補の取込・単球検証
 

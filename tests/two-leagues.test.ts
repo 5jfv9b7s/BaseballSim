@@ -1,3 +1,4 @@
+import { leaguePlayerLeaderboard, leaderboardLeagues } from '../src/world/league-leaderboard.ts';
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -161,6 +162,34 @@ test('交流戦と保存：一度だけ集計し、所属名の編集後も保�
     );
     const loaded = (await storage.load('manual')).world;
     assert.equal(leagueStandings(loaded.definitions, loaded.stats)[0]!.displayName, oldName);
+    for (const scope of ['firstRegular', 'farmRegular'] as const) {
+      const competitionId =
+        scope === 'firstRegular'
+          ? world.definitions.competitionId
+          : world.definitions.farm!.competitionId;
+      for (const league of leaderboardLeagues(world.definitions, scope)) {
+        for (const [category, metric] of [
+          ['batting', 'ops'],
+          ['pitching', 'whip'],
+          ['fielding', 'fieldingPercentage'],
+        ] as const) {
+          const query = {
+            seasonId: world.definitions.seasonId,
+            competitionId,
+            statScope: scope,
+            category,
+            metric,
+            leagueId: league.leagueId!,
+          };
+          const expected = leaguePlayerLeaderboard(world.definitions, world.stats, query);
+          assert.ok(expected.length > 0);
+          assert.deepEqual(
+            leaguePlayerLeaderboard(loaded.definitions, loaded.stats, query),
+            expected,
+          );
+        }
+      }
+    }
     assert.deepEqual(finishDay(loaded), finishDay(world));
     const controller = new WorldController(storage);
     let view = await controller.initialize();

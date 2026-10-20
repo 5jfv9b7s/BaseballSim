@@ -10,7 +10,8 @@ export interface StatMetric {
   key: string;
   label: string;
   direction: SortDirection;
-  format?: 'average' | 'era' | 'innings';
+  format?: 'average' | 'era' | 'ratio' | 'innings';
+  formula?: string;
   qualification?: 'plateAppearances' | 'outsRecorded';
 }
 
@@ -43,6 +44,27 @@ export const STAT_METRICS: Record<StatCategory, readonly StatMetric[]> = {
     count('strikeouts', '三振'),
     count('sacrificeFlies', '犠飛'),
     count('groundedIntoDoublePlays', '併殺打'),
+    {
+      key: 'onBasePercentage',
+      label: '出塁率',
+      direction: 'descending',
+      format: 'average',
+      formula: '（安打＋四球＋死球）÷（打数＋四球＋死球＋犠飛）',
+    },
+    {
+      key: 'sluggingPercentage',
+      label: '長打率',
+      direction: 'descending',
+      format: 'average',
+      formula: '（安打＋二塁打＋2×三塁打＋3×本塁打）÷打数',
+    },
+    {
+      key: 'ops',
+      label: 'OPS',
+      direction: 'descending',
+      format: 'average',
+      formula: '丸め前の出塁率＋丸め前の長打率',
+    },
   ],
   pitching: [
     {
@@ -62,6 +84,27 @@ export const STAT_METRICS: Record<StatCategory, readonly StatMetric[]> = {
     count('hitBatters', '与死球'),
     count('runsAllowed', '失点'),
     count('earnedRuns', '自責点'),
+    {
+      key: 'strikeoutsPerNine',
+      label: '奪三振率',
+      direction: 'descending',
+      format: 'ratio',
+      formula: '27×奪三振÷投球アウト（9回当たり）',
+    },
+    {
+      key: 'whip',
+      label: 'WHIP',
+      direction: 'ascending',
+      format: 'ratio',
+      formula: '3×（被安打＋与四球）÷投球アウト（1回当たり）',
+    },
+    {
+      key: 'strikeoutWalkRatio',
+      label: 'K/BB',
+      direction: 'descending',
+      format: 'ratio',
+      formula: '奪三振÷与四球。与四球0は「—」（順位なし）',
+    },
   ],
   fielding: [
     { ...count('fieldingOuts', '守備回'), format: 'innings' },
@@ -70,6 +113,13 @@ export const STAT_METRICS: Record<StatCategory, readonly StatMetric[]> = {
     count('assists', '補殺'),
     count('doublePlayParticipations', '併殺関与'),
     count('errors', '失策'),
+    {
+      key: 'fieldingPercentage',
+      label: '守備率',
+      direction: 'descending',
+      format: 'average',
+      formula: '（刺殺＋補殺）÷（刺殺＋補殺＋失策）。守備機会0は「—」',
+    },
   ],
 };
 
@@ -92,6 +142,8 @@ export interface LeaderboardQuery {
   direction?: SortDirection;
   qualifiedOnly?: boolean;
   squadId?: string;
+  /** 集計前の参加チーム制限。球団絞り込み（順位を維持）とは別。空なら0件。 */
+  includedSquadIds?: readonly string[];
   position?: string;
 }
 
@@ -112,19 +164,61 @@ export function qualificationThreshold(games: number, category: 'batting' | 'pit
   return result;
 }
 
+/** 不明なカウンタは0にせず、和・積も最初から整数で計算する。 */
 export function statValue(row: LeaderboardRow, metric: StatMetric): StatValue {
-  const counters = row.counters;
-  if (metric.key === 'average' || metric.key === 'era') {
-    const numerator = counters[metric.key === 'average' ? 'hits' : 'earnedRuns'];
-    const denominator = counters[metric.key === 'average' ? 'atBats' : 'outsRecorded'];
-    if (numerator === undefined || !denominator) return null;
-    return {
-      numerator: BigInt(numerator) * (metric.key === 'era' ? 27n : 1n),
-      denominator: BigInt(denominator),
-    };
+  const total = (...terms: (string | [string, bigint])[]): bigint | null => {
+    let result = 0n;
+    for (const term of terms) {
+      const [key, coefficient] = typeof term === 'string' ? [term, 1n] : term;
+      const value = row.counters[key];
+      if (value === undefined) return null;
+      result += BigInt(value) * coefficient;
+    }
+    return result;
+  };
+  const ratio = (numerator: bigint | null, denominator: bigint | null): StatValue =>
+    numerator === null || denominator === null || denominator === 0n
+      ? null
+      : { numerator, denominator };
+  const onBase = () =>
+    ratio(
+      total('hits', 'walks', 'hitByPitch'),
+      total('atBats', 'walks', 'hitByPitch', 'sacrificeFlies'),
+    );
+  const slugging = () =>
+    ratio(total('hits', 'doubles', ['triples', 2n], ['homeRuns', 3n]), total('atBats'));
+
+  switch (metric.key) {
+    case 'average':
+      return ratio(total('hits'), total('atBats'));
+    case 'era':
+      return ratio(total(['earnedRuns', 27n]), total('outsRecorded'));
+    case 'onBasePercentage':
+      return onBase();
+    case 'sluggingPercentage':
+      return slugging();
+    case 'ops': {
+      const obp = onBase();
+      const slg = slugging();
+      // それぞれの表示値を足さず、分数のまま加算してから最後に丸める。
+      return obp && slg
+        ? {
+            numerator: obp.numerator * slg.denominator + slg.numerator * obp.denominator,
+            denominator: obp.denominator * slg.denominator,
+          }
+        : null;
+    }
+    case 'strikeoutsPerNine':
+      return ratio(total(['strikeouts', 27n]), total('outsRecorded'));
+    case 'whip':
+      return ratio(total(['hitsAllowed', 3n], ['walks', 3n]), total('outsRecorded'));
+    case 'strikeoutWalkRatio':
+      return ratio(total('strikeouts'), total('walks'));
+    case 'fieldingPercentage':
+      return ratio(total('putouts', 'assists'), total('putouts', 'assists', 'errors'));
+    default:
+      return ratio(total(metric.key), 1n);
   }
-  const value = counters[metric.key];
-  return value === undefined ? null : { numerator: BigInt(value), denominator: 1n };
 }
 
 /** 表示は最後に丸める。投球回の小数表記を率の分母へ使わない。 */
@@ -133,7 +227,7 @@ export function formatStatValue(value: StatValue, metric: StatMetric): string {
   const { numerator, denominator } = value;
   if (metric.format === 'innings') return `${numerator / 3n}.${numerator % 3n}`;
   if (!metric.format) return String(numerator);
-  const digits = metric.format === 'average' ? 3 : 2;
+  const digits = STATISTICS_RULES.decimalPlaces[metric.format];
   const scale = 10n ** BigInt(digits);
   const rounded = (numerator * scale * 2n + denominator) / (denominator * 2n);
   const text = `${rounded / scale}.${String(rounded % scale).padStart(digits, '0')}`;
@@ -151,14 +245,26 @@ export function playerLeaderboard(stats: SeasonStats, query: LeaderboardQuery): 
     row.competitionId === query.competitionId &&
     row.statScope === query.statScope;
   const teams = stats.teams.filter(inScope);
+  const included = query.includedSquadIds && new Set(query.includedSquadIds);
+  const sources = stats[query.category].filter(inScope);
+  // 他リーグ分を除いても、移籍による資格未決定を単一所属に見せない。
+  const memberships = new Map<string, Set<string>>();
+  for (const source of sources) {
+    const squads = memberships.get(source.playerId) ?? new Set<string>();
+    squads.add(source.squadId);
+    memberships.set(source.playerId, squads);
+  }
   const rows = new Map<string, LeaderboardRow>();
 
-  for (const source of stats[query.category].filter(inScope)) {
+  const fields = STAT_METRICS[query.category].filter(
+    (item) => !item.format || item.format === 'innings',
+  );
+  for (const source of sources) {
+    if (included && !included.has(source.squadId)) continue;
     const position = 'position' in source ? source.position : null;
     if (query.position && position !== query.position) continue;
     const key = JSON.stringify([source.playerId, position]);
     let row = rows.get(key);
-    const fields = STAT_METRICS[query.category].filter((item) => !item.qualification);
     if (!row) {
       row = {
         playerId: source.playerId,
@@ -198,7 +304,7 @@ export function playerLeaderboard(stats: SeasonStats, query: LeaderboardQuery): 
     return (row.counters.gamesAtPosition ?? 0) > 0;
   });
   for (const row of observed) {
-    if (query.category === 'fielding' || row.squadIds.length !== 1) continue;
+    if (query.category === 'fielding' || memberships.get(row.playerId)!.size !== 1) continue;
     const team = teams.find((entry) => entry.squadId === row.squadIds[0]);
     if (!team) continue;
     const required = qualificationThreshold(team.games, query.category);
@@ -238,6 +344,6 @@ export function playerLeaderboard(stats: SeasonStats, query: LeaderboardQuery): 
         ? candidates[index - 1]!.rank
         : index + 1;
   }
-  // 球団で絞っても大会内の順位と当季合計を維持する。
+  // 球団で絞っても、参加チーム制限内の順位と当季合計を維持する。
   return candidates.filter((row) => !query.squadId || row.squadIds.includes(query.squadId));
 }

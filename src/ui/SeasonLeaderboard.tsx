@@ -3,11 +3,11 @@ import { STATISTICS_RULES } from '../../config/statistics.ts';
 import {
   STAT_METRICS,
   formatStatValue,
-  playerLeaderboard,
   statValue,
   type StatCategory,
   type SortDirection,
 } from '../world/leaderboard.ts';
+import { leaderboardLeagues, leaguePlayerLeaderboard } from '../world/league-leaderboard.ts';
 import type { SeasonStats, StatKey, WorldDefinitions } from '../world/types.ts';
 import './leaderboard.css';
 
@@ -35,6 +35,9 @@ export function SeasonLeaderboard({
   const [direction, setDirection] = useState<SortDirection>('descending');
   const [qualifiedOnly, setQualifiedOnly] = useState(false);
   const [clubFilter, setClubFilter] = useState('');
+  const [leagueSelections, setLeagueSelections] = useState<Partial<Record<typeof scope, string>>>(
+    {},
+  );
   const [position, setPosition] = useState('');
   const competition = scope === 'farmRegular' ? definitions.farm! : definitions;
   const squads = competition.squads;
@@ -42,11 +45,27 @@ export function SeasonLeaderboard({
     .clubId;
   const metrics = STAT_METRICS[category];
   const metric = metrics.find((entry) => entry.key === metricKey)!;
-  const squadId = squads.find((squad) => squad.team.clubId === clubFilter)?.squadId;
-  const rows = playerLeaderboard(stats, {
+  const leagues = leaderboardLeagues(definitions, scope);
+  const ownSquad = squads.find((squad) => squad.team.clubId === ownClub);
+  const defaultLeague =
+    leagues.find((league) => ownSquad && league.squadIds.includes(ownSquad.squadId)) ?? leagues[0];
+  const requestedLeague = leagueSelections[scope];
+  const leagueId =
+    (requestedLeague === '' && leagues.length > 1) ||
+    leagues.some((league) => league.leagueId === requestedLeague)
+      ? requestedLeague!
+      : (defaultLeague?.leagueId ?? '');
+  const league = leagues.find((entry) => entry.leagueId === (leagueId || null));
+  const leagueName = league?.displayName ?? '全リーグ（合算）';
+  const selectableSquads = league
+    ? squads.filter((squad) => league.squadIds.includes(squad.squadId))
+    : squads;
+  const squadId = selectableSquads.find((squad) => squad.team.clubId === clubFilter)?.squadId;
+  const rows = leaguePlayerLeaderboard(definitions, stats, {
     seasonId: definitions.seasonId,
     competitionId: competition.competitionId,
     statScope: scope,
+    leagueId: league?.leagueId ?? undefined,
     category,
     metric: metric.key,
     direction,
@@ -69,7 +88,8 @@ export function SeasonLeaderboard({
   return (
     <div className="season-leaderboard">
       <p>
-        {definitions.seasonId} ／ {scope === 'farmRegular' ? '二軍公式戦' : '一軍公式戦'} ／
+        {definitions.seasonId} ／ {scope === 'farmRegular' ? '二軍公式戦' : '一軍公式戦'} ／{' '}
+        {leagueName} ／
         {completedOn ? ` 今季確定（${completedOn}終了）` : ` ${currentDate}現在・確定試合のみ`}
       </p>
       <div className="world-controls" role="group" aria-label="成績の種類">
@@ -86,13 +106,34 @@ export function SeasonLeaderboard({
       </div>
       <div className="world-controls">
         <label>
+          成績のリーグ
+          <select
+            value={leagueId}
+            disabled={leagues.length <= 1}
+            onChange={(event) => {
+              setLeagueSelections({ ...leagueSelections, [scope]: event.target.value });
+              setClubFilter('');
+            }}
+          >
+            {leagues.length > 1 && <option value="">全リーグ（合算）</option>}
+            {leagues.map((entry) => (
+              <option key={entry.leagueId ?? 'unrecorded'} value={entry.leagueId ?? ''}>
+                {entry.displayName}
+                {entry.leagueId && ownSquad && entry.squadIds.includes(ownSquad.squadId)
+                  ? '（自リーグ）'
+                  : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           成績の球団
           <select
             value={squadId ? clubFilter : ''}
             onChange={(event) => setClubFilter(event.target.value)}
           >
             <option value="">全球団</option>
-            {squads.map((squad) => (
+            {selectableSquads.map((squad) => (
               <option key={squad.squadId} value={squad.team.clubId}>
                 {squad.team.name}
                 {squad.team.clubId === ownClub ? '（担当球団）' : ''}
@@ -151,18 +192,27 @@ export function SeasonLeaderboard({
             STATISTICS_RULES.plateAppearancesPerGame.denominator}
           を四捨五入。 規定投球回＝実施試合数×{STATISTICS_RULES.pitchingOutsPerGame / 3}。
           規定による絞り込みは打率・防御率だけに適用します。
-          丸め前の値が同じなら同順位です。球団で絞っても大会内の順位を保ちます。
+          丸め前の値が同じなら同順位です。球団で絞っても選択したリーグ内の順位を保ちます。
         </p>
         <p className="hint">
           安打などの積算値に出場最低数は設けません。出場記録のない選手は載せず、
           未観測の率・旧保存にない項目は「—」とし順位を付けません。
-          防御率の分母が0の場合も「—」です。複数球団での当季成績は合算し、規定の移籍特例は未対応です。
+          分母0の率は「—」です。K/BBの与四球0も無限大の順位にはしません。
+          リーグを選ぶと、そのリーグの参加球団で残した成績だけを合算します（交流戦を含む）。
+          全リーグは合算順位です。複数球団での規定の移籍特例は未対応のため資格未判定とします。
+          出塁率・長打率・OPS・奪三振率・WHIP・K/BB・守備率には、未決定の規定を追加しません。
+          旧保存に犠飛がない場合は、出塁率とOPSも「—」です。
           これは成績の並べ替えで、タイトル・B9・GGの受賞判定ではありません。
         </p>
       </details>
       <h3>
-        {CATEGORY_NAMES[category]}ランキング：{metric.label}
+        {leagueName} ／ {CATEGORY_NAMES[category]}ランキング：{metric.label}
       </h3>
+      {metric.formula && (
+        <p className="hint">
+          {metric.label}＝{metric.formula}
+        </p>
+      )}
       <p>
         {rows.length}件{category === 'fielding' ? '（選手・守備位置別）' : ''}
       </p>
@@ -249,7 +299,12 @@ export function SeasonLeaderboard({
                       </td>
                     )}
                     {metrics.map((entry) => (
-                      <td key={entry.key}>{formatStatValue(statValue(row, entry), entry)}</td>
+                      <td
+                        key={entry.key}
+                        title={statValue(row, entry) ? undefined : '未観測または必要な記録なし'}
+                      >
+                        {formatStatValue(statValue(row, entry), entry)}
+                      </td>
                     ))}
                   </tr>
                 );

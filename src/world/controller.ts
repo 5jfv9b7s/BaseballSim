@@ -1,3 +1,4 @@
+import { seasonGrowthReport } from './season-growth.ts';
 import { growthView } from './growth-view.ts';
 import { trainingView } from './training.ts';
 import { applyFormation } from './formation.ts';
@@ -44,6 +45,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  seasonGrowth: Record<'firstRegular' | 'farmRegular', ReturnType<typeof seasonGrowthReport>>;
   growth: ReturnType<typeof growthView>;
   training: ReturnType<typeof trainingView>;
   playerStatuses: ReturnType<typeof playerStatuses>;
@@ -209,6 +211,10 @@ export class WorldController {
       modelVersion: world.version,
       management: world.version !== 'world-prototype-v1' ? world.management : null,
       seasonSummary: 'seasonSummary' in world ? world.seasonSummary : null,
+      seasonGrowth: {
+        firstRegular: seasonGrowthReport(world, 'firstRegular'),
+        farmRegular: seasonGrowthReport(world, 'farmRegular'),
+      },
       gameLineups: 'gameLineups' in world ? world.gameLineups : null,
       rosterPolicy: 'rosterControl' in world ? rosterPolicyView(world) : null,
       registration: 'registration' in world ? registrationView(world) : null,

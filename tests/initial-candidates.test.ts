@@ -284,6 +284,7 @@ test('取込計画：元資料を変更せず選手別出力を生成し、ハ�
       resolve(source).startsWith(resolve(tmpdir()) + sep) &&
         basename(source).startsWith('baseball-candidates-'),
     );
-    await rm(source, { recursive: true, force: true });
+    // Windowsでは一時ファイルの解放が遅れる場合がある。削除の再試行だけを許可する。
+    await rm(source, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });

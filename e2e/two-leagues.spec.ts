@@ -128,7 +128,7 @@ for (const width of [1280, 390]) {
     await page.getByRole('button', { name: 'シーズン総括', exact: true }).click();
     const summary = page.getByRole('region', { name: 'シーズン終了要約', exact: true });
     await expect(summary).toContainText('全6試合');
-    await expect(summary.getByRole('table')).toHaveCount(2);
+    await expect(summary.getByRole('table', { name: /の順位表$/ })).toHaveCount(2);
     await expect(summary).toContainText('架空スカイリーグ');
     await expect(summary).toContainText('架空オーシャンリーグ');
     const response = await page.evaluate(
@@ -137,7 +137,11 @@ for (const width of [1280, 390]) {
     expect(response.view.seasonSummary!.version).toBe('season-summary-v2');
     expect(response.view.seasonSummary!.title.status).toBe('byLeague');
     expect(response.view.unsavedChanges).toBe(false);
-    const lastRow = summary.getByRole('table').last().locator('tbody tr').last();
+    const lastRow = summary
+      .getByRole('table', { name: /の順位表$/ })
+      .last()
+      .locator('tbody tr')
+      .last();
     await lastRow.evaluate((element) => element.scrollIntoView({ block: 'center' }));
     await expect(lastRow).toBeInViewport();
     const rowBox = (await lastRow.boundingBox())!;
@@ -152,7 +156,7 @@ for (const width of [1280, 390]) {
       .getByRole('combobox', { name: '表示する大会', exact: true })
       .selectOption('farmRegular');
     await expect(summary).toContainText('全4試合');
-    await expect(summary.getByRole('table')).toHaveCount(1);
+    await expect(summary.getByRole('table', { name: /の順位表$/ })).toHaveCount(1);
     await expect(summary).toContainText('架空二軍リーグ');
   });
 }

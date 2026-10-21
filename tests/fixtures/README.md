@@ -80,3 +80,9 @@ Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。man
 個人別データ導入前の0.25.0（a6a01026b8c548aa4454bdce68ba66749b4fb792）で `advanceWorld(createPitchProfileWorld(), 25)` を実行したcanonicalJsonのgzipです。世界v15・定義v14、個人別deliveryは未設定です。変更前ソースから生成した後、実装に着手しました。
 
 展開後canonicalJsonのSHA-256は `f2d9e35b4c3b1f69fdbadf713dd33109f68545a6be329889b8a4fa58dfeff700`。tests/individual-pitches.test.tsで全状態・保存復元・日次続行を検証します。現行データに合わせて期待値を再生成しません。
+
+## world-v16-training-baseline.json.gz
+
+0.38.0（a0bd8e01fb3ffd2b927284ee6391c0685245b226）の変更前ソースで、seed 31の`createDailyTrainingWorld`を短期最終日まで25イベント単位で進め、各日の`completeDay`を実行した固定検体です。4日10試合・2026-09-28、世界v16/定義v21/成長daily-training-v1。canonicalJsonのUTF-8をgzip化し、年間成長総括の実装前に保存しました。IndexedDB全ストアのダンプではありません。
+
+展開後canonicalJson SHA-256は`64218a64ca155e8ed9f1b0d64bc72550fb711800504dad2924a920adf9a6e8ce`、gzip自体は`22d53d484ca207e21865177def075c5598f4c9711e37f260d75e5175cae18daa`。`tests/season-growth.test.ts`で全状態の再現・既存v017保存/バックアップ・成長表示を検証します。将来のモデルに合わせて再生成しないでください。

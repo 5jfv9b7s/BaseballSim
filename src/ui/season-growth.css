@@ -1,0 +1,87 @@
+@import './player-growth.css';
+
+.season-growth {
+  border-top: 1px solid var(--line, #dadfd4);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  min-width: 0;
+}
+.season-growth > label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.season-growth select,
+.season-growth input {
+  max-width: 100%;
+}
+.season-growth-own {
+  display: inline-block;
+  border: 1px solid currentColor;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+}
+.season-growth-scroll > table {
+  min-width: 600px;
+}
+.season-growth-scroll > table > thead > tr > th:first-child,
+.season-growth-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--paper, #fffdf5);
+  box-shadow: 3px 0 5px #1b33251a;
+}
+.season-growth-name {
+  border-left: 3px solid transparent;
+}
+.season-growth tr[data-own-club='true'] > .season-growth-name {
+  border-left-color: #355b49;
+}
+.season-growth-scroll th button {
+  color: inherit;
+}
+.season-growth-scroll td,
+.season-growth-scroll th {
+  font-variant-numeric: tabular-nums;
+}
+.season-growth-detail {
+  border-top: 2px solid #355b49;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  scroll-margin-top: 4rem;
+}
+.season-growth-detail-scroll table {
+  table-layout: fixed;
+  min-width: 360px;
+}
+.season-growth-detail-scroll th:first-child {
+  width: 110px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  position: sticky;
+  left: 0;
+  background: var(--paper, #fffdf5);
+  box-shadow: 3px 0 5px #1b33251a;
+}
+.season-growth-detail-scroll thead th:not(:first-child) {
+  text-align: right;
+}
+.season-growth-detail-scroll td {
+  font-variant-numeric: tabular-nums;
+}
+.season-growth details > summary {
+  cursor: pointer;
+  padding: 0.6rem 0;
+  font-weight: 600;
+}
+.season-summary-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid var(--line, #dadfd4);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}

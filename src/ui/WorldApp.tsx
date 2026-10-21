@@ -868,6 +868,11 @@ export function WorldApp({
         summary={displaySummary}
         squadName={squadName}
         ownSquadId={displayOwnSquadId}
+        view={view!}
+        onSelectPlayer={setSelectedPlayer}
+        onOpenStats={() => navigate('stats')}
+        onOpenMemorial={() => navigate('memorial')}
+        onHome={() => navigate('home')}
       />
     ),
     management: (

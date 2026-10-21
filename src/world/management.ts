@@ -1,3 +1,4 @@
+import { initialTrainingPlans, applyTrainingPlans } from './training.ts';
 import { attachBullpen } from './bullpen.ts';
 import { attachReliefPolicy, applyReliefPolicy } from './relief.ts';
 import { applyFielderRestPolicy } from './fielder-rest.ts';
@@ -51,7 +52,7 @@ export function initialManagement(
     definitions.squads.some((squad) => squad.squadId === controlledSquadId),
     '担当球団が不正です',
   );
-  return {
+  const management: ClubManagement = {
     version: 'club-management-v1',
     controlledSquadId,
     idealLineups: Object.fromEntries(
@@ -77,6 +78,9 @@ export function initialManagement(
     starterOverrides: {},
     actions: [],
   };
+  return definitions.version === 'world-definitions-v20'
+    ? { ...management, version: 'club-management-v2', training: initialTrainingPlans(definitions) }
+    : management;
 }
 
 export function canEditManagement(world: WorldRecord): boolean {
@@ -279,7 +283,13 @@ export function applyManagement(
   const management = structuredClone(world.management);
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
-  if (action.kind === 'setReliefPolicy') {
+  if (action.kind === 'setTrainingPlans') {
+    ensure(
+      management.version === 'club-management-v2',
+      '練習設定は対応する新規プレイで利用できます',
+    );
+    management.training = applyTrainingPlans(world, action);
+  } else if (action.kind === 'setReliefPolicy') {
     ensure('reliefControl' in world, '条件付き救援は新規プレイで利用できます');
     updated = applyReliefPolicy(world, action);
   } else if (action.kind === 'setFielderRestPolicy') {

@@ -61,7 +61,7 @@ for (const width of [1280, 390, 320]) {
     page.on('pageerror', (error) => errors.push(error.message));
     await observe(page);
     const { view, player, detail } = await openFirstPlayer(page);
-    expect(view.definitions.version).toBe('world-definitions-v19');
+    expect(view.definitions.version).toBe('world-definitions-v20');
     const before = await page.evaluate(() => Reflect.get(window, 'developmentCommands'));
     const table = detail.getByRole('table', { name: '選手の基本能力', exact: true });
     const group = detail.getByRole('combobox', { name: '能力の分野', exact: true });

@@ -1,4 +1,4 @@
-import { createPlayerDevelopmentDefinitions } from '../data/world/player-development.ts';
+import { createTrainingPlanDefinitions } from '../data/world/training-plans.ts';
 import { createNewPlayOptions } from '../data/world/new-play-options.ts';
 import type { NewPlayOptions } from './league-structure-types.ts';
 import { ensure, integer } from '../engine/validation.ts';
@@ -85,7 +85,7 @@ export class WorldWorkspace {
     const world = createPitchProfileWorld(
       request.seed,
       request.controlledSquadId,
-      createPlayerDevelopmentDefinitions(request.calendar),
+      createTrainingPlanDefinitions(request.calendar),
     );
     const nextStorage = new DexieWorldStorage(this.storage.database, localWorldId);
     const nextRevision = before.revision + 1;

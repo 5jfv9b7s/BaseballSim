@@ -22,7 +22,7 @@
 
 ## 新規プレイと旧保存
 
-新規プレイの入口は[../world/player-development.ts](../world/player-development.ts)の定義v19です。開始時に全入力を複製し、保存・バックアップにも含めます。編集は新しく作るプレイへ反映します。既存セーブを現在のJSONで更新する処理ではありません。
+22能力を追加した定義v19の入口は[../world/player-development.ts](../world/player-development.ts)です。現行の新規プレイは[../world/training-plans.ts](../world/training-plans.ts)の定義v20でこのデータを継承します。開始時に全入力を複製し、保存・バックアップにも含めます。編集は新しく作るプレイへ反映します。既存セーブを現在のJSONで更新する処理ではありません。
 
 定義v19の新規保存は0.35.0以前のアプリでは未対応です。旧定義v18以前へ追加値を後付けしません。旧保存の選手詳細は、当時記録された能力だけを表示し、追加能力・適性は「記録なし」とします。`createTwoLeagueDefinitions`など旧版の入口は保持しています。
 

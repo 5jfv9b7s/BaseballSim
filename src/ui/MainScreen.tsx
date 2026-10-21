@@ -13,6 +13,7 @@ export type MainPage =
   | 'today'
   | 'formation'
   | 'team'
+  | 'training'
   | 'standings'
   | 'stats'
   | 'memorial'
@@ -23,6 +24,7 @@ export type MainPage =
   | 'help';
 type Section = 'home' | 'schedule' | 'formation' | 'team' | 'records' | 'system';
 type PanelName =
+  | 'training'
   | 'progress'
   | 'competition'
   | 'calendar'
@@ -49,6 +51,7 @@ const TITLES: Record<MainPage, string> = {
   today: '今日の試合',
   formation: 'チーム編成',
   team: 'チーム',
+  training: '育成・練習',
   standings: 'チーム成績',
   stats: '個人成績',
   memorial: 'メモリアル',
@@ -60,6 +63,7 @@ const TITLES: Record<MainPage, string> = {
 };
 
 function sectionOf(page: MainPage): Section {
+  if (page === 'training') return 'team';
   if (['schedule', 'today', 'results'].includes(page)) return 'schedule';
   if (['standings', 'stats', 'memorial', 'summary'].includes(page)) return 'records';
   if (['save', 'new', 'help'].includes(page)) return 'system';
@@ -91,6 +95,7 @@ export function MainScreen({
   notice,
   hasSavedPlays,
   formationPending,
+  trainingPending,
   onPause,
   onToday,
   onOpenTools,
@@ -107,6 +112,7 @@ export function MainScreen({
   notice: ReactNode;
   hasSavedPlays: boolean;
   formationPending: boolean;
+  trainingPending: boolean;
   onPause: () => void;
   onToday: () => void;
   onOpenTools: () => void;
@@ -228,14 +234,19 @@ export function MainScreen({
             {TITLES[page]}
           </h2>
           <div className="save-indicator">
-            <span className="save-badge" data-unsaved={formationPending || view?.unsavedChanges}>
+            <span
+              className="save-badge"
+              data-unsaved={formationPending || trainingPending || view?.unsavedChanges}
+            >
               {!view
                 ? '読み込み中'
-                : formationPending
-                  ? '編成を編集中'
-                  : view.unsavedChanges
-                    ? '未保存の変更あり'
-                    : '保存済み'}
+                : trainingPending
+                  ? '練習設定を編集中'
+                  : formationPending
+                    ? '編成を編集中'
+                    : view.unsavedChanges
+                      ? '未保存の変更あり'
+                      : '保存済み'}
             </span>
             {page !== 'save' && (
               <button className="secondary" disabled={!view} onClick={() => onNavigate('save')}>
@@ -288,20 +299,29 @@ export function MainScreen({
         {section === 'formation' && panels.formation}
         {section === 'team' && (
           <>
-            {view && (
-              <PlayerDirectory
-                key={view.localWorldId + view.worldId}
-                view={view}
-                onSelect={onSelectPlayer}
-              />
+            {submenu([
+              { page: 'team', label: '選手一覧' },
+              { page: 'training', label: '育成・練習' },
+            ])}
+            {page === 'training' ? (
+              panels.training
+            ) : (
+              <>
+                {view && (
+                  <PlayerDirectory
+                    key={view.localWorldId + view.worldId}
+                    view={view}
+                    onSelect={onSelectPlayer}
+                  />
+                )}
+                <div className="feature-grid">
+                  <Construction title="トレード" />
+                  <Construction title="自由契約・退団" />
+                  <Construction title="自由契約選手の獲得" />
+                  <Construction title="外国人選手の獲得" />
+                </div>
+              </>
             )}
-            <div className="feature-grid">
-              <Construction title="トレード" />
-              <Construction title="育成・練習" />
-              <Construction title="自由契約・退団" />
-              <Construction title="自由契約選手の獲得" />
-              <Construction title="外国人選手の獲得" />
-            </div>
           </>
         )}
         {section === 'records' && (

@@ -53,7 +53,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v16'
     | 'world-definitions-v17'
     | 'world-definitions-v18'
-    | 'world-definitions-v19';
+    | 'world-definitions-v19'
+    | 'world-definitions-v20';
+  trainingPlans?: import('./training-types.ts').TrainingPlanInputs;
   playerDevelopment?: import('./player-development-types.ts').PlayerDevelopmentCatalog;
   leagueStructure?: import('./league-structure-types.ts').LeagueStructure;
   playerProfiles?: import('./player-profile-types.ts').PlayerProfileCatalog;
@@ -167,6 +169,7 @@ export interface PitcherUsagePlan {
 }
 
 export type ManagementAction =
+  | import('./training-types.ts').TrainingPlansAction
   | import('./relief-types.ts').ReliefPolicyAction
   | import('./fielder-rest-types.ts').FielderRestAction
   | import('./rest-types.ts').RestPolicyAction
@@ -176,8 +179,7 @@ export type ManagementAction =
   | { kind: 'setGameLineup'; squadId: string; gameId: string; lineup: IdealLineup | null }
   | { kind: 'setGameStarter'; squadId: string; gameId: string; playerId: string | null };
 
-export interface ClubManagement {
-  version: 'club-management-v1';
+interface ClubManagementBase {
   controlledSquadId: string;
   idealLineups: Record<string, IdealLineup>;
   pitcherUsagePlans: Record<string, PitcherUsagePlan>;
@@ -185,6 +187,12 @@ export interface ClubManagement {
   starterOverrides: Record<string, string>;
   actions: { commandId: string; sequence: number; date: string; action: ManagementAction }[];
 }
+
+export type ClubManagement = ClubManagementBase &
+  (
+    | { version: 'club-management-v1' }
+    | { version: 'club-management-v2'; training: import('./training-types.ts').TrainingPlanControl }
+  );
 
 export type WorldRecord = WorldState &
   (

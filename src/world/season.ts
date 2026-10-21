@@ -22,7 +22,11 @@ export function summarizeSeason(
     ),
     '未完了の試合・成績があります',
   );
-  if (['world-definitions-v18', 'world-definitions-v19'].includes(world.definitions.version)) {
+  if (
+    ['world-definitions-v18', 'world-definitions-v19', 'world-definitions-v20'].includes(
+      world.definitions.version,
+    )
+  ) {
     const leagues = leagueStandings(world.definitions, stats, scope).map((league) => {
       const leaders = league.clubs.filter((row) => row.rank === 1);
       return {

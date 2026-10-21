@@ -1,3 +1,6 @@
+import { TrainingEditor } from './TrainingEditor.tsx';
+import { createTrainingDraft, trainingChanges } from '../world/training.ts';
+import type { TrainingDraft } from '../world/training-types.ts';
 import { leagueStandings } from '../world/league-standings.ts';
 import { LeagueStandingsPanel } from './LeagueStandingsPanel.tsx';
 import { SeasonSummaryPanel } from './SeasonSummaryPanel.tsx';
@@ -51,6 +54,9 @@ export function WorldApp({
   development?: boolean;
   onOpenTools: () => void;
 }) {
+  const [training, setTraining] = useState<TrainingDraft | null>(null);
+  const trainingBase = useRef<TrainingDraft | null>(null);
+  const trainingDestination = useRef<MainPage | 'tools' | null>(null);
   const [formation, setFormation] = useState<FormationDraft | null>(null);
   const formationBase = useRef<FormationDraft | null>(null);
   const formationDestination = useRef<MainPage | 'tools' | null>(null);
@@ -106,11 +112,15 @@ export function WorldApp({
   }
 
   function finishNavigation(destination: MainPage | 'tools') {
+    setTraining(null);
+    trainingBase.current = null;
     setFormation(null);
     formationBase.current = null;
     setSelectedPlayer('');
     if (destination === 'tools') onOpenTools();
     else {
+      if (destination === 'formation') beginFormation();
+      if (destination === 'training') beginTraining();
       if (destination === 'today') {
         setScope('firstRegular');
         setSelectedDate(latest.current?.currentDate ?? '');
@@ -128,8 +138,39 @@ export function WorldApp({
     setFormation(draft ? structuredClone(draft) : null);
   }
 
+  function beginTraining() {
+    const current = latest.current;
+    if (!current?.training || pending.current || auto.current) return;
+    const draft = createTrainingDraft(current.training.plans);
+    trainingBase.current = draft;
+    setTraining(structuredClone(draft));
+  }
+
+  function saveTraining(destination?: MainPage | 'tools') {
+    const current = latest.current;
+    if (!current?.training || !training || !trainingBase.current || pending.current || auto.current)
+      return;
+    const updates = trainingChanges(trainingBase.current, training);
+    if (!updates.length) {
+      if (destination) finishNavigation(destination);
+      return;
+    }
+    trainingDestination.current = destination ?? null;
+    send({ kind: 'setTrainingPlans', squadId: current.training.squadId, updates });
+  }
+
   function navigate(destination: MainPage | 'tools') {
-    if (formationDestination.current) return;
+    if (formationDestination.current || trainingDestination.current) return;
+    if (
+      page === 'training' &&
+      destination !== 'training' &&
+      training &&
+      trainingBase.current &&
+      trainingChanges(trainingBase.current, training).length
+    ) {
+      saveTraining(destination);
+      return;
+    }
     if (
       page === 'formation' &&
       destination !== 'formation' &&
@@ -142,7 +183,10 @@ export function WorldApp({
       send({ kind: 'setFormation', ...formation });
       return;
     }
-    if (destination === 'formation') {
+    if (destination === 'training') {
+      if (page !== 'training') beginTraining();
+      setPage(destination);
+    } else if (destination === 'formation') {
       if (page !== 'formation') beginFormation();
       setPage(destination);
     } else finishNavigation(destination);
@@ -230,6 +274,7 @@ export function WorldApp({
       setNewPlayOptions(data.newPlayOptions);
       setPlays(data.plays ?? []);
       if (!data.ok) {
+        trainingDestination.current = null;
         formationDestination.current = null;
         progressTarget.current = null;
         auto.current = false;
@@ -298,6 +343,15 @@ export function WorldApp({
         lastAction.current === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');
+      if (lastAction.current === 'setTrainingPlans') {
+        const destination = trainingDestination.current;
+        trainingDestination.current = null;
+        const saved = data.view.training ? createTrainingDraft(data.view.training.plans) : null;
+        trainingBase.current = saved;
+        setTraining(saved ? structuredClone(saved) : null);
+        setMessage('練習設定をまとめて確定し、自動保存しました。');
+        if (destination) finishNavigation(destination);
+      }
       if (lastAction.current === 'setFormation') {
         const destination = formationDestination.current;
         formationDestination.current = null;
@@ -308,6 +362,9 @@ export function WorldApp({
       if (lastAction.current === 'load' || lastAction.current === 'openPlay') {
         progressTarget.current = null;
         setSelectedPlayer('');
+        setTraining(null);
+        trainingBase.current = null;
+        trainingDestination.current = null;
         setFormation(null);
         formationBase.current = null;
         setScope('firstRegular');
@@ -326,6 +383,9 @@ export function WorldApp({
         auto.current = false;
         setRunning(false);
         setSelectedPlayer('');
+        setTraining(null);
+        trainingBase.current = null;
+        trainingDestination.current = null;
         setFormation(null);
         formationBase.current = null;
         setScope('firstRegular');
@@ -348,6 +408,7 @@ export function WorldApp({
       if (auto.current) continueDay();
     };
     instance.onerror = () => {
+      trainingDestination.current = null;
       formationDestination.current = null;
       progressTarget.current = null;
       pending.current = false;
@@ -464,6 +525,13 @@ export function WorldApp({
       ].sort()
     : [];
 
+  const trainingViewDraft = view?.training
+    ? (training ?? createTrainingDraft(view.training.plans))
+    : null;
+  const trainingPending =
+    !!training &&
+    !!trainingBase.current &&
+    trainingChanges(trainingBase.current, training).length > 0;
   const formationView = view && (formation ?? createFormationDraft(view));
   const formationPending =
     !!formation && !!formationBase.current && formationChanged(formationBase.current, formation);
@@ -475,6 +543,29 @@ export function WorldApp({
   const weekEnd = view && seventh > view.definitions.endDate ? view.definitions.endDate : seventh;
 
   const panels = {
+    training:
+      view && trainingViewDraft ? (
+        <TrainingEditor
+          key={view.localWorldId + editorEpoch}
+          view={view}
+          draft={trainingViewDraft}
+          changed={trainingPending}
+          locked={!training || disabled || !view.canEditManagement}
+          onChange={setTraining}
+          onSave={() => saveTraining()}
+          onReset={() => {
+            setTraining(structuredClone(trainingBase.current));
+            setError('');
+          }}
+          onSelectPlayer={setSelectedPlayer}
+        />
+      ) : (
+        <section className="panel">
+          <p>
+            この保存には練習設定の記録がありません。既存プレイを残し、新規プレイで利用できます。成長計算は準備中です。
+          </p>
+        </section>
+      ),
     formation:
       view && formationView ? (
         <>
@@ -1194,6 +1285,7 @@ export function WorldApp({
         notice={notification}
         hasSavedPlays={plays.length > 0}
         formationPending={formationPending}
+        trainingPending={trainingPending}
         onPause={() => {
           auto.current = false;
           setRunning(false);

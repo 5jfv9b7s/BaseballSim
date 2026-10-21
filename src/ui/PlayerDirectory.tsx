@@ -121,7 +121,7 @@ export function PlayerDirectory({
         {squad.players.length}名）
       </p>
       <p className="hint">
-        名前を選ぶと詳細を開きます。年齢はゲーム内日付の満年齢、代表位置は守備適性とは別です。投手は持ち球で分類し、背番号・守備適性は工事中です。
+        名前を選ぶと詳細を開きます。年齢はゲーム内日付の満年齢、代表位置は守備適性とは別です。投手は持ち球で分類します。守備適性は選手詳細から確認でき、背番号は工事中です。
       </p>
       <div className="world-table">
         <table aria-label="選手プロフィール一覧">

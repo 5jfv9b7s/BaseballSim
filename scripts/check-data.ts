@@ -1,3 +1,6 @@
+import { createTrainingPlanWorld } from '../src/world/engine.ts';
+import { createTrainingPlanDefinitions } from '../src/data/world/training-plans.ts';
+import { trainingTargetAbilities, trainingTargetOptions } from '../src/world/training.ts';
 import { readdirSync, readFileSync } from 'node:fs';
 import { createPlayerDevelopmentWorld } from '../src/world/engine.ts';
 import { createPlayerDevelopmentDefinitions } from '../src/data/world/player-development.ts';
@@ -308,3 +311,19 @@ for (const club of readdirSync(developmentRoot, { withFileTypes: true }).filter(
 }
 if (fileIds.size !== developmentIds.size) throw new Error('追加能力JSONに不足があります');
 console.log(`追加能力JSONの登録照合: ${fileIds.size}人（検査成功）`);
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createTrainingPlanWorld(
+    undefined,
+    undefined,
+    createTrainingPlanDefinitions(calendar),
+  );
+  if (world.management.version !== 'club-management-v2')
+    throw new Error('通常練習の状態がありません');
+  for (const playerId of Object.keys(world.management.training.plans))
+    for (const option of trainingTargetOptions(world.definitions, playerId))
+      trainingTargetAbilities(world.definitions, playerId, option.target);
+  console.log(
+    `通常練習（${calendar}）: ${Object.keys(world.management.training.plans).length}選手 / 個別・群・9位置・本人の持ち球（検査成功、効果未接続）`,
+  );
+}

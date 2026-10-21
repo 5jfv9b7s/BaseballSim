@@ -10,7 +10,7 @@ export interface BullpenInput {
 }
 export type BullpenWorld = Extract<
   WorldRecord,
-  { version: 'world-prototype-v14' | 'world-prototype-v15' }
+  { version: 'world-prototype-v14' | 'world-prototype-v15' | 'world-prototype-v16' }
 >;
 
 export function validateBullpenDefinitions(defs: WorldDefinitions): void {

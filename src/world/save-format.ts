@@ -16,7 +16,8 @@ export type SaveFormat =
   | 'v013-world-snapshot-v12'
   | 'v014-world-snapshot-v13'
   | 'v015-world-snapshot-v14'
-  | 'v016-world-snapshot-v15';
+  | 'v016-world-snapshot-v15'
+  | 'v017-world-snapshot-v16';
 export const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
@@ -46,7 +47,9 @@ export const formatFor = (version: WorldRecord['version']): SaveFormat =>
                             ? 'v014-world-snapshot-v13'
                             : version === 'world-prototype-v14'
                               ? 'v015-world-snapshot-v14'
-                              : 'v016-world-snapshot-v15';
+                              : version === 'world-prototype-v15'
+                                ? 'v016-world-snapshot-v15'
+                                : 'v017-world-snapshot-v16';
 export const MAX_BYTES = 64 * 1024 * 1024;
 export const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 

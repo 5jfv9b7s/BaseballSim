@@ -77,7 +77,7 @@ export function validateTrainingSettings(
   }
 }
 export function validateTrainingDefinitions(definitions: WorldDefinitions): void {
-  if (definitions.version !== 'world-definitions-v20') {
+  if (!['world-definitions-v20', 'world-definitions-v21'].includes(definitions.version)) {
     ensure(definitions.trainingPlans === undefined, '旧定義へ練習設定を後付けできません');
     return;
   }

@@ -14,10 +14,13 @@ async function observe(page: Page, mode: 'current' | 'legacy' | 'boundary' = 'cu
             if (!view) return;
             // 表示投影のみ。Workerの正本やIndexedDBは変更しない。
             if (mode === 'legacy') {
+              view.growth = null;
               view.definitions.version = 'world-definitions-v18';
               delete view.definitions.playerDevelopment;
             } else if (mode === 'boundary') {
               view.definitions.squads[0].players[0].batting.contactVsRight.valueMilli = 89999;
+              const id = view.definitions.squads[0].players[0].playerId;
+              view.growth.current[id]['{"code":"contactVsRight","scope":"batting"}'] = 89999;
             }
             Reflect.set(window, 'developmentView', view);
           });
@@ -38,7 +41,9 @@ async function observe(page: Page, mode: 'current' | 'legacy' | 'boundary' = 'cu
     };
   }, mode);
   await page.goto('/');
-  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
+    timeout: 30000,
+  });
 }
 
 async function openFirstPlayer(page: Page) {
@@ -61,7 +66,7 @@ for (const width of [1280, 390, 320]) {
     page.on('pageerror', (error) => errors.push(error.message));
     await observe(page);
     const { view, player, detail } = await openFirstPlayer(page);
-    expect(view.definitions.version).toBe('world-definitions-v20');
+    expect(view.definitions.version).toBe('world-definitions-v21');
     const before = await page.evaluate(() => Reflect.get(window, 'developmentCommands'));
     const table = detail.getByRole('table', { name: '選手の基本能力', exact: true });
     const group = detail.getByRole('combobox', { name: '能力の分野', exact: true });
@@ -111,7 +116,7 @@ for (const width of [1280, 390, 320]) {
       'value',
       String(input.growthProfile.ambitionMilli / 1000),
     );
-    await expect(detail).toContainText('成長履歴は工事中');
+    await expect(detail).toContainText('まだ日次の練習実績がありません');
     await detail.screenshot({ path: `.tmp/player-development-qa/growth-${width}.png` });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

@@ -1,3 +1,4 @@
+import { growthView } from './growth-view.ts';
 import { trainingView } from './training.ts';
 import { applyFormation } from './formation.ts';
 import type { FormationAction } from './formation-draft.ts';
@@ -15,7 +16,7 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createTrainingPlanWorld, worldPhase } from './engine.ts';
+import { advanceWorld, completeDay, createDailyTrainingWorld, worldPhase } from './engine.ts';
 import { leagueStandings } from './league-standings.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
@@ -43,6 +44,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  growth: ReturnType<typeof growthView>;
   training: ReturnType<typeof trainingView>;
   playerStatuses: ReturnType<typeof playerStatuses>;
   localWorldId: string;
@@ -110,7 +112,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createTrainingPlanWorld();
+  private world: WorldRecord = createDailyTrainingWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -165,6 +167,7 @@ export class WorldController {
       (squad) => squad.team.clubId === controlledClub,
     );
     return structuredClone({
+      growth: growthView(world),
       training: trainingView(world),
       playerStatuses: playerStatuses(world),
       localWorldId: this.localWorldId,
@@ -173,7 +176,9 @@ export class WorldController {
         farmRegular: world.definitions.farm ? singleGameHomeRunRecord(world, 'farmRegular') : null,
       },
       bullpen:
-        world.version === 'world-prototype-v14' || world.version === 'world-prototype-v15'
+        world.version === 'world-prototype-v14' ||
+        world.version === 'world-prototype-v15' ||
+        world.version === 'world-prototype-v16'
           ? bullpenView(world)
           : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
@@ -186,7 +191,8 @@ export class WorldController {
         world.version === 'world-prototype-v12' ||
         world.version === 'world-prototype-v13' ||
         world.version === 'world-prototype-v14' ||
-        world.version === 'world-prototype-v15'
+        world.version === 'world-prototype-v15' ||
+        world.version === 'world-prototype-v16'
           ? performanceView(world)
           : null,
       condition: 'condition' in world ? conditionView(world) : null,

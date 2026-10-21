@@ -1,5 +1,7 @@
 # 選手・持ち球・球団の編集
 
+0.38.0の通常練習は[training/](training/README.md)で初期指定と対象辞書、[../../config/growth.ts](../../config/growth.ts)で試作係数を調整します。[日次効果・現在値・成長履歴の操作と式](../../TRAINING-IMPLEMENTATION.md)を参照してください。変更は新規プレイだけに反映し、既存の初期選手JSONや提供候補を書き換えません。
+
 ## 通常練習の初期指定（0.37.0）
 
 新規プレイは[world/training-plans.ts](world/training-plans.ts)の定義v20を使います。[training/README.md](training/README.md)に、共通/選手別の初期指定、対象群、個別・一括編集と保存の扱いをまとめました。練習効果・成長式は未接続です。

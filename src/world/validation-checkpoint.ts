@@ -14,6 +14,14 @@ export interface CheckpointCache {
 /** 終了試合は既存検証で深く凍結済み。それ以外はキャッシュと呼出側で共有しない。 */
 export function copyCheckpointWorld(world: WorldRecord): WorldRecord {
   const { games, ...core } = world;
+  if ('growth' in core) {
+    const copy = structuredClone({
+      ...core,
+      growth: { ...core.growth, state: { ...core.growth.state, days: {} } },
+    });
+    copy.growth.state.days = { ...core.growth.state.days };
+    return { ...copy, games: { ...games } } as WorldRecord;
+  }
   return { ...structuredClone(core), games: { ...games } } as WorldRecord;
 }
 
@@ -27,6 +35,11 @@ export function resumeCheckpoint(
   const actions = 'management' in candidate ? candidate.management.actions : [];
   if (
     candidate.version !== base.version ||
+    ('growth' in base &&
+      (!('growth' in candidate) ||
+        !Object.entries(base.growth.state.days).every(
+          ([date, day]) => candidate.growth.state.days[date] === day,
+        ))) ||
     candidate.seed !== base.seed ||
     candidate.worldId !== base.worldId ||
     ('management' in candidate ? candidate.management.controlledSquadId : null) !==

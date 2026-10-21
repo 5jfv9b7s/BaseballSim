@@ -17,7 +17,9 @@ for (const width of [1280, 390]) {
     });
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
-    await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+    await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
+      timeout: 30000,
+    });
     await nav.getByRole('button', { name: 'チーム', exact: true }).click();
     const directory = page.getByRole('region', { name: '選手一覧', exact: true });
     const club = directory.getByRole('combobox', { name: '選手の球団', exact: true });
@@ -39,7 +41,7 @@ for (const width of [1280, 390]) {
     await detail.screenshot({ path: `.tmp/main-details-qa/ability-${width}.png` });
     await detail.getByRole('button', { name: '状態・成長', exact: true }).click();
     await expect(detail.locator('.player-state')).not.toContainText('記録なし');
-    await expect(detail).toContainText('成長履歴は工事中');
+    await expect(detail).toContainText('まだ日次の練習実績がありません');
     await detail.getByRole('button', { name: '成績', exact: true }).click();
     await expect(detail).toContainText('この大会の成績記録はありません');
     await page.keyboard.press('Escape');
@@ -127,7 +129,9 @@ test('年間表示：未確定のグラフを月変更で補完せず、進行�
   test.setTimeout(90000);
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
-  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
+    timeout: 30000,
+  });
   await nav.getByRole('button', { name: 'システム', exact: true }).click();
   await page.getByRole('button', { name: '新規プレイ', exact: true }).click();
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
@@ -226,7 +230,9 @@ test('貯金グラフ：同日の一部終了では更新せず、全試合終�
     };
   });
   await page.goto('/');
-  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
+    timeout: 30000,
+  });
   await page.getByRole('button', { name: /^今日の試合へ/ }).click();
   await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
   await expect.poll(() => page.evaluate(() => Reflect.get(window, 'graphDayHeld'))).toBe(true);

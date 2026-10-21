@@ -1,7 +1,8 @@
 import { ensure } from '../engine/validation.ts';
 
 export const MAX_PACKAGE_BYTES = 66 * 1024 * 1024;
-const MAX_ENTRIES = 260;
+// v17はゲーム256＋練習日366＋必須3ブロックと目録。旧版の上限はsnapshot側で維持。
+const MAX_ENTRIES = 626;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 const crcTable = Array.from({ length: 256 }, (_, value) => {

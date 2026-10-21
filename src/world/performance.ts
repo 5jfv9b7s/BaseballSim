@@ -12,7 +12,8 @@ export type PerformanceWorld = Extract<
       | 'world-prototype-v12'
       | 'world-prototype-v13'
       | 'world-prototype-v14'
-      | 'world-prototype-v15';
+      | 'world-prototype-v15'
+      | 'world-prototype-v16';
   }
 >;
 

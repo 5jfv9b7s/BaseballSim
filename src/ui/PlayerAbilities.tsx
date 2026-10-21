@@ -1,3 +1,5 @@
+import { growthAbilityKey } from '../world/growth-basis.ts';
+import { commonTrainingRef } from '../world/training.ts';
 import { useState } from 'react';
 import {
   COMMON_ABILITIES,
@@ -26,12 +28,17 @@ const GROUPS = {
 export function PlayerAbilities({
   definitions,
   playerId,
+  current,
 }: {
   definitions: WorldDefinitions;
   playerId: string;
+  current?: Record<string, number>;
 }) {
   const [group, setGroup] = useState('all');
   const full = playerBaseAbilities(definitions, playerId);
+  if (full && current)
+    for (const code of Object.keys(full) as CommonAbilityCode[])
+      full[code].valueMilli = current[growthAbilityKey(commonTrainingRef(code))]!;
   const legacy = existingPlayerAbilities(definitions, playerId);
   const development = playerDevelopment(definitions, playerId);
   const codes: CommonAbilityCode[] = full
@@ -52,7 +59,7 @@ export function PlayerAbilities({
       <p>現在の基本能力です。調子・体力による試合時の一時補正とは区別します。</p>
       {full ? (
         <p className="hint">
-          追加値は架空の動作確認用です。「未接続」の能力と適性・習熟は表示・保存のみで、試合へはまだ作用しません。
+          追加値は架空の動作確認用です。「未接続」の能力と適性・習熟は、試合へはまだ作用しません。
         </p>
       ) : (
         <p className="hint">
@@ -112,7 +119,7 @@ export function PlayerAbilities({
         <details className="player-position-skills">
           <summary>守備適性・習熟（9位置）</summary>
           <p className="hint">
-            適性は向きやすさ、習熟は現在の技能です。固定の適性と成長上限を混同せず、DHは守備位置に加えません。計算への接続は準備中です。
+            適性は向きやすさ、習熟は現在の技能です。固定の適性と成長上限を混同せず、DHは守備位置に加えません。試合への作用は準備中です。
           </p>
           <div
             className="world-table"
@@ -143,7 +150,15 @@ export function PlayerAbilities({
                       </td>
                       <td>
                         <AbilityRating
-                          valueMilli={skill.familiarity.valueMilli}
+                          valueMilli={
+                            current?.[
+                              growthAbilityKey({
+                                scope: 'position',
+                                positionCode: position,
+                                code: 'familiarity',
+                              })
+                            ] ?? skill.familiarity.valueMilli
+                          }
                           label={`${position}の習熟`}
                         />
                       </td>

@@ -1,3 +1,4 @@
+import { applyGrowthFixture } from './growth-fixture.ts';
 import { initialTrainingPlans, applyTrainingPlans } from './training.ts';
 import { attachBullpen } from './bullpen.ts';
 import { attachReliefPolicy, applyReliefPolicy } from './relief.ts';
@@ -78,7 +79,7 @@ export function initialManagement(
     starterOverrides: {},
     actions: [],
   };
-  return definitions.version === 'world-definitions-v20'
+  return ['world-definitions-v20', 'world-definitions-v21'].includes(definitions.version)
     ? { ...management, version: 'club-management-v2', training: initialTrainingPlans(definitions) }
     : management;
 }
@@ -235,8 +236,13 @@ export function managementFixture(
   const activeIds = fixture.clubs.flatMap((club) => club.playerIds);
   fixture.players = fixture.players.filter((player) => activeIds.includes(player.playerId));
   fixture.pitches = fixture.pitches.filter((pitch) => activeIds.includes(pitch.playerId));
+  applyGrowthFixture(world, fixture);
   if ('reliefControl' in world) attachReliefPolicy(world, gameId, fixture);
-  if (world.version === 'world-prototype-v14' || world.version === 'world-prototype-v15')
+  if (
+    world.version === 'world-prototype-v14' ||
+    world.version === 'world-prototype-v15' ||
+    world.version === 'world-prototype-v16'
+  )
     attachBullpen(world, gameId, fixture);
   validateGameFixture(fixture);
   return fixture;

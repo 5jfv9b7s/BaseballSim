@@ -56,6 +56,7 @@ export function validateLeagueStructure(definitions: WorldDefinitions): void {
     'world-definitions-v18',
     'world-definitions-v19',
     'world-definitions-v20',
+    'world-definitions-v21',
   ].includes(definitions.version);
   if (definitions.version !== 'world-definitions-v17' && !multiLeague) {
     ensure(

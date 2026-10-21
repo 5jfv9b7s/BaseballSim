@@ -1,3 +1,4 @@
+import { freezeGrowthData } from './growth.ts';
 import { resumeCheckpoint, makeCheckpoint, type CheckpointCache } from './validation-checkpoint.ts';
 import { applyManagement } from './management.ts';
 import { ensure, integer } from '../engine/validation.ts';
@@ -5,6 +6,7 @@ import { canonicalJson } from '../storage/codec.ts';
 import {
   advanceWorld,
   completeDay,
+  createDailyTrainingWorld,
   createWorld,
   createManagedWorld,
   createAnnualWorld,
@@ -75,6 +77,7 @@ function validateWithCache(
       'world-prototype-v13',
       'world-prototype-v14',
       'world-prototype-v15',
+      'world-prototype-v16',
     ].includes(candidate.version),
     '未対応の世界モデルです',
   );
@@ -90,17 +93,19 @@ function validateWithCache(
   ensure(Array.isArray(actions), '編成履歴が不正です');
   integer(actions.length, 0, 'seasonSummary' in candidate ? 2048 : 256, '編成履歴の件数');
   ensure(
-    candidate.version === 'world-prototype-v15'
-      ? [
-          'world-definitions-v14',
-          'world-definitions-v15',
-          'world-definitions-v16',
-          'world-definitions-v17',
-          'world-definitions-v18',
-          'world-definitions-v19',
-          'world-definitions-v20',
-        ].includes(candidate.definitions.version)
-      : candidate.definitions.version ===
+    candidate.version === 'world-prototype-v16'
+      ? candidate.definitions.version === 'world-definitions-v21'
+      : candidate.version === 'world-prototype-v15'
+        ? [
+            'world-definitions-v14',
+            'world-definitions-v15',
+            'world-definitions-v16',
+            'world-definitions-v17',
+            'world-definitions-v18',
+            'world-definitions-v19',
+            'world-definitions-v20',
+          ].includes(candidate.definitions.version)
+        : candidate.definitions.version ===
           (candidate.version === 'world-prototype-v14'
             ? 'world-definitions-v13'
             : candidate.version === 'world-prototype-v13'
@@ -132,91 +137,97 @@ function validateWithCache(
   let actionIndex = resumed?.actionIndex ?? 0;
   let replay: WorldRecord = resumed
     ? resumed.world
-    : candidate.version === 'world-prototype-v15'
-      ? createPitchProfileWorld(
+    : candidate.version === 'world-prototype-v16'
+      ? createDailyTrainingWorld(
           candidate.seed,
           candidate.management.controlledSquadId,
           candidate.definitions,
         )
-      : candidate.version === 'world-prototype-v14'
-        ? createBullpenWorld(
+      : candidate.version === 'world-prototype-v15'
+        ? createPitchProfileWorld(
             candidate.seed,
             candidate.management.controlledSquadId,
             candidate.definitions,
           )
-        : candidate.version === 'world-prototype-v13'
-          ? createReliefWorld(
+        : candidate.version === 'world-prototype-v14'
+          ? createBullpenWorld(
               candidate.seed,
               candidate.management.controlledSquadId,
               candidate.definitions,
             )
-          : candidate.version === 'world-prototype-v12'
-            ? createFielderRestWorld(
+          : candidate.version === 'world-prototype-v13'
+            ? createReliefWorld(
                 candidate.seed,
                 candidate.management.controlledSquadId,
                 candidate.definitions,
               )
-            : candidate.version === 'world-prototype-v11'
-              ? createPerformanceWorld(
+            : candidate.version === 'world-prototype-v12'
+              ? createFielderRestWorld(
                   candidate.seed,
                   candidate.management.controlledSquadId,
                   candidate.definitions,
                 )
-              : candidate.version === 'world-prototype-v10'
-                ? createConditionWorld(
+              : candidate.version === 'world-prototype-v11'
+                ? createPerformanceWorld(
                     candidate.seed,
                     candidate.management.controlledSquadId,
                     candidate.definitions,
                   )
-                : candidate.version === 'world-prototype-v9'
-                  ? createRestWorld(
+                : candidate.version === 'world-prototype-v10'
+                  ? createConditionWorld(
                       candidate.seed,
                       candidate.management.controlledSquadId,
                       candidate.definitions,
                     )
-                  : candidate.version === 'world-prototype-v8'
-                    ? createPhysicalWorld(
+                  : candidate.version === 'world-prototype-v9'
+                    ? createRestWorld(
                         candidate.seed,
                         candidate.management.controlledSquadId,
                         candidate.definitions,
                       )
-                    : candidate.version === 'world-prototype-v7'
-                      ? createFarmWorld(
+                    : candidate.version === 'world-prototype-v8'
+                      ? createPhysicalWorld(
                           candidate.seed,
                           candidate.management.controlledSquadId,
                           candidate.definitions,
                         )
-                      : candidate.version === 'world-prototype-v6'
-                        ? createRosterPolicyWorld(
+                      : candidate.version === 'world-prototype-v7'
+                        ? createFarmWorld(
                             candidate.seed,
                             candidate.management.controlledSquadId,
                             candidate.definitions,
                           )
-                        : candidate.version === 'world-prototype-v5'
-                          ? createRegistrationWorld(
+                        : candidate.version === 'world-prototype-v6'
+                          ? createRosterPolicyWorld(
                               candidate.seed,
                               candidate.management.controlledSquadId,
                               candidate.definitions,
                             )
-                          : candidate.version === 'world-prototype-v4'
-                            ? createRosterWorld(
+                          : candidate.version === 'world-prototype-v5'
+                            ? createRegistrationWorld(
                                 candidate.seed,
                                 candidate.management.controlledSquadId,
                                 candidate.definitions,
                               )
-                            : candidate.version === 'world-prototype-v3'
-                              ? createAnnualWorld(
+                            : candidate.version === 'world-prototype-v4'
+                              ? createRosterWorld(
                                   candidate.seed,
                                   candidate.management.controlledSquadId,
                                   candidate.definitions,
                                 )
-                              : candidate.version === 'world-prototype-v2'
-                                ? createManagedWorld(
+                              : candidate.version === 'world-prototype-v3'
+                                ? createAnnualWorld(
                                     candidate.seed,
-                                    candidate.definitions,
                                     candidate.management.controlledSquadId,
+                                    candidate.definitions,
                                   )
-                                : createWorld(candidate.seed, candidate.definitions);
+                                : candidate.version === 'world-prototype-v2'
+                                  ? createManagedWorld(
+                                      candidate.seed,
+                                      candidate.definitions,
+                                      candidate.management.controlledSquadId,
+                                    )
+                                  : createWorld(candidate.seed, candidate.definitions);
 
   const replayDate = (requireComplete: boolean) => {
     while (actions[actionIndex]?.date === replay.currentDate) {
@@ -278,6 +289,28 @@ function validateWithCache(
   ensure(actionIndex === actions.length, '日程と編成履歴が一致しません');
   const { games: replayGames, ...replayCore } = replay;
   const { games: candidateGames, ...candidateCore } = candidate;
+  if ('growth' in replayCore && 'growth' in candidateCore) {
+    const expected = replayCore.growth.state.days,
+      actual = candidateCore.growth.state.days;
+    ensure(actual && typeof actual === 'object' && !Array.isArray(actual), '練習履歴が不正です');
+    ensure(
+      canonicalJson(Object.keys(expected).sort()) === canonicalJson(Object.keys(actual).sort()),
+      '練習履歴の日付が一致しません',
+    );
+    for (const date of Object.keys(expected)) {
+      ensure(
+        expected[date] === actual[date] ||
+          canonicalJson(expected[date]) === canonicalJson(actual[date]),
+        '成長履歴を再現できません',
+      );
+      freezeGrowthData(actual[date]);
+    }
+    replayCore.growth = { ...replayCore.growth, state: { ...replayCore.growth.state, days: {} } };
+    candidateCore.growth = {
+      ...candidateCore.growth,
+      state: { ...candidateCore.growth.state, days: {} },
+    };
+  }
   ensure(
     canonicalJson(Object.keys(replayGames).sort()) ===
       canonicalJson(Object.keys(candidateGames).sort()),
@@ -287,5 +320,9 @@ function validateWithCache(
     canonicalJson(replayCore) === canonicalJson(candidateCore),
     '世界の成績・日付・進行状態が一致しません',
   );
+  // 同一参照を再利用するのは、この検証で完全照合・深い凍結が済んだ履歴だけ。
+  // 再生成側の別オブジェクトを残すと、次の日次保存で全期間を再実行してしまう。
+  if (completedBoundary && 'growth' in completedBoundary.world && 'growth' in candidate)
+    completedBoundary.world.growth.state.days = { ...candidate.growth.state.days };
   if (cache) cache.checkpoint = completedBoundary;
 }

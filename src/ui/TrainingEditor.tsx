@@ -1,3 +1,5 @@
+import { growthAbilityKey } from '../world/growth-basis.ts';
+import { PlayerGrowth } from './PlayerGrowth.tsx';
 import { useState } from 'react';
 import { canonicalJson } from '../storage/codec.ts';
 import { playerAge, playerProfile } from '../world/player-profiles.ts';
@@ -102,7 +104,9 @@ export function TrainingEditor({
         </div>
       </div>
       <p className="training-scope-note">
-        現在は練習の指定・保存まで対応しています。日次の練習効果・疲労調整・経験・恒久成長は工事中です。設定だけで能力や疲労は変化しません。
+        {view.growth
+          ? '全試合終了後の日次確定で通常練習を実施します。現在の指定は次の練習に使用します。実戦経験・加齢・覚醒・キャンプは工事中です。'
+          : 'この保存は練習の指定・保存まで対応しています。日次の練習効果・疲労調整・経験・恒久成長は工事中です。設定だけで能力や疲労は変化しません。'}
       </p>
       {locked && (
         <p className="hint">
@@ -330,7 +334,7 @@ export function TrainingEditor({
                     {selected.length ? '設定が異なります（変更しない）' : '選手を選んでください'}
                   </option>
                 )}
-                <option value="true">許可する（判定準備中）</option>
+                <option value="true">{view.growth ? '許可する' : '許可する（判定準備中）'}</option>
                 <option value="false">手動指定を維持する</option>
               </select>
             </label>
@@ -364,7 +368,14 @@ export function TrainingEditor({
                         <tr key={canonicalJson(ability.abilityRef)}>
                           <th scope="row">{ability.label}</th>
                           <td>
-                            <AbilityRating label={ability.label} valueMilli={ability.valueMilli} />
+                            <AbilityRating
+                              label={ability.label}
+                              valueMilli={
+                                view.growth?.current[single]?.[
+                                  growthAbilityKey(ability.abilityRef)
+                                ] ?? ability.valueMilli
+                              }
+                            />
                           </td>
                           <td>{Math.floor(ability.ceilingMilli / 1000)}</td>
                         </tr>
@@ -375,13 +386,16 @@ export function TrainingEditor({
               </div>
             </>
           )}
+          {single && <PlayerGrowth key={single} view={view} playerId={single} />}
           <details className="training-help">
             <summary>対応範囲と未実装の機能</summary>
             <p>
               対象群は保存内の辞書から展開します。球種の制球・再現性は本人の持ち球を選ぶ場合だけ指定できます。複数選択では全員に共通する対象を表示します。
             </p>
             <p>
-              キャンプ、新球種習得、傾向変更、成長履歴・成長予測は工事中です。疲労による自動調整は希望の保存のみで、強度を自動変更する処理はまだ動作しません。
+              {view.growth
+                ? '通常練習は才能・向上心と指定を使用し、指定外にも基礎練習を配分します。疲労の自動調整は全試合後の体力・疲労・出場負荷で強度を下げます。将来の成長予測・キャンプ・新球種習得・傾向変更は工事中です。'
+                : 'キャンプ、新球種習得、傾向変更、成長履歴・成長予測は工事中です。疲労による自動調整は希望の保存のみです。'}
             </p>
           </details>
         </section>

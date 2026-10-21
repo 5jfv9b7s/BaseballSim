@@ -1,3 +1,6 @@
+import { createDailyTrainingWorld } from '../src/world/engine.ts';
+import { createDailyTrainingDefinitions } from '../src/data/world/daily-training.ts';
+import { growthBasis } from '../src/world/growth-basis.ts';
 import { createTrainingPlanWorld } from '../src/world/engine.ts';
 import { createTrainingPlanDefinitions } from '../src/data/world/training-plans.ts';
 import { trainingTargetAbilities, trainingTargetOptions } from '../src/world/training.ts';
@@ -325,5 +328,25 @@ for (const calendar of ['short', 'annual'] as const) {
       trainingTargetAbilities(world.definitions, playerId, option.target);
   console.log(
     `通常練習（${calendar}）: ${Object.keys(world.management.training.plans).length}選手 / 個別・群・9位置・本人の持ち球（検査成功、効果未接続）`,
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createDailyTrainingWorld(
+    undefined,
+    undefined,
+    createDailyTrainingDefinitions(calendar),
+  );
+  let abilities = 0;
+  for (const id of Object.keys(world.growth.state.players)) {
+    const basis = growthBasis(world.definitions, id);
+    for (const row of basis) {
+      if (world.growth.state.players[id]!.values[row.key] !== row.valueMilli)
+        throw new Error('成長初期値の不一致');
+    }
+    abilities += basis.length;
+  }
+  console.log(
+    `通常練習v1: ${calendar} / 全${Object.keys(world.growth.state.players).length}人 / ${abilities}能力 / 独立乱数・初期値・設定（検査成功）`,
   );
 }

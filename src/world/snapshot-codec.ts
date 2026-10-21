@@ -65,7 +65,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
   ensure(['dailyAuto', 'manual', 'actionAuto'].includes(snapshot.saveKind), '保存種別が不正です');
   exactKeys(snapshot.versions, ['saveFormatVersion', 'simulationVersion'], '保存形式');
   ensure(
-    /^world-prototype-v([1-9]|1[0-5])$/.test(snapshot.versions.simulationVersion) &&
+    /^world-prototype-v([1-9]|1[0-6])$/.test(snapshot.versions.simulationVersion) &&
       snapshot.versions.saveFormatVersion === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
   );
@@ -76,7 +76,8 @@ export function validateSnapshot(snapshot: Snapshot): void {
   ensure(
     Array.isArray(snapshot.blockRefs) &&
       snapshot.blockRefs.length >= 3 &&
-      snapshot.blockRefs.length <= 259,
+      snapshot.blockRefs.length <=
+        (snapshot.versions.saveFormatVersion === 'v017-world-snapshot-v16' ? 625 : 259),
     '保存ブロック数が不正です',
   );
   const keys = new Set<string>(),
@@ -94,11 +95,16 @@ export function validateSnapshot(snapshot: Snapshot): void {
     );
     const gameId = ref.logicalKey.startsWith('game/') ? ref.logicalKey.slice(5) : null;
     ensure(
-      gameId !== null
-        ? gameId.length > 0 &&
+      ref.logicalKey.startsWith('growth/day/')
+        ? snapshot.versions.saveFormatVersion === 'v017-world-snapshot-v16' &&
+            /^growth\/day\/\d{4}-\d{2}-\d{2}$/.test(ref.logicalKey) &&
+            ref.kind === 'growthDay'
+        : gameId !== null
+          ? gameId.length > 0 &&
             !['__proto__', 'constructor', 'prototype'].includes(gameId) &&
             ref.kind === 'game'
-        : ['definitions', 'world', 'stats'].includes(ref.logicalKey) && ref.kind === ref.logicalKey,
+          : ['definitions', 'world', 'stats'].includes(ref.logicalKey) &&
+            ref.kind === ref.logicalKey,
       '未対応の保存ブロックです',
     );
     ensure(
@@ -165,6 +171,7 @@ export async function decodeWorldSnapshot(
       'world-prototype-v13',
       'world-prototype-v14',
       'world-prototype-v15',
+      'world-prototype-v16',
     ].includes(snapshot.versions.simulationVersion) &&
       format === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
@@ -202,6 +209,7 @@ export async function decodeWorldSnapshot(
             'v014-world-snapshot-v13',
             'v015-world-snapshot-v14',
             'v016-world-snapshot-v15',
+            'v017-world-snapshot-v16',
           ].includes(format)
             ? MAX_ANNUAL_RAW_BYTES
             : MAX_BYTES) &&
@@ -227,10 +235,15 @@ export async function decodeWorldSnapshot(
     definitions && values.has('world') && values.has('stats'),
     '世界保存の必須ブロックが不足しています',
   );
+  const growthDays: Record<string, import('./growth-types.ts').TrainingDay> = {};
   const games: WorldRecord['games'] = {};
   for (const [key, value] of values) {
     if (key.startsWith('game/')) games[key.slice(5)] = value as WorldRecord['games'][string];
-    else ensure(['world', 'stats', 'definitions'].includes(key), '未対応の保存ブロックです');
+    else if (key.startsWith('growth/day/')) {
+      const day = value as import('./growth-types.ts').TrainingDay;
+      ensure(day && day.date === key.slice(11), '練習履歴ブロックの日付が一致しません');
+      growthDays[day.date] = day;
+    } else ensure(['world', 'stats', 'definitions'].includes(key), '未対応の保存ブロックです');
   }
   const world = {
     ...(values.get('world') as object),
@@ -238,6 +251,14 @@ export async function decodeWorldSnapshot(
     definitions: definitions.world,
     games,
   };
+  const decoded = world as WorldRecord;
+  if ('growth' in decoded) {
+    ensure(
+      decoded.growth?.state && !Object.hasOwn(decoded.growth.state, 'days'),
+      '練習履歴の格納位置が不正です',
+    );
+    decoded.growth.state.days = growthDays;
+  } else ensure(Object.keys(growthDays).length === 0, '旧保存へ成長履歴を追加できません');
   validator.validate(world);
   ensure(
     world.version === snapshot.versions.simulationVersion,
@@ -247,7 +268,9 @@ export async function decodeWorldSnapshot(
     canonicalJson(definitions.engine) ===
       canonicalJson(
         definitionsFor(
-          world.version === 'world-prototype-v15' ? 'game-prototype-v11' : 'game-prototype-v10',
+          world.version === 'world-prototype-v15' || world.version === 'world-prototype-v16'
+            ? 'game-prototype-v11'
+            : 'game-prototype-v10',
           world.definitions.matchConfig,
           world.definitions.errorConfig,
         ),

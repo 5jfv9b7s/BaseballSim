@@ -119,7 +119,11 @@ export function playerBaseAbilities(
 }
 
 export function validatePlayerDevelopment(definitions: WorldDefinitions): void {
-  if (!['world-definitions-v19', 'world-definitions-v20'].includes(definitions.version)) {
+  if (
+    !['world-definitions-v19', 'world-definitions-v20', 'world-definitions-v21'].includes(
+      definitions.version,
+    )
+  ) {
     ensure(definitions.playerDevelopment === undefined, '旧定義へ追加能力・適性を後付けできません');
     return;
   }

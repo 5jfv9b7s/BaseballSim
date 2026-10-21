@@ -1,3 +1,4 @@
+import { currentCommonAbilities } from './growth-basis.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import type { GameRecord } from '../game/types.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
@@ -17,7 +18,8 @@ export function validatePhysicalDefinitions(definitions: WorldDefinitions): void
       definitions.version === 'world-definitions-v17' ||
       definitions.version === 'world-definitions-v18' ||
       definitions.version === 'world-definitions-v19' ||
-      definitions.version === 'world-definitions-v20'
+      definitions.version === 'world-definitions-v20' ||
+      definitions.version === 'world-definitions-v21'
         ? 'physical-load-v2'
         : 'physical-load-v1'),
     '身体モデルの設定が必要です',
@@ -129,7 +131,10 @@ export function applyPhysicalGame(
       row.sourceLoads.push(source);
     }
     const workload = config.workloadUnits[kind] * count;
-    const stamina = inputs.get(playerId)!.physical.stamina.valueMilli;
+    const stamina =
+      'growth' in world
+        ? currentCommonAbilities(world, playerId)!['physical.stamina'].valueMilli
+        : inputs.get(playerId)!.physical.stamina.valueMilli;
     const energy = Math.round(
       (((workload * config.energyCostMilli) / 1000) * 120000) / (60000 + stamina),
     );
@@ -189,7 +194,11 @@ export function applyPhysicalGame(
 }
 
 /** 全試合の終了後、暦日につき一度。休養日は実績ゼロで判断し、登録区分は使わない。 */
-export function recoverPhysicalDay(world: PhysicalWorld, nextDate: string): PhysicalWorldState {
+export function recoverPhysicalDay(
+  world: PhysicalWorld,
+  nextDate: string,
+  trainingActive?: ReadonlySet<string>,
+): PhysicalWorldState {
   const config = world.definitions.physicalConfig!.dailyRecovery;
   const next: PhysicalWorldState = {
     ...world.physical,
@@ -200,8 +209,14 @@ export function recoverPhysicalDay(world: PhysicalWorld, nextDate: string): Phys
     const key = activityKey(input.playerId, world.currentDate);
     ensure(!next.recoveries[key], 'この日の回復は反映済みです');
     const before = next.players[input.playerId]!;
-    const rested = !next.activityLoads[key]?.sourceLoads.some((s) => s.actualCounts > 0);
-    const rate = input.physical.recovery.valueMilli / 120000;
+    const rested =
+      !trainingActive?.has(input.playerId) &&
+      !next.activityLoads[key]?.sourceLoads.some((s) => s.actualCounts > 0);
+    const recovery =
+      'growth' in world
+        ? currentCommonAbilities(world, input.playerId)!['physical.recovery'].valueMilli
+        : input.physical.recovery.valueMilli;
+    const rate = recovery / 120000;
     const energy = Math.round(
       config.energyBaseMilli +
         config.energyAbilityMilli * rate +
@@ -245,6 +260,14 @@ export function physicalView(world: PhysicalWorld) {
     if (state.fatigueMilli >= advice.fatigueAtOrAboveMilli) reasons.push('疲労蓄積');
     return {
       ...input,
+      ...('growth' in world
+        ? {
+            physical: {
+              stamina: currentCommonAbilities(world, input.playerId)!['physical.stamina'],
+              recovery: currentCommonAbilities(world, input.playerId)!['physical.recovery'],
+            },
+          }
+        : {}),
       ...state,
       displayName: player.familyName + ' ' + player.givenName,
       activity: activity ?? null,

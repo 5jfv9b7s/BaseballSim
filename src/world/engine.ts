@@ -1,3 +1,10 @@
+import { createDailyTrainingDefinitions } from '../data/world/daily-training.ts';
+import {
+  initialGrowth,
+  applyTrainingDay,
+  validateGrowthDefinitions,
+  freezeGrowthData,
+} from './growth.ts';
 import { createTrainingPlanDefinitions } from '../data/world/training-plans.ts';
 import { validateTrainingDefinitions } from './training.ts';
 import { createPlayerDevelopmentDefinitions } from '../data/world/player-development.ts';
@@ -118,6 +125,7 @@ export function scheduledFixture(
           'world-definitions-v18',
           'world-definitions-v19',
           'world-definitions-v20',
+          'world-definitions-v21',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -153,6 +161,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -208,6 +217,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v18',
         'world-definitions-v19',
         'world-definitions-v20',
+        'world-definitions-v21',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -243,6 +253,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v18',
           'world-definitions-v19',
           'world-definitions-v20',
+          'world-definitions-v21',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -298,6 +309,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
@@ -347,6 +359,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -374,6 +387,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -398,6 +412,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validatePhysicalDefinitions(definitions);
@@ -422,6 +437,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateRestDefinitions(definitions);
@@ -444,6 +460,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateConditionDefinitions(definitions);
@@ -466,6 +483,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validatePerformanceConfig(definitions.performanceConfig!);
@@ -482,6 +500,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateFielderRestDefinitions(definitions);
@@ -502,6 +521,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateReliefDefinitions(definitions);
@@ -520,6 +540,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validateBullpenDefinitions(definitions);
@@ -537,6 +558,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v18',
       'world-definitions-v19',
       'world-definitions-v20',
+      'world-definitions-v21',
     ].includes(definitions.version)
   )
     validatePitchProfiles(definitions.pitchProfiles!);
@@ -544,6 +566,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
   validatePlayerProfiles(definitions);
   validatePlayerDevelopment(definitions);
   validateTrainingDefinitions(definitions);
+  validateGrowthDefinitions(definitions);
   validateLeagueStructure(definitions);
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
@@ -609,7 +632,9 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
     world.version !== 'world-prototype-v1'
       ? managementFixture(world, gameId, scheduledFixture(world.definitions, scheduled))
       : scheduledFixture(world.definitions, scheduled),
-    world.version === 'world-prototype-v15' ? 'game-prototype-v11' : 'game-prototype-v10',
+    world.version === 'world-prototype-v15' || world.version === 'world-prototype-v16'
+      ? 'game-prototype-v11'
+      : 'game-prototype-v10',
     world.definitions.matchConfig,
     world.definitions.errorConfig,
   );
@@ -621,7 +646,8 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
     world.version === 'world-prototype-v12' ||
     world.version === 'world-prototype-v13' ||
     world.version === 'world-prototype-v14' ||
-    world.version === 'world-prototype-v15'
+    world.version === 'world-prototype-v15' ||
+    world.version === 'world-prototype-v16'
   ) {
     ensure(scheduled.date === world.currentDate, '試合前補正は当日の状態から作成します');
     game.performance = performanceSnapshot(world, gameId, game.fixture);
@@ -688,9 +714,11 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
       '試合集計が未完了です',
     );
   }
+  const trained =
+    world.version === 'world-prototype-v16' ? { ...world, ...applyTrainingDay(world) } : world;
   const currentDate = nextDate(expectedDate);
   const next: WorldRecord = {
-    ...world,
+    ...trained,
     currentDate,
     dayPlan: plan({ definitions: world.definitions, currentDate }),
     completedDates: [...world.completedDates, expectedDate],
@@ -705,8 +733,18 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
   }
   if ('condition' in next && 'condition' in world)
     next.condition = advanceConditionDay(world, currentDate);
-  if ('physical' in next && 'physical' in world)
-    next.physical = recoverPhysicalDay(world, currentDate);
+  if ('physical' in next && 'physical' in trained)
+    next.physical = recoverPhysicalDay(
+      trained,
+      currentDate,
+      'growth' in trained
+        ? new Set(
+            trained.growth.state.days[expectedDate]!.outcomes.filter(
+              (o) => o.effectiveIntensity !== 'rest',
+            ).map((o) => o.playerId),
+          )
+        : undefined,
+    );
   if ('seasonSummary' in next && currentDate > next.definitions.endDate) {
     next.seasonSummary = summarizeSeason(next);
   }
@@ -1045,4 +1083,36 @@ export function createTrainingPlanWorld(
 ) {
   ensure(definitions.version === 'world-definitions-v20', '練習設定対応の初期定義が必要です');
   return createPitchProfileWorld(seed, controlledSquadId, definitions);
+}
+
+/** 通常練習の新規世界。旧v15へ日次成長を後付けしない。 */
+export function createDailyTrainingWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createDailyTrainingDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v16' }> {
+  ensure(
+    definitions.version === 'world-definitions-v21',
+    '通常練習計算に対応する初期定義が必要です',
+  );
+  const base = createManagedWorld(seed, definitions, controlledSquadId);
+  freezeGrowthData(base.definitions);
+  const saved = base.definitions;
+  const world: Extract<WorldRecord, { version: 'world-prototype-v16' }> = {
+    ...base,
+    version: 'world-prototype-v16',
+    growth: initialGrowth(saved, seed),
+    reliefControl: initialRelief(saved),
+    fielderRest: initialFielderRest(saved),
+    seasonSummary: null,
+    farmSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(saved),
+    rosterControl: initialRosterControl(saved),
+    physical: initialPhysical(saved),
+    restControl: initialRest(saved),
+    condition: initialCondition(saved, seed),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
 }

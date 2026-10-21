@@ -17,6 +17,7 @@ async function observe(page: Page, mode: 'current' | 'legacy' | 'failOnce' = 'cu
             if (!event.data?.view) return;
             // 旧版のケースだけ表示用応答を投影する。実旧保存の復元はNodeで検証。
             if (mode === 'legacy') {
+              event.data.view.growth = null;
               event.data.view.training = null;
               event.data.view.definitions.version = 'world-definitions-v19';
               delete event.data.view.definitions.trainingPlans;
@@ -88,7 +89,7 @@ for (const width of [1280, 390, 320]) {
     const detail = panel.getByRole('region', { name: '選択選手の練習内容', exact: true });
     const roster = panel.getByRole('table', { name: '練習選手一覧', exact: true });
     await expect(roster.locator('tbody tr')).toHaveCount(30);
-    await expect(panel).toContainText('日次の練習効果・疲労調整・経験・恒久成長は工事中');
+    await expect(panel).toContainText('全試合終了後の日次確定で通常練習を実施します');
     await panel.getByRole('combobox', { name: '練習の登録区分', exact: true }).selectOption('farm');
     const farmCount = before.playerStatuses.filter(
       (p) => p.clubId === before.definitions.squads[0]!.team.clubId && p.registration === 'farm',

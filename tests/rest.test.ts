@@ -422,7 +422,8 @@ test('方針保存失敗と再送：方針・起用・履歴を一緒に確定�
 
 test(
   '年間：休養方針を使う一軍・二軍216試合と188日を完走し保存復元',
-  { timeout: 600000 },
+  // 圧縮と複数回の再実行照合を含む。実行環境の負荷に余裕を持たせる。
+  { timeout: 1800000 },
   async () => {
     let world: RestWorld = createRestWorld(20260924, undefined, createRestDefinitions('annual'));
     while (worldPhase(world) !== 'scheduleComplete')

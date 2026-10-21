@@ -1,3 +1,5 @@
+import { PlayerGrowth } from './PlayerGrowth.tsx';
+import { growthAbilityKey } from '../world/growth-basis.ts';
 import { PlayerAbilities } from './PlayerAbilities.tsx';
 import { AbilityRating } from './visuals/AbilityRating.tsx';
 import { playerDevelopment } from '../world/player-development.ts';
@@ -58,7 +60,26 @@ export function PlayerDetails({
   const state = view.playerStatuses?.find((item) => item.playerId === playerId);
   const registration = registrationDraft ?? state?.registration;
   const development = playerDevelopment(view.definitions, playerId);
-  const pitches = squad.pitches.filter((pitch) => pitch.playerId === playerId);
+  const current = view.growth?.current[playerId];
+  const pitches = squad.pitches
+    .filter((pitch) => pitch.playerId === playerId)
+    .map((pitch) => ({
+      ...pitch,
+      control: {
+        ...pitch.control,
+        valueMilli:
+          current?.[
+            growthAbilityKey({ scope: 'pitch', pitchId: pitch.pitchId, code: 'control' })
+          ] ?? pitch.control.valueMilli,
+      },
+      repeatability: {
+        ...pitch.repeatability,
+        valueMilli:
+          current?.[
+            growthAbilityKey({ scope: 'pitch', pitchId: pitch.pitchId, code: 'repeatability' })
+          ] ?? pitch.repeatability.valueMilli,
+      },
+    }));
   const stats =
     scope === 'farmRegular' && view.farm
       ? (view.farm.summary?.stats ?? view.farm.stats)
@@ -122,7 +143,12 @@ export function PlayerDetails({
       </nav>
       {tab === 'ability' && (
         <>
-          <PlayerAbilities key={playerId} definitions={view.definitions} playerId={playerId} />
+          <PlayerAbilities
+            key={playerId}
+            definitions={view.definitions}
+            playerId={playerId}
+            current={current}
+          />
           <h3>持ち球</h3>
           {pitches.length === 0 ? (
             <p>持ち球の登録がありません。</p>
@@ -168,7 +194,9 @@ export function PlayerDetails({
             />
           )}
           <p className="hint">
-            能力・上限・適性は保存内の設定です。練習・恒久的成長と適性の計算接続は準備中です。
+            {view.growth
+              ? '現在値には確定済みの通常練習を反映します。追加11能力・守備習熟の試合への作用、適性の計算接続は準備中です。'
+              : '能力・上限・適性は保存内の設定です。この保存では練習・恒久的成長は未対応です。'}
           </p>
         </>
       )}
@@ -228,17 +256,22 @@ export function PlayerDetails({
                 </div>
               </div>
               <p className="hint">
-                架空の固定初期値です。成長量・機会への作用は未接続で、上限を持つ基本能力とは別に保存します。
+                {view.growth
+                  ? '才能は通常練習の成長量、向上心は成長機会に作用します。固定特性で、成長合計には含みません。'
+                  : '架空の固定初期値です。この保存では成長量・機会への作用は未接続です。'}
               </p>
             </>
           )}
 
           <p>体力は高いほど余力があり、疲労は高いほど蓄積しています。</p>
           <p className="hint">
-            怪我・恒久的成長・成長履歴は工事中です。記録のない状態を健康・成長なしとは判定しません。
+            {view.growth
+              ? '怪我・実戦経験・加齢・覚醒・キャンプは工事中です。通常練習の実績だけを表示します。'
+              : '怪我・恒久的成長・成長履歴は工事中です。記録のない状態を健康・成長なしとは判定しません。'}
           </p>
         </>
       )}
+      {tab === 'state' && <PlayerGrowth key={playerId} view={view} playerId={playerId} />}
       {tab === 'contract' && (
         <>
           <h3>プロフィール</h3>

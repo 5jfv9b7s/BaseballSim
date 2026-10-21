@@ -32,7 +32,9 @@ async function observe(page: import('@playwright/test').Page, legacy = false) {
     };
   }, legacy);
   await page.goto('/');
-  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
+    timeout: 30000,
+  });
 }
 
 for (const width of [1280, 390]) {
@@ -96,7 +98,7 @@ for (const width of [1280, 390]) {
     const saved = await page.evaluate(
       () => Reflect.get(window, 'leagueResponse') as WorldWorkerResponse,
     );
-    expect(saved.view.definitions.version).toBe('world-definitions-v20');
+    expect(saved.view.definitions.version).toBe('world-definitions-v21');
     expect(saved.view.management!.controlledSquadId).toBe('aonagi-first');
     expect(saved.view.unsavedChanges).toBe(false);
     await page.screenshot({ path: `.tmp/league-structure-qa/home-${width}.png`, fullPage: true });

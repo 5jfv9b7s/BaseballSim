@@ -1,0 +1,76 @@
+.player-growth {
+  border-top: 1px solid var(--line, #dadfd4);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  min-width: 0;
+}
+.growth-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.growth-heading h3 {
+  margin: 0;
+}
+.growth-heading label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.growth-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.growth-totals div {
+  border-left: 3px solid #355b49;
+  padding-left: 0.6rem;
+}
+.growth-totals dt {
+  color: var(--muted, #68766f);
+  font-size: 0.9rem;
+}
+.growth-totals dd {
+  color: #22382f;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.2rem 0 0;
+}
+.growth-chart {
+  width: 100%;
+  max-height: 220px;
+  display: block;
+}
+.growth-chart text {
+  fill: currentColor;
+  font-size: 16px;
+}
+.growth-chart polyline {
+  fill: none;
+  stroke: #355b49;
+  stroke-width: 2;
+}
+.growth-chart circle {
+  fill: #355b49;
+}
+.growth-zero {
+  stroke: #8795a6;
+  stroke-dasharray: 4 3;
+}
+.player-growth details {
+  margin-top: 0.6rem;
+}
+.player-growth summary {
+  cursor: pointer;
+  padding: 0.4rem 0;
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  .growth-heading label {
+    flex-wrap: wrap;
+  }
+}

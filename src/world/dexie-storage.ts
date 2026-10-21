@@ -50,6 +50,7 @@ export class WorldDatabase extends Dexie {
 export class DexieWorldStorage implements WorldStorageAdapter {
   readonly database: WorldDatabase;
   private validator: WorldValidator = new WorldValidator();
+  private growthBlocks = new WeakMap<object, Block>();
   private gameBlocks = new WeakMap<GameRecord, Block>();
 
   readonly localWorldId: string;
@@ -143,6 +144,19 @@ export class DexieWorldStorage implements WorldStorageAdapter {
     }
 
     const { definitions, games, stats, contributions, statApplicationMarkers, ...core } = world;
+    const historyValues: [string, string, unknown][] = [];
+    let storedCore: unknown = core;
+    if ('growth' in core) {
+      const { days, ...growthState } = core.growth.state;
+      storedCore = { ...core, growth: { ...core.growth, state: growthState } };
+      historyValues.push(
+        ...Object.entries(days).map(([date, day]): [string, string, unknown] => [
+          'growth/day/' + date,
+          'growthDay',
+          day,
+        ]),
+      );
+    }
     const values: [string, string, unknown][] = [
       [
         'definitions',
@@ -150,13 +164,16 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         {
           world: definitions,
           engine: definitionsFor(
-            world.version === 'world-prototype-v15' ? 'game-prototype-v11' : 'game-prototype-v10',
+            world.version === 'world-prototype-v15' || world.version === 'world-prototype-v16'
+              ? 'game-prototype-v11'
+              : 'game-prototype-v10',
             definitions.matchConfig,
             definitions.errorConfig,
           ),
         },
       ],
-      ['world', 'world', core],
+      ['world', 'world', storedCore],
+      ...historyValues,
       ['stats', 'stats', { stats, contributions, statApplicationMarkers }],
       ...Object.entries(games).map(([gameId, game]): [string, string, unknown] => [
         'game/' + gameId,
@@ -168,7 +185,12 @@ export class DexieWorldStorage implements WorldStorageAdapter {
     let bytes = 0;
     let storedBytes = 0;
     for (const [logicalKey, blockKind, value] of values) {
-      const cached = blockKind === 'game' ? this.gameBlocks.get(value as GameRecord) : undefined;
+      const cached =
+        blockKind === 'game'
+          ? this.gameBlocks.get(value as GameRecord)
+          : blockKind === 'growthDay'
+            ? this.growthBlocks.get(value as object)
+            : undefined;
       if (cached?.schemaVersion === format && cached.logicalKey === logicalKey) {
         bytes += cached.rawBytes;
         storedBytes += cached.payloadBytes.length;
@@ -206,6 +228,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       blocks.push(block);
       if (blockKind === 'game' && Object.isFrozen(value))
         this.gameBlocks.set(value as GameRecord, block);
+      if (blockKind === 'growthDay' && Object.isFrozen(value))
+        this.growthBlocks.set(value as object, block);
     }
 
     const verified = await verifySharedBlocks(this.database, blocks);
@@ -308,23 +332,25 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ensure(
           snapshot.blockRefs.length >= 3 &&
             snapshot.blockRefs.length <=
-              ([
-                'world-prototype-v3',
-                'world-prototype-v4',
-                'world-prototype-v5',
-                'world-prototype-v6',
-                'world-prototype-v7',
-                'world-prototype-v8',
-                'world-prototype-v9',
-                'world-prototype-v10',
-                'world-prototype-v11',
-                'world-prototype-v12',
-                'world-prototype-v13',
-                'world-prototype-v14',
-                'world-prototype-v15',
-              ].includes(snapshot.versions.simulationVersion)
-                ? 259
-                : 35),
+              (snapshot.versions.simulationVersion === 'world-prototype-v16'
+                ? 625
+                : [
+                      'world-prototype-v3',
+                      'world-prototype-v4',
+                      'world-prototype-v5',
+                      'world-prototype-v6',
+                      'world-prototype-v7',
+                      'world-prototype-v8',
+                      'world-prototype-v9',
+                      'world-prototype-v10',
+                      'world-prototype-v11',
+                      'world-prototype-v12',
+                      'world-prototype-v13',
+                      'world-prototype-v14',
+                      'world-prototype-v15',
+                    ].includes(snapshot.versions.simulationVersion)
+                  ? 259
+                  : 35),
           '保存ブロック数が不正です',
         );
         const blocks = await db.save_blocks.bulkGet(snapshot.blockRefs.map((ref) => ref.blockId));

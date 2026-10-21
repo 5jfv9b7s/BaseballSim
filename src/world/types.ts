@@ -54,7 +54,9 @@ export interface WorldDefinitions {
     | 'world-definitions-v17'
     | 'world-definitions-v18'
     | 'world-definitions-v19'
-    | 'world-definitions-v20';
+    | 'world-definitions-v20'
+    | 'world-definitions-v21';
+  growthConfig?: import('./growth-types.ts').GrowthConfig;
   trainingPlans?: import('./training-types.ts').TrainingPlanInputs;
   playerDevelopment?: import('./player-development-types.ts').PlayerDevelopmentCatalog;
   leagueStructure?: import('./league-structure-types.ts').LeagueStructure;
@@ -198,6 +200,21 @@ export type WorldRecord = WorldState &
   (
     | { version: 'world-prototype-v1' }
     | { version: 'world-prototype-v2'; management: ClubManagement }
+    | {
+        version: 'world-prototype-v16';
+        growth: import('./growth-types.ts').GrowthState;
+        reliefControl: import('./relief-types.ts').ReliefControl;
+        fielderRest: import('./fielder-rest-types.ts').FielderRestControl;
+        condition: import('./condition-types.ts').ConditionWorldState;
+        restControl: import('./rest-types.ts').RestControl;
+        physical: import('./physical-types.ts').PhysicalWorldState;
+        management: ClubManagement;
+        seasonSummary: SeasonSummary | null;
+        farmSummary: SeasonSummary | null;
+        gameLineups: Record<string, IdealLineup>;
+        registration: import('./registration-types.ts').RegistrationState;
+        rosterControl: import('./roster-policy-types.ts').RosterControl;
+      }
     | {
         version: 'world-prototype-v15';
         reliefControl: import('./relief-types.ts').ReliefControl;

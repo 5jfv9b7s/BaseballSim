@@ -39,14 +39,22 @@ export function growthView(world: WorldRecord): GrowthView | null {
   }
   const last = dates.at(-1);
   const view: GrowthView = {
-    version: 'daily-training-v1',
+    version: world.growth.version,
     current,
     periods,
     dates,
     dailyDeltas: Object.fromEntries(
       ids.map((id) => [id, dates.map((date) => state.days[date]!.displayDeltas[id]!)]),
     ),
-    latest: last ? { date: last, outcomes: structuredClone(state.days[last]!.outcomes) } : null,
+    latest: last
+      ? {
+          date: last,
+          outcomes: structuredClone(state.days[last]!.outcomes),
+          ...(world.growth.version === 'daily-development-v2'
+            ? { experience: structuredClone(world.growth.state.days[last]!.experience) }
+            : {}),
+        }
+      : null,
   };
   cache.set(world.growth, view);
   return view;

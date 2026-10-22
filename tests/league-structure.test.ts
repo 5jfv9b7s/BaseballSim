@@ -239,7 +239,7 @@ test('新規確認：旧プレイ読込中も現行初期データを表示し�
       controlledSquadId: 'aonagi-first',
     });
     assert.equal(created.ok, true);
-    assert.equal(created.view.definitions.version, 'world-definitions-v21');
+    assert.equal(created.view.definitions.version, 'world-definitions-v22');
     assert.equal(created.view.management!.controlledSquadId, 'aonagi-first');
     const saved = (await new DexieWorldStorage(db, created.view.localWorldId).load('auto')).world;
     assert.deepEqual(saved.definitions.leagueStructure, created.view.definitions.leagueStructure);

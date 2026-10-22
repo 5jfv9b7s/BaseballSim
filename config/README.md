@@ -199,3 +199,20 @@ relief.tsに条件が重なる役割の優先順と、役割を追加する際�
 ## 大会・球場の入力範囲（0.32.0）
 
 [league-structure.ts](league-structure.ts)は球場収容人数・距離・文字列の固定読込範囲です。興行の計算係数ではありません。[編集ガイド](../src/data/clubs/README.md)を参照してください。現行の形状はmatch.tsと同じ共通モデルを要求し、未対応の個別形状を黙って無視しません。
+
+## 実戦経験の係数（0.40.0）
+
+[experience.ts](experience.ts)は未校正の`game-experience-v1`です。新規世界v17/定義v22にだけ適用し、旧保存の式・係数は変えません。通常練習の[growth.ts](growth.ts)とは別設定です。試合の成績や勝敗への評価点を追加する設定ではありません。[出場量の数え方・式・保存](../TRAINING-IMPLEMENTATION.md#0400実戦経験による成長)。
+
+| 項目                         | 既定                    | 入力範囲・単位                                        |
+| ---------------------------- | ----------------------- | ----------------------------------------------------- |
+| enabled                      | true                    | boolean。falseなら経験の抽選/増加なし                 |
+| opportunity.baseMilli        | 25000                   | 整数1〜100000、確率×100000                            |
+| opportunity.ambitionMilli    | 50000                   | 整数0〜100000、向上心最大時の加算。合計は100000へ制限 |
+| opponent.centerMilli         | 60000                   | 整数1〜120000、相手能力の基準ratingMilli              |
+| opponent.spanPermille        | 100                     | 整数0〜200、相手倍率の最大±幅、1000が等倍             |
+| domains.*.saturationUnits    | 打撃6 / 投球60 / 守備90 | 整数1〜1000、分野の有効出場量の漸近上限               |
+| domains.*.basePerUnitMilli   | 120 / 6 / 2             | 整数1〜1000、1有効単位当たりの基礎ratingMilli         |
+| domains.*.talentPerUnitMilli | 120 / 6 / 2             | 整数0〜1000、才能最大時の加算ratingMilli              |
+
+実単位Nを`floor(1000*C*N/(C+N))`へ逓減し、基礎量＋才能係数×才能/120000、相手倍率を掛けて四捨五入します。1日1選手1分野の総量を、実対象の重みへ分配します。球種・位置が多くても機会や総予算は増えません。係数を変えた後は`npm.cmd run data:check`と新規プレイで確認してください。式・対象・分岐の変更は新モデル版として実装し、旧版の再現性を維持します。

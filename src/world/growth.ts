@@ -6,7 +6,7 @@ import { growthBasis, growthAbilityKey } from './growth-basis.ts';
 import { playerDevelopment } from './player-development.ts';
 import { trainingSettings, trainingTargetAbilities } from './training.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
-import type { GrowthConfig, GrowthState, TrainingDay } from './growth-types.ts';
+import type { GrowthConfig, TrainingGrowthState, TrainingDay } from './growth-types.ts';
 import type { TrainingSettings } from './training-types.ts';
 
 function fields(value: unknown, keys: string[], name: string): void {
@@ -18,7 +18,7 @@ function fields(value: unknown, keys: string[], name: string): void {
 }
 
 export function validateGrowthDefinitions(definitions: WorldDefinitions): void {
-  if (definitions.version !== 'world-definitions-v21') {
+  if (!['world-definitions-v21', 'world-definitions-v22'].includes(definitions.version)) {
     ensure(definitions.growthConfig === undefined, '旧定義へ成長モデルを追加できません');
     return;
   }
@@ -102,9 +102,12 @@ export function freezeGrowthData<T>(value: T): T {
   return value;
 }
 
-export function initialGrowth(definitions: WorldDefinitions, seed: number): GrowthState {
+export function initialGrowth(definitions: WorldDefinitions, seed: number): TrainingGrowthState {
   validateGrowthDefinitions(definitions);
-  ensure(definitions.version === 'world-definitions-v21', '通常練習に対応する初期定義が必要です');
+  ensure(
+    ['world-definitions-v21', 'world-definitions-v22'].includes(definitions.version),
+    '通常練習に対応する初期定義が必要です',
+  );
   return {
     modelId: 'daily-training',
     version: 'daily-training-v1',
@@ -194,7 +197,9 @@ export function trainingBudget(
 }
 
 /** 全試合後の一回だけ。成長用乱数は各選手で独立し、試合の乱数を消費しない。 */
-export function applyTrainingDay(world: Extract<WorldRecord, { version: 'world-prototype-v16' }>) {
+export function calculateTrainingDay(
+  world: Extract<WorldRecord, { version: 'world-prototype-v16' | 'world-prototype-v17' }>,
+) {
   const date = world.currentDate;
   ensure(
     !world.growth.state.days[date] &&
@@ -208,15 +213,10 @@ export function applyTrainingDay(world: Extract<WorldRecord, { version: 'world-p
   );
   ensure(world.management.version === 'club-management-v2', '通常練習の指定がありません');
   const config = world.definitions.growthConfig!;
-  const state = {
-    ...world.growth.state,
-    players: { ...world.growth.state.players },
-    days: { ...world.growth.state.days },
-    lastCompletedOn: date,
-  };
+  const players = { ...world.growth.state.players };
   const physical = { ...world.physical, players: { ...world.physical.players } };
   const day: TrainingDay = { date, outcomes: [], changes: [], displayDeltas: {} };
-  const playerIds = Object.keys(state.players).sort();
+  const playerIds = Object.keys(players).sort();
   for (const playerId of playerIds) {
     const previous = world.growth.state.players[playerId]!;
     const values = { ...previous.values };
@@ -284,7 +284,7 @@ export function applyTrainingDay(world: Extract<WorldRecord, { version: 'world-p
       );
       if (outside > 0) grow(others[Math.floor(background!.value * others.length)]!.key, outside);
     }
-    state.players[playerId] = { values, rng: background?.state ?? previous.rng };
+    players[playerId] = { values, rng: background?.state ?? previous.rng };
     const energySpent = Math.min(body.energyMilli, intensity.energyCostMilli);
     const fatigueAdded = Math.min(100000 - body.fatigueMilli, intensity.fatigueCostMilli);
     physical.players[playerId] = {
@@ -311,6 +311,22 @@ export function applyTrainingDay(world: Extract<WorldRecord, { version: 'world-p
       0,
     );
   }
-  state.days[date] = freezeGrowthData(day);
-  return { growth: { ...world.growth, state }, physical };
+  return { players, day, physical };
+}
+
+/** 旧v16の計算・保存構造を維持する。経験成長を後付けしない。 */
+export function applyTrainingDay(world: Extract<WorldRecord, { version: 'world-prototype-v16' }>) {
+  const { players, day, physical } = calculateTrainingDay(world);
+  return {
+    growth: {
+      ...world.growth,
+      state: {
+        ...world.growth.state,
+        players,
+        lastCompletedOn: world.currentDate,
+        days: { ...world.growth.state.days, [world.currentDate]: freezeGrowthData(day) },
+      },
+    },
+    physical,
+  };
 }

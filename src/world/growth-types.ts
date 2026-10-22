@@ -43,7 +43,7 @@ export interface AbilityChange {
   changeKind: 'value';
   beforeValue: number;
   afterValue: number;
-  reason: 'training';
+  reason: 'training' | 'experience';
   sourceEventId: string;
   abilityCatalogVersion: 'common-abilities-v1';
 }
@@ -68,7 +68,7 @@ export interface TrainingDay {
   displayDeltas: Record<string, number>;
 }
 
-export interface GrowthState {
+export interface TrainingGrowthState {
   modelId: 'daily-training';
   version: 'daily-training-v1';
   schemaId: 'daily-training-state-v1';
@@ -80,7 +80,7 @@ export interface GrowthState {
 }
 
 export interface GrowthView {
-  version: 'daily-training-v1';
+  version: GrowthState['version'];
   current: Record<string, Record<string, number>>;
   periods: Record<
     'season' | 'last30' | 'last7' | 'lastDay',
@@ -92,5 +92,61 @@ export interface GrowthView {
   >;
   dates: string[];
   dailyDeltas: Record<string, number[]>;
-  latest: { date: string; outcomes: TrainingOutcome[] } | null;
+  latest: { date: string; outcomes: TrainingOutcome[]; experience?: ExperienceOutcome[] } | null;
 }
+
+export type ExperienceDomain = 'batting' | 'pitching' | 'fielding';
+
+/** 実戦経験v1の未校正係数。通常練習v1とは独立して保存する。 */
+export interface ExperienceConfig {
+  version: 'game-experience-v1';
+  enabled: boolean;
+  opportunity: { baseMilli: number; ambitionMilli: number };
+  opponent: { centerMilli: number; spanPermille: number };
+  domains: Record<
+    ExperienceDomain,
+    {
+      saturationUnits: number;
+      basePerUnitMilli: number;
+      talentPerUnitMilli: number;
+    }
+  >;
+}
+
+export interface ExperienceActivity {
+  playerId: string;
+  domain: ExperienceDomain;
+  units: number;
+  /** 当日の実出場を参照する。結果の成功・失敗では重み付けしない。 */
+  sources: { gameId: string; units: number }[];
+  targets: { abilityRef: TrainingAbilityRef; units: number }[];
+  opponentQualityMilli: number;
+}
+
+export interface ExperienceOutcome extends ExperienceActivity {
+  effectiveUnitsMilli: number;
+  opponentFactorPermille: number;
+  opportunityMilli: number;
+  opportunityOccurred: boolean;
+  budgetMilli: number;
+  /** 上限で切り捨てた分を除く、実際に増えた内部値の合計。 */
+  appliedMilli: number;
+}
+
+export interface DevelopmentDay extends TrainingDay {
+  experience: ExperienceOutcome[];
+}
+
+export interface DevelopmentGrowthState {
+  modelId: 'daily-development';
+  version: 'daily-development-v2';
+  schemaId: 'daily-development-state-v2';
+  state: {
+    lastCompletedOn: string | null;
+    players: TrainingGrowthState['state']['players'];
+    experienceRng: Record<string, RngState>;
+    days: Record<string, DevelopmentDay>;
+  };
+}
+
+export type GrowthState = TrainingGrowthState | DevelopmentGrowthState;

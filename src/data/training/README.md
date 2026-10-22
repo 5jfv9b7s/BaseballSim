@@ -2,6 +2,8 @@
 
 0.38.0の新規プレイでは、通常練習の効果・疲労による強度調整・恒久的な現在値・成長履歴まで接続しています。[現在の操作・試作の式と係数・保存の版](../../../TRAINING-IMPLEMENTATION.md)を参照してください。係数は[config/growth.ts](../../../config/growth.ts)、初期指定と対象辞書はこのフォルダです。新規入口は[../world/daily-training.ts](../world/daily-training.ts)（世界v16/定義v21/保存v017）です。
 
+0.40.0の新規入口は[../world/development.ts](../world/development.ts)（世界v17/定義v22/保存v018）です。通常練習に加え、完了打席・使用した持ち球・実守備位置による経験を反映します。係数は[config/experience.ts](../../../config/experience.ts)、実装は[src/world/experience.ts](../../../src/world/experience.ts)です。既存のv16保存へ経験を追加しません。式・範囲・操作は[育成ガイド](../../../TRAINING-IMPLEMENTATION.md#0400実戦経験による成長)を参照してください。
+
 以下は0.37.0で追加した保存専用モデルと、継承する編集操作の記録です。旧v20は保存専用のまま保持し、新規モデルの効果を後付けしません。
 
 ## 0.37.0：通常練習の初期指定（保存専用モデル）

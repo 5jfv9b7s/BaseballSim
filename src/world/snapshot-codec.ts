@@ -65,7 +65,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
   ensure(['dailyAuto', 'manual', 'actionAuto'].includes(snapshot.saveKind), '保存種別が不正です');
   exactKeys(snapshot.versions, ['saveFormatVersion', 'simulationVersion'], '保存形式');
   ensure(
-    /^world-prototype-v([1-9]|1[0-6])$/.test(snapshot.versions.simulationVersion) &&
+    /^world-prototype-v([1-9]|1[0-7])$/.test(snapshot.versions.simulationVersion) &&
       snapshot.versions.saveFormatVersion === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
   );
@@ -77,7 +77,11 @@ export function validateSnapshot(snapshot: Snapshot): void {
     Array.isArray(snapshot.blockRefs) &&
       snapshot.blockRefs.length >= 3 &&
       snapshot.blockRefs.length <=
-        (snapshot.versions.saveFormatVersion === 'v017-world-snapshot-v16' ? 625 : 259),
+        (['v017-world-snapshot-v16', 'v018-world-snapshot-v17'].includes(
+          snapshot.versions.saveFormatVersion,
+        )
+          ? 625
+          : 259),
     '保存ブロック数が不正です',
   );
   const keys = new Set<string>(),
@@ -96,7 +100,9 @@ export function validateSnapshot(snapshot: Snapshot): void {
     const gameId = ref.logicalKey.startsWith('game/') ? ref.logicalKey.slice(5) : null;
     ensure(
       ref.logicalKey.startsWith('growth/day/')
-        ? snapshot.versions.saveFormatVersion === 'v017-world-snapshot-v16' &&
+        ? ['v017-world-snapshot-v16', 'v018-world-snapshot-v17'].includes(
+            snapshot.versions.saveFormatVersion,
+          ) &&
             /^growth\/day\/\d{4}-\d{2}-\d{2}$/.test(ref.logicalKey) &&
             ref.kind === 'growthDay'
         : gameId !== null
@@ -172,6 +178,7 @@ export async function decodeWorldSnapshot(
       'world-prototype-v14',
       'world-prototype-v15',
       'world-prototype-v16',
+      'world-prototype-v17',
     ].includes(snapshot.versions.simulationVersion) &&
       format === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
@@ -210,6 +217,7 @@ export async function decodeWorldSnapshot(
             'v015-world-snapshot-v14',
             'v016-world-snapshot-v15',
             'v017-world-snapshot-v16',
+            'v018-world-snapshot-v17',
           ].includes(format)
             ? MAX_ANNUAL_RAW_BYTES
             : MAX_BYTES) &&
@@ -257,7 +265,19 @@ export async function decodeWorldSnapshot(
       decoded.growth?.state && !Object.hasOwn(decoded.growth.state, 'days'),
       '練習履歴の格納位置が不正です',
     );
-    decoded.growth.state.days = growthDays;
+    if (decoded.growth.version === 'daily-development-v2') {
+      ensure(
+        Object.values(growthDays).every((day) =>
+          Array.isArray((day as import('./growth-types.ts').DevelopmentDay).experience),
+        ),
+        '実戦経験履歴がありません',
+      );
+      // 出場量・対象・全乱数・能力値の意味は、直後のモデル別再実行で照合する。
+      decoded.growth.state.days = growthDays as Record<
+        string,
+        import('./growth-types.ts').DevelopmentDay
+      >;
+    } else decoded.growth.state.days = growthDays;
   } else ensure(Object.keys(growthDays).length === 0, '旧保存へ成長履歴を追加できません');
   validator.validate(world);
   ensure(
@@ -268,7 +288,9 @@ export async function decodeWorldSnapshot(
     canonicalJson(definitions.engine) ===
       canonicalJson(
         definitionsFor(
-          world.version === 'world-prototype-v15' || world.version === 'world-prototype-v16'
+          world.version === 'world-prototype-v15' ||
+            world.version === 'world-prototype-v16' ||
+            world.version === 'world-prototype-v17'
             ? 'game-prototype-v11'
             : 'game-prototype-v10',
           world.definitions.matchConfig,

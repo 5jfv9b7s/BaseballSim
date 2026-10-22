@@ -4,8 +4,9 @@ import { growthComparison } from '../src/world/growth-view.ts';
 import { growthAbilityKey } from '../src/world/growth-basis.ts';
 import { commonTrainingRef } from '../src/world/training.ts';
 
-test.setTimeout(150000);
-async function observe(page: Page, legacy = false) {
+// 3画面幅の照合と実保存/再開を含むため、Windowsの年間検証併走時にも待機できる上限。
+test.setTimeout(240000);
+async function observe(page: Page, legacy: boolean | 'training' = false) {
   await page.addInitScript((legacy) => {
     const NativeWorker = Worker;
     Reflect.set(window, 'growthCommands', []);
@@ -16,7 +17,13 @@ async function observe(page: Page, legacy = false) {
           this.addEventListener('message', (event) => {
             if (!event.data?.view) return;
             // 旧版の表示だけを投影。旧保存の実際の復元はNodeで確認する。
-            if (legacy) {
+            if (legacy === 'training') {
+              event.data.view.growth.version = 'daily-training-v1';
+              if (event.data.view.growth.latest) delete event.data.view.growth.latest.experience;
+              event.data.view.definitions.version = 'world-definitions-v21';
+              delete event.data.view.definitions.experienceConfig;
+              event.data.view.modelVersion = 'world-prototype-v16';
+            } else if (legacy) {
               event.data.view.growth = null;
               event.data.view.definitions.version = 'world-definitions-v20';
               event.data.view.modelVersion = 'world-prototype-v15';
@@ -38,9 +45,11 @@ async function observe(page: Page, legacy = false) {
   });
 }
 const read = (page: Page) =>
-  page.evaluate(() => Reflect.get(window, 'growthView')) as Promise<WorldView>;
+  test.step('Workerの表示状態を取得', () =>
+    page.evaluate(() => Reflect.get(window, 'growthView')) as Promise<WorldView>);
 const count = (page: Page) =>
-  page.evaluate(() => Reflect.get(window, 'growthCommands').length) as Promise<number>;
+  test.step('閲覧操作の送信指示数を確認', () =>
+    page.evaluate(() => Reflect.get(window, 'growthCommands').length) as Promise<number>);
 const menu = (page: Page, name: string) =>
   page
     .getByRole('navigation', { name: 'メインメニュー', exact: true })
@@ -72,13 +81,18 @@ for (const width of [1280, 390, 320])
       timeout: 60000,
     });
     const after = await read(page);
+    expect(after.modelVersion).toBe('world-prototype-v17');
+    expect(after.growth!.version).toBe('daily-development-v2');
+    expect(after.growth!.latest!.experience!.length).toBeGreaterThan(0);
     expect(after.growth!.dates).toEqual(['2026-09-24']);
     expect(after.growth!.latest!.outcomes).toHaveLength(120);
     const g = after.growth!;
-    const player = after.definitions.squads[0]!.players.find((p) =>
-      Object.keys(g.current[p.playerId]!).some(
-        (k) => g.current[p.playerId]![k] !== g.periods.season.start[p.playerId]![k],
-      ),
+    const player = after.definitions.squads[0]!.players.find(
+      (p) =>
+        g.latest!.experience!.some((e) => e.playerId === p.playerId) &&
+        Object.keys(g.current[p.playerId]!).some(
+          (k) => g.current[p.playerId]![k] !== g.periods.season.start[p.playerId]![k],
+        ),
     )!;
     expect(player).toBeTruthy();
     const id = player.playerId;
@@ -107,12 +121,19 @@ for (const width of [1280, 390, 320])
     await expect(changes.locator('tbody tr')).toHaveCount(
       comparison.rows.filter((r) => r.beforeValue !== r.afterValue).length,
     );
+    await growth.getByText(/^直近の実戦経験（/).click();
+    const experience = growth.locator('.experience-results');
+    const played = g.latest!.experience!.filter((e) => e.playerId === id);
+    await expect(experience.locator('li')).toHaveCount(played.length);
+    const labels = { batting: '打席', pitching: '球', fielding: '球分の守備参加' };
+    for (const row of played)
+      await expect(experience).toContainText(`${row.units}${labels[row.domain]}`);
     await growth.getByText(/^直近の練習結果（/).click();
     await expect(growth).toContainText('2026-09-24');
     await expect(growth).toContainText('体力消費');
     await expect(growth.getByRole('img')).toHaveAccessibleName(/日別の能力変化/);
     await growth.scrollIntoViewIfNeeded();
-    await growth.screenshot({ path: `.tmp/growth-qa/history-${width}.png` });
+    await growth.screenshot({ path: `.tmp/experience-qa/history-${width}.png` });
     expect(await count(page)).toBe(beforeCommands);
     expect(await read(page)).toEqual(after);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
@@ -133,7 +154,7 @@ for (const width of [1280, 390, 320])
       String(comparison.decrease),
       signed(comparison.net),
     ]);
-    await detail.screenshot({ path: `.tmp/growth-qa/detail-${width}.png` });
+    await detail.screenshot({ path: `.tmp/experience-qa/detail-${width}.png` });
     await page.keyboard.press('Escape');
     expect(await count(page)).toBe(beforeCommands);
     if (width === 1280) {
@@ -166,4 +187,20 @@ test('通常練習：旧v20相当の表示では成長履歴や自動調整を�
     panel.getByRole('combobox', { name: '疲労による自動調整', exact: true }),
   ).toContainText('判定準備中');
   expect(await count(page)).toBe(0);
+});
+
+test('実戦経験：旧v16相当の表示は通常練習のみと明記し、未記録を経験ゼロで補わない', async ({
+  page,
+}) => {
+  await observe(page, 'training');
+  await page.getByRole('button', { name: /^今日の試合へ/ }).click();
+  await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
+  await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-25', {
+    timeout: 60000,
+  });
+  await training(page);
+  const panel = page.getByRole('region', { name: '育成・練習設定', exact: true });
+  await expect(panel).toContainText('実戦経験・加齢・覚醒・キャンプは工事中');
+  await expect(panel.getByText(/^直近の練習結果（/)).toBeVisible();
+  await expect(panel.getByText(/^直近の実戦経験（/)).toHaveCount(0);
 });

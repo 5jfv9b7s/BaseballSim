@@ -86,3 +86,9 @@ Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。man
 0.38.0（a0bd8e01fb3ffd2b927284ee6391c0685245b226）の変更前ソースで、seed 31の`createDailyTrainingWorld`を短期最終日まで25イベント単位で進め、各日の`completeDay`を実行した固定検体です。4日10試合・2026-09-28、世界v16/定義v21/成長daily-training-v1。canonicalJsonのUTF-8をgzip化し、年間成長総括の実装前に保存しました。IndexedDB全ストアのダンプではありません。
 
 展開後canonicalJson SHA-256は`64218a64ca155e8ed9f1b0d64bc72550fb711800504dad2924a920adf9a6e8ce`、gzip自体は`22d53d484ca207e21865177def075c5598f4c9711e37f260d75e5175cae18daa`。`tests/season-growth.test.ts`で全状態の再現・既存v017保存/バックアップ・成長表示を検証します。将来のモデルに合わせて再生成しないでください。
+
+## world-v16-in-progress.json.gz
+
+0.39.0（4ad6d23ef29f09cb531276a80d272a20cab2f7ea）の変更前ソースで、seed 31の`createDailyTrainingWorld`を初日の全4試合・日次確定まで進め、翌日を17イベント進めた固定検体です。2026-09-25・世界v16/定義v21/daily-training-v1。canonicalJsonをgzip化したWorldRecordで、IndexedDB全ストアのダンプではありません。
+
+展開後canonicalJson SHA-256は`056c94bcdd0cc32987f372457472550119e9659bca42c03e7cff924a2b8a863a`、gzip自体は`aa2606f8638ee0fea3f249285a3ee1da0d5a677124e88b6a162fd2c027a5f516`。`tests/experience.test.ts`で旧v017保存・読込・バックアップと途中再開を確認し、終了時の全状態を変更前の`world-v16-training-baseline.json.gz`と照合します。実戦経験モデルに合わせて再生成しません。

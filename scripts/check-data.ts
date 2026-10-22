@@ -1,3 +1,5 @@
+import { createDevelopmentWorld } from '../src/world/engine.ts';
+import { createDevelopmentDefinitions } from '../src/data/world/development.ts';
 import { createDailyTrainingWorld } from '../src/world/engine.ts';
 import { createDailyTrainingDefinitions } from '../src/data/world/daily-training.ts';
 import { growthBasis } from '../src/world/growth-basis.ts';
@@ -348,5 +350,21 @@ for (const calendar of ['short', 'annual'] as const) {
   }
   console.log(
     `通常練習v1: ${calendar} / 全${Object.keys(world.growth.state.players).length}人 / ${abilities}能力 / 独立乱数・初期値・設定（検査成功）`,
+  );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createDevelopmentWorld(20260924, undefined, createDevelopmentDefinitions(calendar));
+  const players = Object.keys(world.growth.state.players);
+  if (
+    players.length !== 120 ||
+    Object.keys(world.growth.state.experienceRng).length !== players.length
+  )
+    throw new Error('実戦経験の全選手・独立乱数が不足しています');
+  for (const id of players)
+    if (world.growth.state.experienceRng[id]!.drawCount !== 0)
+      throw new Error('未出場の経験乱数が消費されています');
+  console.log(
+    `実戦経験v1: ${calendar} / 全${players.length}人 / 通常練習と独立・設定・初期値（検査成功）`,
   );
 }

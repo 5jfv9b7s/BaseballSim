@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
+import { ExperienceResults } from './ExperienceResults.tsx';
 import { growthComparison } from '../world/growth-view.ts';
 import './player-growth.css';
 
@@ -147,6 +148,7 @@ export function PlayerGrowth({ view, playerId }: { view: WorldView; playerId: st
           基本22能力・守備習熟・持ち球の制球と再現性を集計。固定適性・才能・向上心・上限・球速・一時的な状態は含みません。
         </p>
       </details>
+      <ExperienceResults view={view} playerId={playerId} />
       <details>
         <summary>直近の練習結果（{growth.latest!.date}）</summary>
         {outcome && (

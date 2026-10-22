@@ -98,7 +98,7 @@ for (const width of [1280, 390]) {
     const saved = await page.evaluate(
       () => Reflect.get(window, 'leagueResponse') as WorldWorkerResponse,
     );
-    expect(saved.view.definitions.version).toBe('world-definitions-v21');
+    expect(saved.view.definitions.version).toBe('world-definitions-v22');
     expect(saved.view.management!.controlledSquadId).toBe('aonagi-first');
     expect(saved.view.unsavedChanges).toBe(false);
     await page.screenshot({ path: `.tmp/league-structure-qa/home-${width}.png`, fullPage: true });

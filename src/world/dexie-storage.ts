@@ -164,7 +164,9 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         {
           world: definitions,
           engine: definitionsFor(
-            world.version === 'world-prototype-v15' || world.version === 'world-prototype-v16'
+            world.version === 'world-prototype-v15' ||
+              world.version === 'world-prototype-v16' ||
+              world.version === 'world-prototype-v17'
               ? 'game-prototype-v11'
               : 'game-prototype-v10',
             definitions.matchConfig,
@@ -332,7 +334,9 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ensure(
           snapshot.blockRefs.length >= 3 &&
             snapshot.blockRefs.length <=
-              (snapshot.versions.simulationVersion === 'world-prototype-v16'
+              (['world-prototype-v16', 'world-prototype-v17'].includes(
+                snapshot.versions.simulationVersion,
+              )
                 ? 625
                 : [
                       'world-prototype-v3',

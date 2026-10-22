@@ -17,7 +17,7 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createDailyTrainingWorld, worldPhase } from './engine.ts';
+import { advanceWorld, completeDay, createDevelopmentWorld, worldPhase } from './engine.ts';
 import { leagueStandings } from './league-standings.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
@@ -114,7 +114,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createDailyTrainingWorld();
+  private world: WorldRecord = createDevelopmentWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -180,7 +180,8 @@ export class WorldController {
       bullpen:
         world.version === 'world-prototype-v14' ||
         world.version === 'world-prototype-v15' ||
-        world.version === 'world-prototype-v16'
+        world.version === 'world-prototype-v16' ||
+        world.version === 'world-prototype-v17'
           ? bullpenView(world)
           : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
@@ -194,7 +195,8 @@ export class WorldController {
         world.version === 'world-prototype-v13' ||
         world.version === 'world-prototype-v14' ||
         world.version === 'world-prototype-v15' ||
-        world.version === 'world-prototype-v16'
+        world.version === 'world-prototype-v16' ||
+        world.version === 'world-prototype-v17'
           ? performanceView(world)
           : null,
       condition: 'condition' in world ? conditionView(world) : null,

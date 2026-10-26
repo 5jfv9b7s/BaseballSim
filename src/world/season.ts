@@ -29,6 +29,7 @@ export function summarizeSeason(
       'world-definitions-v20',
       'world-definitions-v21',
       'world-definitions-v22',
+      'world-definitions-v23',
     ].includes(world.definitions.version)
   ) {
     const leagues = leagueStandings(world.definitions, stats, scope).map((league) => {

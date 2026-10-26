@@ -2,7 +2,9 @@
 
 0.38.0の通常練習は[training/](training/README.md)で初期指定と対象辞書、[../../config/growth.ts](../../config/growth.ts)で試作係数を調整します。[日次効果・現在値・成長履歴の操作と式](../../TRAINING-IMPLEMENTATION.md)を参照してください。変更は新規プレイだけに反映し、既存の初期選手JSONや提供候補を書き換えません。
 
-0.40.0の新規プレイは[world/development.ts](world/development.ts)の定義v22です。通常練習を継承し、実戦経験は[../../config/experience.ts](../../config/experience.ts)で試作係数を調整します。旧版の入口と説明は各節の版の履歴として残し、既存保存へ新計算を後付けしません。
+0.41.0の新規プレイは[world/age-development.ts](world/age-development.ts)の定義v23です。選手別の年齢曲線は[age-curves/README.md](age-curves/README.md)、共通係数は[config/aging.ts](../../config/aging.ts)で編集します。新規だけに有効で、旧保存の曲線や能力を補完しません。
+
+0.40.0当時の新規プレイは[world/development.ts](world/development.ts)の定義v22です。通常練習を継承し、実戦経験は[../../config/experience.ts](../../config/experience.ts)で試作係数を調整します。旧版の入口と説明は各節の版の履歴として残し、既存保存へ新計算を後付けしません。
 
 ## 通常練習の初期指定（0.37.0）
 

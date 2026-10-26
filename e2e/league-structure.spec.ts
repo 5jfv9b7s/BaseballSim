@@ -98,7 +98,10 @@ for (const width of [1280, 390]) {
     const saved = await page.evaluate(
       () => Reflect.get(window, 'leagueResponse') as WorldWorkerResponse,
     );
-    expect(saved.view.definitions.version).toBe('world-definitions-v22');
+    expect(saved.view.definitions.version).toBe('world-definitions-v23');
+    expect(saved.view.modelVersion).toBe('world-prototype-v18');
+    expect(saved.view.definitions.ageCurves!.players).toHaveLength(120);
+    expect(saved.view.growth!.version).toBe('daily-development-v3');
     expect(saved.view.management!.controlledSquadId).toBe('aonagi-first');
     expect(saved.view.unsavedChanges).toBe(false);
     await page.screenshot({ path: `.tmp/league-structure-qa/home-${width}.png`, fullPage: true });

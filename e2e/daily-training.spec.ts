@@ -6,7 +6,7 @@ import { commonTrainingRef } from '../src/world/training.ts';
 
 // 3画面幅の照合と実保存/再開を含むため、Windowsの年間検証併走時にも待機できる上限。
 test.setTimeout(240000);
-async function observe(page: Page, legacy: boolean | 'training' = false) {
+async function observe(page: Page, legacy: boolean | 'training' | 'experience' = false) {
   await page.addInitScript((legacy) => {
     const NativeWorker = Worker;
     Reflect.set(window, 'growthCommands', []);
@@ -17,9 +17,21 @@ async function observe(page: Page, legacy: boolean | 'training' = false) {
           this.addEventListener('message', (event) => {
             if (!event.data?.view) return;
             // 旧版の表示だけを投影。旧保存の実際の復元はNodeで確認する。
-            if (legacy === 'training') {
+            if (legacy === 'experience') {
+              event.data.view.growth.version = 'daily-development-v2';
+              if (event.data.view.growth.latest) delete event.data.view.growth.latest.aging;
+              delete event.data.view.definitions.ageConfig;
+              delete event.data.view.definitions.ageCurves;
+              event.data.view.definitions.version = 'world-definitions-v22';
+              event.data.view.modelVersion = 'world-prototype-v17';
+            } else if (legacy === 'training') {
               event.data.view.growth.version = 'daily-training-v1';
-              if (event.data.view.growth.latest) delete event.data.view.growth.latest.experience;
+              if (event.data.view.growth.latest) {
+                delete event.data.view.growth.latest.experience;
+                delete event.data.view.growth.latest.aging;
+              }
+              delete event.data.view.definitions.ageConfig;
+              delete event.data.view.definitions.ageCurves;
               event.data.view.definitions.version = 'world-definitions-v21';
               delete event.data.view.definitions.experienceConfig;
               event.data.view.modelVersion = 'world-prototype-v16';
@@ -81,8 +93,8 @@ for (const width of [1280, 390, 320])
       timeout: 60000,
     });
     const after = await read(page);
-    expect(after.modelVersion).toBe('world-prototype-v17');
-    expect(after.growth!.version).toBe('daily-development-v2');
+    expect(after.modelVersion).toBe('world-prototype-v18');
+    expect(after.growth!.version).toBe('daily-development-v3');
     expect(after.growth!.latest!.experience!.length).toBeGreaterThan(0);
     expect(after.growth!.dates).toEqual(['2026-09-24']);
     expect(after.growth!.latest!.outcomes).toHaveLength(120);
@@ -121,6 +133,21 @@ for (const width of [1280, 390, 320])
     await expect(changes.locator('tbody tr')).toHaveCount(
       comparison.rows.filter((r) => r.beforeValue !== r.afterValue).length,
     );
+    await growth.getByText(/^直近の年齢変化（/).click();
+    const aging = growth.locator('.age-results');
+    const ageRow = g.latest!.aging!.find((row) => row.playerId === id)!;
+    const number = (v: number) => (v > 0 ? '+' : '') + (v / 1000).toFixed(3).replace(/\.?0+$/, '');
+    const ageTable = aging.getByRole('table', { name: '年齢変化の内訳', exact: true });
+    await expect(ageTable.locator('tbody tr')).toHaveCount(3);
+    for (let index = 0; index < ageRow.groups.length; index++) {
+      const row = ageRow.groups[index]!;
+      await expect(ageTable.locator('tbody tr').nth(index).locator('td')).toHaveText([
+        number(row.increaseMilli),
+        number(row.decreaseMilli),
+        number(row.increaseMilli + row.decreaseMilli),
+      ]);
+    }
+    await aging.screenshot({ path: `.tmp/age-qa/aging-${width}.png` });
     await growth.getByText(/^直近の実戦経験（/).click();
     const experience = growth.locator('.experience-results');
     const played = g.latest!.experience!.filter((e) => e.playerId === id);
@@ -133,7 +160,7 @@ for (const width of [1280, 390, 320])
     await expect(growth).toContainText('体力消費');
     await expect(growth.getByRole('img')).toHaveAccessibleName(/日別の能力変化/);
     await growth.scrollIntoViewIfNeeded();
-    await growth.screenshot({ path: `.tmp/experience-qa/history-${width}.png` });
+    await growth.screenshot({ path: `.tmp/age-qa/history-${width}.png` });
     expect(await count(page)).toBe(beforeCommands);
     expect(await read(page)).toEqual(after);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
@@ -154,7 +181,7 @@ for (const width of [1280, 390, 320])
       String(comparison.decrease),
       signed(comparison.net),
     ]);
-    await detail.screenshot({ path: `.tmp/experience-qa/detail-${width}.png` });
+    await detail.screenshot({ path: `.tmp/age-qa/detail-${width}.png` });
     await page.keyboard.press('Escape');
     expect(await count(page)).toBe(beforeCommands);
     if (width === 1280) {
@@ -203,4 +230,14 @@ test('実戦経験：旧v16相当の表示は通常練習のみと明記し、�
   await expect(panel).toContainText('実戦経験・加齢・覚醒・キャンプは工事中');
   await expect(panel.getByText(/^直近の練習結果（/)).toBeVisible();
   await expect(panel.getByText(/^直近の実戦経験（/)).toHaveCount(0);
+});
+
+test('年齢変化：旧v17相当の表示では年齢変化を記録済みと扱わない', async ({ page }) => {
+  await observe(page, 'experience');
+  await training(page);
+  const panel = page.getByRole('region', { name: '育成・練習設定', exact: true });
+  await expect(panel).toContainText('通常練習と実戦経験を反映');
+  await expect(panel).toContainText('加齢・覚醒・キャンプは工事中');
+  await expect(panel.locator('.age-results')).toHaveCount(0);
+  expect(await count(page)).toBe(0);
 });

@@ -1,0 +1,29 @@
+{
+  "playerId": "player-h-29",
+  "ageCurves": {
+    "physical": {
+      "growthStartAgeMilli": 18000,
+      "growthPeakAgeMilli": 23000,
+      "growthEndAgeMilli": 28000,
+      "declineStartAgeMilli": 32000,
+      "growthPermille": 1200,
+      "declinePermille": 800
+    },
+    "technique": {
+      "growthStartAgeMilli": 21000,
+      "growthPeakAgeMilli": 26000,
+      "growthEndAgeMilli": 32000,
+      "declineStartAgeMilli": 36000,
+      "growthPermille": 1200,
+      "declinePermille": 800
+    },
+    "judgment": {
+      "growthStartAgeMilli": 24000,
+      "growthPeakAgeMilli": 29000,
+      "growthEndAgeMilli": 35000,
+      "declineStartAgeMilli": 40000,
+      "growthPermille": 1200,
+      "declinePermille": 800
+    }
+  }
+}

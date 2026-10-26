@@ -20,7 +20,8 @@ export function validatePhysicalDefinitions(definitions: WorldDefinitions): void
       definitions.version === 'world-definitions-v19' ||
       definitions.version === 'world-definitions-v20' ||
       definitions.version === 'world-definitions-v21' ||
-      definitions.version === 'world-definitions-v22'
+      definitions.version === 'world-definitions-v22' ||
+      definitions.version === 'world-definitions-v23'
         ? 'physical-load-v2'
         : 'physical-load-v1'),
     '身体モデルの設定が必要です',

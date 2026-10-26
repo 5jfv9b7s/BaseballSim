@@ -18,7 +18,11 @@ function fields(value: unknown, keys: string[], name: string): void {
 }
 
 export function validateGrowthDefinitions(definitions: WorldDefinitions): void {
-  if (!['world-definitions-v21', 'world-definitions-v22'].includes(definitions.version)) {
+  if (
+    !['world-definitions-v21', 'world-definitions-v22', 'world-definitions-v23'].includes(
+      definitions.version,
+    )
+  ) {
     ensure(definitions.growthConfig === undefined, '旧定義へ成長モデルを追加できません');
     return;
   }
@@ -105,7 +109,9 @@ export function freezeGrowthData<T>(value: T): T {
 export function initialGrowth(definitions: WorldDefinitions, seed: number): TrainingGrowthState {
   validateGrowthDefinitions(definitions);
   ensure(
-    ['world-definitions-v21', 'world-definitions-v22'].includes(definitions.version),
+    ['world-definitions-v21', 'world-definitions-v22', 'world-definitions-v23'].includes(
+      definitions.version,
+    ),
     '通常練習に対応する初期定義が必要です',
   );
   return {
@@ -198,7 +204,10 @@ export function trainingBudget(
 
 /** 全試合後の一回だけ。成長用乱数は各選手で独立し、試合の乱数を消費しない。 */
 export function calculateTrainingDay(
-  world: Extract<WorldRecord, { version: 'world-prototype-v16' | 'world-prototype-v17' }>,
+  world: Extract<
+    WorldRecord,
+    { version: 'world-prototype-v16' | 'world-prototype-v17' | 'world-prototype-v18' }
+  >,
 ) {
   const date = world.currentDate;
   ensure(

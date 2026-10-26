@@ -16,7 +16,10 @@ import type {
   DevelopmentGrowthState,
 } from './growth-types.ts';
 
-type DevelopmentWorld = Extract<WorldRecord, { version: 'world-prototype-v17' }>;
+type DevelopmentWorld = Extract<
+  WorldRecord,
+  { version: 'world-prototype-v17' | 'world-prototype-v18' }
+>;
 export const EXPERIENCE_DOMAINS = ['batting', 'pitching', 'fielding'] as const;
 
 function fields(value: unknown, keys: string[], label: string) {
@@ -27,7 +30,7 @@ function fields(value: unknown, keys: string[], label: string) {
   );
 }
 export function validateExperienceDefinitions(definitions: WorldDefinitions) {
-  if (definitions.version !== 'world-definitions-v22') {
+  if (!['world-definitions-v22', 'world-definitions-v23'].includes(definitions.version)) {
     ensure(definitions.experienceConfig === undefined, '旧定義へ実戦経験モデルを追加できません');
     return;
   }
@@ -58,7 +61,10 @@ export function initialDevelopment(
   seed: number,
 ): DevelopmentGrowthState {
   validateExperienceDefinitions(definitions);
-  ensure(definitions.version === 'world-definitions-v22', '実戦経験に対応する定義が必要です');
+  ensure(
+    ['world-definitions-v22', 'world-definitions-v23'].includes(definitions.version),
+    '実戦経験に対応する定義が必要です',
+  );
   const training = initialGrowth(definitions, seed);
   return {
     modelId: 'daily-development',
@@ -233,7 +239,7 @@ export function experienceBudget(
 }
 
 /** 通常練習→実戦経験→既存の日次回復。出場済みの負荷を二重に加えない。 */
-export function applyDevelopmentDay(world: DevelopmentWorld) {
+export function calculateDevelopmentDay(world: DevelopmentWorld) {
   const { players, day: trainingDay, physical } = calculateTrainingDay(world);
   const config = world.definitions.experienceConfig!;
   const experienceRng = { ...world.growth.state.experienceRng };
@@ -305,6 +311,13 @@ export function applyDevelopmentDay(world: DevelopmentWorld) {
         Math.floor(world.growth.state.players[playerId]!.values[a.key]! / 1000),
       0,
     );
+  return { players, day, physical, experienceRng };
+}
+/** 旧v17の保存形と計算を維持し、年齢変化を後付けしない。 */
+export function applyDevelopmentDay(
+  world: Extract<WorldRecord, { version: 'world-prototype-v17' }>,
+) {
+  const { players, day, physical, experienceRng } = calculateDevelopmentDay(world);
   const growth: DevelopmentGrowthState = {
     ...world.growth,
     state: {

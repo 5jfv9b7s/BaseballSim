@@ -12,7 +12,11 @@ export type BullpenWorld = Extract<
   WorldRecord,
   {
     version:
-      'world-prototype-v14' | 'world-prototype-v15' | 'world-prototype-v16' | 'world-prototype-v17';
+      | 'world-prototype-v14'
+      | 'world-prototype-v15'
+      | 'world-prototype-v16'
+      | 'world-prototype-v17'
+      | 'world-prototype-v18';
   }
 >;
 

@@ -1,3 +1,4 @@
+import { AgeResults } from './AgeResults.tsx';
 import { useId, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import { ExperienceResults } from './ExperienceResults.tsx';
@@ -25,6 +26,7 @@ export function PlayerGrowth({ view, playerId }: { view: WorldView; playerId: st
       <section aria-label="成長履歴">
         <h3>成長履歴</h3>
         <p>まだ日次の練習実績がありません。全試合終了後の日次確定から記録します。</p>
+        <AgeResults view={view} playerId={playerId} />
       </section>
     );
   const range = growth.periods[period];
@@ -148,6 +150,7 @@ export function PlayerGrowth({ view, playerId }: { view: WorldView; playerId: st
           基本22能力・守備習熟・持ち球の制球と再現性を集計。固定適性・才能・向上心・上限・球速・一時的な状態は含みません。
         </p>
       </details>
+      <AgeResults view={view} playerId={playerId} />
       <ExperienceResults view={view} playerId={playerId} />
       <details>
         <summary>直近の練習結果（{growth.latest!.date}）</summary>

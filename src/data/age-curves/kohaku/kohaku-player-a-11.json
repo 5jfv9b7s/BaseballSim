@@ -1,0 +1,29 @@
+{
+  "playerId": "kohaku-player-a-11",
+  "ageCurves": {
+    "physical": {
+      "growthStartAgeMilli": 17000,
+      "growthPeakAgeMilli": 22000,
+      "growthEndAgeMilli": 27000,
+      "declineStartAgeMilli": 31000,
+      "growthPermille": 900,
+      "declinePermille": 1100
+    },
+    "technique": {
+      "growthStartAgeMilli": 20000,
+      "growthPeakAgeMilli": 25000,
+      "growthEndAgeMilli": 31000,
+      "declineStartAgeMilli": 35000,
+      "growthPermille": 900,
+      "declinePermille": 1100
+    },
+    "judgment": {
+      "growthStartAgeMilli": 23000,
+      "growthPeakAgeMilli": 28000,
+      "growthEndAgeMilli": 34000,
+      "declineStartAgeMilli": 39000,
+      "growthPermille": 900,
+      "declinePermille": 1100
+    }
+  }
+}

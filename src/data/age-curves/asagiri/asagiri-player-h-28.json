@@ -1,0 +1,29 @@
+{
+  "playerId": "asagiri-player-h-28",
+  "ageCurves": {
+    "physical": {
+      "growthStartAgeMilli": 15000,
+      "growthPeakAgeMilli": 20000,
+      "growthEndAgeMilli": 25000,
+      "declineStartAgeMilli": 28000,
+      "growthPermille": 1100,
+      "declinePermille": 700
+    },
+    "technique": {
+      "growthStartAgeMilli": 18000,
+      "growthPeakAgeMilli": 23000,
+      "growthEndAgeMilli": 29000,
+      "declineStartAgeMilli": 32000,
+      "growthPermille": 1100,
+      "declinePermille": 700
+    },
+    "judgment": {
+      "growthStartAgeMilli": 21000,
+      "growthPeakAgeMilli": 26000,
+      "growthEndAgeMilli": 32000,
+      "declineStartAgeMilli": 36000,
+      "growthPermille": 1100,
+      "declinePermille": 700
+    }
+  }
+}

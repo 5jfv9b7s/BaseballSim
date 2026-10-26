@@ -1,3 +1,4 @@
+import { createAgeHistoryCodec } from './age-history-codec.ts';
 import { verifySharedBlocks, putSharedBlocks } from './shared-blocks.ts';
 import { exportStoredPlay, importStoredPlay, listStoredPlays } from './backup-storage.ts';
 import { collectUnusedInTransaction } from './storage-gc.ts';
@@ -144,6 +145,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
     }
 
     const { definitions, games, stats, contributions, statApplicationMarkers, ...core } = world;
+    const ageCodec =
+      world.version === 'world-prototype-v18' ? createAgeHistoryCodec(definitions) : null;
     const historyValues: [string, string, unknown][] = [];
     let storedCore: unknown = core;
     if ('growth' in core) {
@@ -153,7 +156,9 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ...Object.entries(days).map(([date, day]): [string, string, unknown] => [
           'growth/day/' + date,
           'growthDay',
-          day,
+          world.version === 'world-prototype-v18'
+            ? ageCodec!.encode(day as import('./age-types.ts').AgeDevelopmentDay)
+            : day,
         ]),
       );
     }
@@ -166,7 +171,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
           engine: definitionsFor(
             world.version === 'world-prototype-v15' ||
               world.version === 'world-prototype-v16' ||
-              world.version === 'world-prototype-v17'
+              world.version === 'world-prototype-v17' ||
+              world.version === 'world-prototype-v18'
               ? 'game-prototype-v11'
               : 'game-prototype-v10',
             definitions.matchConfig,
@@ -334,7 +340,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ensure(
           snapshot.blockRefs.length >= 3 &&
             snapshot.blockRefs.length <=
-              (['world-prototype-v16', 'world-prototype-v17'].includes(
+              (['world-prototype-v16', 'world-prototype-v17', 'world-prototype-v18'].includes(
                 snapshot.versions.simulationVersion,
               )
                 ? 625

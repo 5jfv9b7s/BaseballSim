@@ -43,7 +43,7 @@ export interface AbilityChange {
   changeKind: 'value';
   beforeValue: number;
   afterValue: number;
-  reason: 'training' | 'experience';
+  reason: 'training' | 'experience' | 'aging';
   sourceEventId: string;
   abilityCatalogVersion: 'common-abilities-v1';
 }
@@ -92,7 +92,12 @@ export interface GrowthView {
   >;
   dates: string[];
   dailyDeltas: Record<string, number[]>;
-  latest: { date: string; outcomes: TrainingOutcome[]; experience?: ExperienceOutcome[] } | null;
+  latest: {
+    date: string;
+    outcomes: TrainingOutcome[];
+    experience?: ExperienceOutcome[];
+    aging?: import('./age-types.ts').AgeOutcome[];
+  } | null;
 }
 
 export type ExperienceDomain = 'batting' | 'pitching' | 'fielding';
@@ -149,4 +154,5 @@ export interface DevelopmentGrowthState {
   };
 }
 
-export type GrowthState = TrainingGrowthState | DevelopmentGrowthState;
+export type GrowthState =
+  TrainingGrowthState | DevelopmentGrowthState | import('./age-types.ts').AgeDevelopmentGrowthState;

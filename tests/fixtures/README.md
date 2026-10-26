@@ -92,3 +92,9 @@ Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。man
 0.39.0（4ad6d23ef29f09cb531276a80d272a20cab2f7ea）の変更前ソースで、seed 31の`createDailyTrainingWorld`を初日の全4試合・日次確定まで進め、翌日を17イベント進めた固定検体です。2026-09-25・世界v16/定義v21/daily-training-v1。canonicalJsonをgzip化したWorldRecordで、IndexedDB全ストアのダンプではありません。
 
 展開後canonicalJson SHA-256は`056c94bcdd0cc32987f372457472550119e9659bca42c03e7cff924a2b8a863a`、gzip自体は`aa2606f8638ee0fea3f249285a3ee1da0d5a677124e88b6a162fd2c027a5f516`。`tests/experience.test.ts`で旧v017保存・読込・バックアップと途中再開を確認し、終了時の全状態を変更前の`world-v16-training-baseline.json.gz`と照合します。実戦経験モデルに合わせて再生成しません。
+
+## world-v17-in-progress.json.gz
+
+年齢変化を導入する前の0.40.0（c6554ac43f217c9ed1245b83785a96bce6e447c8）で、seed31の`advanceWorld(createDevelopmentWorld(31), 17)`を実行した途中検体です。世界v17/定義v22/daily-development-v2。canonicalJsonのUTF-8をgzip化したWorldRecordで、DB全体のダンプではありません。変更前ソースで固定してから実装に着手しました。
+
+展開後canonicalJson SHA-256は`060b02af676e0f690a87239293487136eb96cdce757862d17cc5c0d16d684eef`、gzip自体は`4f6ebc395545e87f3c3f68d82b1e953188a1fbd4d6ba768f0423a7064b8e79e3`。初日を完了して日次確定した全状態のSHA-256は`b26aae8f960576a418f259e491de0477f03055e35751d0e9ef75fcc333ae6727`です。tests/aging.test.tsで旧v018保存/復元/バックアップと継続を照合し、将来のモデルに合わせて再生成しません。

@@ -1,3 +1,4 @@
+import { createAgeHistoryCodec } from './age-history-codec.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson, definitionsFor, sha256 } from '../storage/codec.ts';
 import { WorldValidator } from './validation.ts';
@@ -65,7 +66,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
   ensure(['dailyAuto', 'manual', 'actionAuto'].includes(snapshot.saveKind), '保存種別が不正です');
   exactKeys(snapshot.versions, ['saveFormatVersion', 'simulationVersion'], '保存形式');
   ensure(
-    /^world-prototype-v([1-9]|1[0-7])$/.test(snapshot.versions.simulationVersion) &&
+    /^world-prototype-v([1-9]|1[0-8])$/.test(snapshot.versions.simulationVersion) &&
       snapshot.versions.saveFormatVersion === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
   );
@@ -77,7 +78,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
     Array.isArray(snapshot.blockRefs) &&
       snapshot.blockRefs.length >= 3 &&
       snapshot.blockRefs.length <=
-        (['v017-world-snapshot-v16', 'v018-world-snapshot-v17'].includes(
+        (['v017-world-snapshot-v16', 'v018-world-snapshot-v17', 'v019-world-snapshot-v18'].includes(
           snapshot.versions.saveFormatVersion,
         )
           ? 625
@@ -100,9 +101,11 @@ export function validateSnapshot(snapshot: Snapshot): void {
     const gameId = ref.logicalKey.startsWith('game/') ? ref.logicalKey.slice(5) : null;
     ensure(
       ref.logicalKey.startsWith('growth/day/')
-        ? ['v017-world-snapshot-v16', 'v018-world-snapshot-v17'].includes(
-            snapshot.versions.saveFormatVersion,
-          ) &&
+        ? [
+            'v017-world-snapshot-v16',
+            'v018-world-snapshot-v17',
+            'v019-world-snapshot-v18',
+          ].includes(snapshot.versions.saveFormatVersion) &&
             /^growth\/day\/\d{4}-\d{2}-\d{2}$/.test(ref.logicalKey) &&
             ref.kind === 'growthDay'
         : gameId !== null
@@ -179,6 +182,7 @@ export async function decodeWorldSnapshot(
       'world-prototype-v15',
       'world-prototype-v16',
       'world-prototype-v17',
+      'world-prototype-v18',
     ].includes(snapshot.versions.simulationVersion) &&
       format === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
@@ -218,6 +222,7 @@ export async function decodeWorldSnapshot(
             'v016-world-snapshot-v15',
             'v017-world-snapshot-v16',
             'v018-world-snapshot-v17',
+            'v019-world-snapshot-v18',
           ].includes(format)
             ? MAX_ANNUAL_RAW_BYTES
             : MAX_BYTES) &&
@@ -243,12 +248,16 @@ export async function decodeWorldSnapshot(
     definitions && values.has('world') && values.has('stats'),
     '世界保存の必須ブロックが不足しています',
   );
+  const ageCodec =
+    format === 'v019-world-snapshot-v18' ? createAgeHistoryCodec(definitions.world) : null;
   const growthDays: Record<string, import('./growth-types.ts').TrainingDay> = {};
   const games: WorldRecord['games'] = {};
   for (const [key, value] of values) {
     if (key.startsWith('game/')) games[key.slice(5)] = value as WorldRecord['games'][string];
     else if (key.startsWith('growth/day/')) {
-      const day = value as import('./growth-types.ts').TrainingDay;
+      const day = ageCodec
+        ? ageCodec.decode(value)
+        : (value as import('./growth-types.ts').TrainingDay);
       ensure(day && day.date === key.slice(11), '練習履歴ブロックの日付が一致しません');
       growthDays[day.date] = day;
     } else ensure(['world', 'stats', 'definitions'].includes(key), '未対応の保存ブロックです');
@@ -265,7 +274,20 @@ export async function decodeWorldSnapshot(
       decoded.growth?.state && !Object.hasOwn(decoded.growth.state, 'days'),
       '練習履歴の格納位置が不正です',
     );
-    if (decoded.growth.version === 'daily-development-v2') {
+    if (decoded.growth.version === 'daily-development-v3') {
+      ensure(
+        Object.values(growthDays).every(
+          (day) =>
+            Array.isArray((day as import('./age-types.ts').AgeDevelopmentDay).experience) &&
+            Array.isArray((day as import('./age-types.ts').AgeDevelopmentDay).aging),
+        ),
+        '年齢変化の履歴がありません',
+      );
+      decoded.growth.state.days = growthDays as Record<
+        string,
+        import('./age-types.ts').AgeDevelopmentDay
+      >;
+    } else if (decoded.growth.version === 'daily-development-v2') {
       ensure(
         Object.values(growthDays).every((day) =>
           Array.isArray((day as import('./growth-types.ts').DevelopmentDay).experience),
@@ -290,7 +312,8 @@ export async function decodeWorldSnapshot(
         definitionsFor(
           world.version === 'world-prototype-v15' ||
             world.version === 'world-prototype-v16' ||
-            world.version === 'world-prototype-v17'
+            world.version === 'world-prototype-v17' ||
+            world.version === 'world-prototype-v18'
             ? 'game-prototype-v11'
             : 'game-prototype-v10',
           world.definitions.matchConfig,

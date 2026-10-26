@@ -1,9 +1,9 @@
-import { createDevelopmentDefinitions } from '../data/world/development.ts';
+import { createAgeDevelopmentDefinitions } from '../data/world/age-development.ts';
 import { createNewPlayOptions } from '../data/world/new-play-options.ts';
 import type { NewPlayOptions } from './league-structure-types.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { createDevelopmentWorld } from './engine.ts';
+import { createAgeDevelopmentWorld } from './engine.ts';
 import { DexieWorldStorage, WorldDatabase } from './dexie-storage.ts';
 import { WorldController, type WorldCommand, type WorldView } from './controller.ts';
 import type { StorageInspection } from './storage-inspection.ts';
@@ -82,10 +82,10 @@ export class WorldWorkspace {
       '新規作成の前に現在の作業を手動保存してください',
     );
 
-    const world = createDevelopmentWorld(
+    const world = createAgeDevelopmentWorld(
       request.seed,
       request.controlledSquadId,
-      createDevelopmentDefinitions(request.calendar),
+      createAgeDevelopmentDefinitions(request.calendar),
     );
     const nextStorage = new DexieWorldStorage(this.storage.database, localWorldId);
     const nextRevision = before.revision + 1;

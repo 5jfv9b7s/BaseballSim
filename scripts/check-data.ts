@@ -1,3 +1,5 @@
+import { createAgeDevelopmentWorld } from '../src/world/engine.ts';
+import { createAgeDevelopmentDefinitions } from '../src/data/world/age-development.ts';
 import { createDevelopmentWorld } from '../src/world/engine.ts';
 import { createDevelopmentDefinitions } from '../src/data/world/development.ts';
 import { createDailyTrainingWorld } from '../src/world/engine.ts';
@@ -367,4 +369,33 @@ for (const calendar of ['short', 'annual'] as const) {
   console.log(
     `実戦経験v1: ${calendar} / 全${players.length}人 / 通常練習と独立・設定・初期値（検査成功）`,
   );
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const w = createAgeDevelopmentWorld(
+    20260924,
+    undefined,
+    createAgeDevelopmentDefinitions(calendar),
+  );
+  console.log(
+    '年齢変化データ: ' +
+      calendar +
+      ' / ' +
+      w.definitions.ageCurves!.players.length +
+      '人（検査成功）',
+  );
+}
+
+// 一人一JSONの登録漏れ・孤立ファイルも検査する。
+{
+  const catalog = createAgeDevelopmentDefinitions().ageCurves!;
+  const files = readdirSync('src/data/age-curves', { recursive: true }).filter((name) =>
+    String(name).endsWith('.json'),
+  );
+  const ids = files
+    .map((name) => JSON.parse(readFileSync('src/data/age-curves/' + name, 'utf8')).playerId)
+    .sort();
+  if (JSON.stringify(ids) !== JSON.stringify(catalog.players.map((p) => p.playerId).sort()))
+    throw Error('年齢曲線JSONの登録と実ファイルが一致しません');
+  console.log('年齢曲線JSONの登録照合: ' + ids.length + '人（検査成功）');
 }

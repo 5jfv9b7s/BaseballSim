@@ -78,9 +78,12 @@ export function validateTrainingSettings(
 }
 export function validateTrainingDefinitions(definitions: WorldDefinitions): void {
   if (
-    !['world-definitions-v20', 'world-definitions-v21', 'world-definitions-v22'].includes(
-      definitions.version,
-    )
+    ![
+      'world-definitions-v20',
+      'world-definitions-v21',
+      'world-definitions-v22',
+      'world-definitions-v23',
+    ].includes(definitions.version)
   ) {
     ensure(definitions.trainingPlans === undefined, '旧定義へ練習設定を後付けできません');
     return;

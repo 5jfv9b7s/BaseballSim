@@ -50,7 +50,10 @@ export function growthView(world: WorldRecord): GrowthView | null {
       ? {
           date: last,
           outcomes: structuredClone(state.days[last]!.outcomes),
-          ...(world.growth.version === 'daily-development-v2'
+          ...(world.growth.version === 'daily-development-v3'
+            ? { aging: structuredClone(world.growth.state.days[last]!.aging) }
+            : {}),
+          ...(world.growth.version !== 'daily-training-v1'
             ? { experience: structuredClone(world.growth.state.days[last]!.experience) }
             : {}),
         }

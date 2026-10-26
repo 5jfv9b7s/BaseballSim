@@ -12,7 +12,7 @@ import type {
   RookieAwakeningDay,
 } from './awakening-types.ts';
 
-type RookieWorld = Extract<WorldRecord, { version: 'world-prototype-v19' }>;
+type RookieWorld = Extract<WorldRecord, { version: 'world-prototype-v19' | 'world-prototype-v20' }>;
 function fields(value: unknown, keys: string[], name: string) {
   ensure(value && typeof value === 'object' && !Array.isArray(value), name + 'が不正です');
   ensure(
@@ -21,7 +21,7 @@ function fields(value: unknown, keys: string[], name: string) {
   );
 }
 export function validateAwakeningDefinitions(d: WorldDefinitions): void {
-  if (d.version !== 'world-definitions-v24') {
+  if (!['world-definitions-v24', 'world-definitions-v25'].includes(d.version)) {
     ensure(d.awakeningConfig === undefined, '旧定義へ覚醒モデルを追加できません');
     return;
   }
@@ -60,7 +60,10 @@ export function initialRookieDevelopment(
   seed: number,
 ): RookieDevelopmentGrowthState {
   validateAwakeningDefinitions(d);
-  ensure(d.version === 'world-definitions-v24', '覚醒に対応する定義が必要です');
+  ensure(
+    ['world-definitions-v24', 'world-definitions-v25'].includes(d.version),
+    '覚醒に対応する定義が必要です',
+  );
   const base = initialAgeDevelopment(d, seed);
   const players = Object.fromEntries(
     d
@@ -102,8 +105,11 @@ export function initialRookieDevelopment(
   };
 }
 /** 全試合後、練習→経験→年齢変化→覚醒。保存成功前の候補だけを更新する。 */
-export function applyRookieDevelopmentDay(world: RookieWorld) {
-  const aged = calculateAgeDevelopmentDay(world);
+export function calculateRookieDevelopmentDay(
+  world: RookieWorld,
+  override?: import('./camp-types.ts').CampTrainingOverride,
+) {
+  const aged = calculateAgeDevelopmentDay(world, override);
   const { players, experienceRng, agingRemainders, physical } = aged;
   const day: RookieAwakeningDay = { ...aged.day, awakening: [] };
   const c = world.definitions.awakeningConfig!;
@@ -179,13 +185,28 @@ export function applyRookieDevelopmentDay(world: RookieWorld) {
       0,
     );
   }
+  return {
+    players,
+    experienceRng,
+    agingRemainders,
+    physical,
+    day,
+    awakeningState: { ...previous, players: states },
+  };
+}
+/** 旧v19の計算・状態・保存構造を維持する。 */
+export function applyRookieDevelopmentDay(
+  world: Extract<WorldRecord, { version: 'world-prototype-v19' }>,
+) {
+  const { players, experienceRng, agingRemainders, physical, day, awakeningState } =
+    calculateRookieDevelopmentDay(world);
   const growth: RookieDevelopmentGrowthState = {
     ...world.growth,
     state: {
       players,
       experienceRng,
       agingRemainders,
-      awakeningState: { ...previous, players: states },
+      awakeningState,
       lastCompletedOn: world.currentDate,
       days: { ...world.growth.state.days, [world.currentDate]: freezeGrowthData(day) },
     },

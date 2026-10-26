@@ -1,3 +1,5 @@
+import { trainingTargetLabel } from '../world/training.ts';
+import { CampResults } from './CampResults.tsx';
 import { RookieAwakeningResults } from './RookieAwakeningResults.tsx';
 import { AgeResults } from './AgeResults.tsx';
 import { useId, useState } from 'react';
@@ -29,6 +31,7 @@ export function PlayerGrowth({ view, playerId }: { view: WorldView; playerId: st
         <p>まだ日次の練習実績がありません。全試合終了後の日次確定から記録します。</p>
         <AgeResults view={view} playerId={playerId} />
         <RookieAwakeningResults view={view} playerId={playerId} />
+        <CampResults view={view} playerId={playerId} />
       </section>
     );
   const range = growth.periods[period];
@@ -154,13 +157,16 @@ export function PlayerGrowth({ view, playerId }: { view: WorldView; playerId: st
       </details>
       <AgeResults view={view} playerId={playerId} />
       <RookieAwakeningResults view={view} playerId={playerId} />
+      <CampResults view={view} playerId={playerId} />
       <ExperienceResults view={view} playerId={playerId} />
       <details>
         <summary>直近の練習結果（{growth.latest!.date}）</summary>
         {outcome && (
           <>
             <p>
-              指定：{INTENSITIES[outcome.settings.intensity]} → 実施：
+              {outcome.campId ? 'キャンプ' : '通常練習'} ／{' '}
+              {trainingTargetLabel(view.definitions, playerId, outcome.settings.target)} ／ 指定：
+              {INTENSITIES[outcome.settings.intensity]} → 実施：
               {INTENSITIES[outcome.effectiveIntensity]}
               {outcome.adjustmentReasons.length > 0 &&
                 `（${outcome.adjustmentReasons.join('・')}）`}

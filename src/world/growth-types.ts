@@ -43,12 +43,13 @@ export interface AbilityChange {
   changeKind: 'value';
   beforeValue: number;
   afterValue: number;
-  reason: 'training' | 'experience' | 'aging' | 'rookieAwakening';
+  reason: 'training' | 'experience' | 'aging' | 'rookieAwakening' | 'campTraining' | 'campBurst';
   sourceEventId: string;
   abilityCatalogVersion: 'common-abilities-v1';
 }
 
 export interface TrainingOutcome {
+  campId?: string;
   playerId: string;
   settings: TrainingSettings;
   effectiveIntensity: TrainingSettings['intensity'];
@@ -81,6 +82,12 @@ export interface TrainingGrowthState {
 
 export interface GrowthView {
   version: GrowthState['version'];
+  campBursts?: {
+    campId: string;
+    date: string;
+    outcome: import('./camp-types.ts').CampBurstOutcome;
+    changes: AbilityChange[];
+  }[];
   rookieAwakening?: { events: import('./awakening-types.ts').RookieAwakeningEvent[] };
   current: Record<string, Record<string, number>>;
   periods: Record<
@@ -159,4 +166,5 @@ export type GrowthState =
   | TrainingGrowthState
   | DevelopmentGrowthState
   | import('./age-types.ts').AgeDevelopmentGrowthState
-  | import('./awakening-types.ts').RookieDevelopmentGrowthState;
+  | import('./awakening-types.ts').RookieDevelopmentGrowthState
+  | import('./camp-types.ts').CampDevelopmentGrowthState;

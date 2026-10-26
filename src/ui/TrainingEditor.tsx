@@ -1,3 +1,4 @@
+import { CampEditor, type CampEditorProps } from './CampEditor.tsx';
 import { RookieAwakeningResults } from './RookieAwakeningResults.tsx';
 import { growthAbilityKey } from '../world/growth-basis.ts';
 import { PlayerGrowth } from './PlayerGrowth.tsx';
@@ -6,6 +7,7 @@ import { canonicalJson } from '../storage/codec.ts';
 import { playerAge, playerProfile } from '../world/player-profiles.ts';
 import { PROFILE_POSITIONS } from '../world/player-profile-types.ts';
 import {
+  trainingChanges,
   trainingTargetOptions,
   trainingTargetLabel,
   trainingTargetAbilities,
@@ -25,7 +27,9 @@ export function TrainingEditor({
   onSave,
   onReset,
   onSelectPlayer,
+  camp,
 }: {
+  camp?: CampEditorProps;
   view: WorldView;
   draft: TrainingDraft;
   changed: boolean;
@@ -84,15 +88,22 @@ export function TrainingEditor({
   }
   const hiddenSelected = selected.filter((id) => !visible.some((p) => p.playerId === id)).length;
   const single = selected.length === 1 ? selected[0]! : null;
+  const campChanged =
+    camp &&
+    Object.keys(camp.base).some(
+      (id) => trainingChanges(camp.base[id]!, camp.draft[id]!).length > 0,
+    );
   return (
     <section className="panel training-panel" aria-label="育成・練習設定">
       <div className="training-toolbar">
         <p role="status">
           {changed
             ? '練習設定を編集中'
-            : view.unsavedChanges
-              ? '練習設定の変更なし（プレイは未保存）'
-              : '練習設定は保存済み'}
+            : campChanged
+              ? 'キャンプ設定を編集中'
+              : view.unsavedChanges
+                ? '練習設定の変更なし（プレイは未保存）'
+                : '練習設定は保存済み'}
           <small>ゲーム内の別画面へ移ると、変更した選手の設定をまとめて保存します。</small>
         </p>
         <div className="world-controls">
@@ -105,15 +116,17 @@ export function TrainingEditor({
         </div>
       </div>
       <p className="training-scope-note">
-        {view.growth?.version === 'daily-development-v4'
-          ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化・ルーキー覚醒を反映します。現在の指定は次の通常練習に使用します。移籍覚醒・キャンプは工事中です。'
-          : view.growth?.version === 'daily-development-v3'
-            ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化を反映します。現在の指定は次の通常練習に使用します。覚醒・キャンプは工事中です。'
-            : view.growth?.version === 'daily-development-v2'
-              ? '全試合終了後の日次確定で通常練習と実戦経験を反映します。現在の指定は次の通常練習に使用します。加齢・覚醒・キャンプは工事中です。'
-              : view.growth
-                ? '全試合終了後の日次確定で通常練習を実施します。現在の指定は次の練習に使用します。実戦経験・加齢・覚醒・キャンプは工事中です。'
-                : 'この保存は練習の指定・保存まで対応しています。日次の練習効果・疲労調整・経験・恒久成長は工事中です。設定だけで能力や疲労は変化しません。'}
+        {view.growth?.version === 'daily-development-v5'
+          ? '日次確定で通常練習・キャンプ練習・実戦経験・年齢変化・ルーキー覚醒を反映します。期間中はキャンプ専用メニューを使います。移籍覚醒は工事中です。'
+          : view.growth?.version === 'daily-development-v4'
+            ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化・ルーキー覚醒を反映します。現在の指定は次の通常練習に使用します。移籍覚醒・キャンプは工事中です。'
+            : view.growth?.version === 'daily-development-v3'
+              ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化を反映します。現在の指定は次の通常練習に使用します。覚醒・キャンプは工事中です。'
+              : view.growth?.version === 'daily-development-v2'
+                ? '全試合終了後の日次確定で通常練習と実戦経験を反映します。現在の指定は次の通常練習に使用します。加齢・覚醒・キャンプは工事中です。'
+                : view.growth
+                  ? '全試合終了後の日次確定で通常練習を実施します。現在の指定は次の練習に使用します。実戦経験・加齢・覚醒・キャンプは工事中です。'
+                  : 'この保存は練習の指定・保存まで対応しています。日次の練習効果・疲労調整・経験・恒久成長は工事中です。設定だけで能力や疲労は変化しません。'}
       </p>
       {locked && (
         <p className="hint">
@@ -346,6 +359,7 @@ export function TrainingEditor({
               </select>
             </label>
           </fieldset>
+          {camp && <CampEditor view={view} selected={selected} locked={locked} {...camp} />}
           {single && (
             <>
               <p className="hint">
@@ -402,7 +416,7 @@ export function TrainingEditor({
             </p>
             <p>
               {view.growth
-                ? '通常練習は才能・向上心と指定を使用し、指定外にも基礎練習を配分します。疲労の自動調整は全試合後の体力・疲労・出場負荷で強度を下げます。将来の成長予測・キャンプ・新球種習得・傾向変更は工事中です。'
+                ? '通常練習は才能・向上心と指定を使用し、指定外にも基礎練習を配分します。疲労の自動調整は全試合後の体力・疲労・出場負荷で強度を下げます。将来の成長予測・新球種習得・傾向変更は工事中です。キャンプは対応する新規プレイで利用できます。'
                 : 'キャンプ、新球種習得、傾向変更、成長履歴・成長予測は工事中です。疲労による自動調整は希望の保存のみです。'}
             </p>
           </details>

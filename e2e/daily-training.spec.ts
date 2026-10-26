@@ -18,6 +18,10 @@ async function observe(page: Page, legacy: boolean | 'training' | 'experience' |
             if (!event.data?.view) return;
             // 旧版の表示だけを投影。旧保存の実際の復元はNodeで確認する。
             if (legacy) {
+              event.data.view.camp = null;
+              if (event.data.view.growth) delete event.data.view.growth.campBursts;
+              delete event.data.view.definitions.campConfig;
+              delete event.data.view.definitions.campInputs;
               if (event.data.view.growth) delete event.data.view.growth.rookieAwakening;
               delete event.data.view.definitions.awakeningConfig;
             }
@@ -101,8 +105,8 @@ for (const width of [1280, 390, 320])
       timeout: 60000,
     });
     const after = await read(page);
-    expect(after.modelVersion).toBe('world-prototype-v19');
-    expect(after.growth!.version).toBe('daily-development-v4');
+    expect(after.modelVersion).toBe('world-prototype-v20');
+    expect(after.growth!.version).toBe('daily-development-v5');
     expect(after.growth!.latest!.experience!.length).toBeGreaterThan(0);
     expect(after.growth!.dates).toEqual(['2026-09-24']);
     expect(after.growth!.latest!.outcomes).toHaveLength(120);

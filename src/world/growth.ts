@@ -24,6 +24,7 @@ export function validateGrowthDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v22',
       'world-definitions-v23',
       'world-definitions-v24',
+      'world-definitions-v25',
     ].includes(definitions.version)
   ) {
     ensure(definitions.growthConfig === undefined, '旧定義へ成長モデルを追加できません');
@@ -117,6 +118,7 @@ export function initialGrowth(definitions: WorldDefinitions, seed: number): Trai
       'world-definitions-v22',
       'world-definitions-v23',
       'world-definitions-v24',
+      'world-definitions-v25',
     ].includes(definitions.version),
     '通常練習に対応する初期定義が必要です',
   );
@@ -217,9 +219,11 @@ export function calculateTrainingDay(
         | 'world-prototype-v16'
         | 'world-prototype-v17'
         | 'world-prototype-v18'
-        | 'world-prototype-v19';
+        | 'world-prototype-v19'
+        | 'world-prototype-v20';
     }
   >,
+  override?: import('./camp-types.ts').CampTrainingOverride,
 ) {
   const date = world.currentDate;
   ensure(
@@ -241,7 +245,9 @@ export function calculateTrainingDay(
   for (const playerId of playerIds) {
     const previous = world.growth.state.players[playerId]!;
     const values = { ...previous.values };
-    const settings = trainingSettings(world.management.training.plans[playerId]!);
+    const settings = trainingSettings(
+      override?.plans[playerId] ?? world.management.training.plans[playerId]!,
+    );
     const body = world.physical.players[playerId]!;
     const workload =
       world.physical.activityLoads[activityKey(playerId, date)]?.sourceLoads.reduce(
@@ -278,7 +284,7 @@ export function calculateTrainingDay(
       values[key] = after;
       const order = day.changes.length + 1;
       day.changes.push({
-        changeId: `training-${date}-${playerId}-${order}`,
+        changeId: `${override ? 'camp-training' : 'training'}-${date}-${playerId}-${order}`,
         playerId,
         effectiveOn: date,
         eventOrder: order,
@@ -287,16 +293,22 @@ export function calculateTrainingDay(
         changeKind: 'value',
         beforeValue: before,
         afterValue: after,
-        reason: 'training',
-        sourceEventId: 'training-day-' + date,
+        reason: override ? 'campTraining' : 'training',
+        sourceEventId: override
+          ? 'camp-training-day-' + override.campId + '-' + date
+          : 'training-day-' + date,
         abilityCatalogVersion: 'common-abilities-v1',
       });
     }
+    let allocatedBudget = budget;
     if (budget > 0) {
       const outside = others.length
         ? Math.floor((budget * config.budget.backgroundPermille) / 1000)
         : 0;
-      const focus = budget - outside;
+      const focus = Math.round(
+        ((budget - outside) * (override?.focusAmountPermille ?? 1000)) / 1000,
+      );
+      allocatedBudget = focus + outside;
       const share = Math.floor(focus / targets.length),
         remainder = focus % targets.length;
       const start = world.completedDates.length % targets.length;
@@ -320,7 +332,8 @@ export function calculateTrainingDay(
       adjustmentReasons: decision.reasons,
       opportunityMilli: chance,
       opportunityOccurred: occurred,
-      budgetMilli: budget,
+      budgetMilli: allocatedBudget,
+      ...(override ? { campId: override.campId } : {}),
       energySpentMilli: energySpent,
       fatigueAddedMilli: fatigueAdded,
     });

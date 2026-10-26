@@ -55,6 +55,7 @@ export function validatePlayerProfiles(definitions: WorldDefinitions): void {
       'world-definitions-v22',
       'world-definitions-v23',
       'world-definitions-v24',
+      'world-definitions-v25',
     ].includes(definitions.version)
   ) {
     ensure(catalog === undefined, '旧定義へプロフィールを追加できません');

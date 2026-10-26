@@ -106,3 +106,13 @@ Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。man
 - canonical JSON SHA-256: `5e43e8cf65ff531b725211ddff407a9c11fa262b5ca68f4dc55454e6b2dc82e8`
 - gzip SHA-256: `7d706e6c27fdb3307a5aad9902ffbfe1c2ac503664ee0d9da00f2dc0e68242f4`
 - 1日終了の全状態SHA-256: `976068daf1fd36fedddc11ae07eaff40ee338b1082948209e9e8f2289cb0ec2e`
+
+## world-v19-in-progress.json.gz（固定・0.42.0）
+
+HEAD 8a895b8からseed31・短期の17球進行時点を保存したv19検体です。互換性を確認するため、キャンプ実装後に再生成しません。
+
+- gzip SHA256: `48c8138be6117e7279ae58a861c4d81886099d454c14c2ccf1364b4eddfc619f`
+- 正規JSON SHA256: `d5d3ffb05563f11e039dbea7c5625673a73341a94deeaae2741ad6e7b815a823`
+- 初日確定後 SHA256: `82da14a894766886e523f9ab355843173aa1bb0e515c723225695516c180695c`
+
+`tests/camp.test.ts`で旧v020のDB保存・復元・バックアップ・続行とハッシュを検査します。

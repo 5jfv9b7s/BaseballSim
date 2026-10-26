@@ -10,7 +10,8 @@ const points = (value: number) => {
 export function AgeResults({ view, playerId }: { view: WorldView; playerId: string }) {
   if (
     view.growth?.version !== 'daily-development-v3' &&
-    view.growth?.version !== 'daily-development-v4'
+    view.growth?.version !== 'daily-development-v4' &&
+    view.growth?.version !== 'daily-development-v5'
   )
     return null;
   const latest = view.growth.latest;

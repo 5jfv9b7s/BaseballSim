@@ -15,7 +15,10 @@ import type {
 import type { TrainingAbilityRef } from './training-types.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
 
-type AgeWorld = Extract<WorldRecord, { version: 'world-prototype-v18' | 'world-prototype-v19' }>;
+type AgeWorld = Extract<
+  WorldRecord,
+  { version: 'world-prototype-v18' | 'world-prototype-v19' | 'world-prototype-v20' }
+>;
 /** 平均グレゴリオ年365.2425日。日次への変換は整数端数を繰り越す。 */
 export const AGE_YEAR_DENOMINATOR = 3652425;
 function fields(value: unknown, keys: string[], label: string): void {
@@ -26,7 +29,9 @@ function fields(value: unknown, keys: string[], label: string): void {
   );
 }
 export function validateAgeDefinitions(d: WorldDefinitions): void {
-  if (!['world-definitions-v23', 'world-definitions-v24'].includes(d.version)) {
+  if (
+    !['world-definitions-v23', 'world-definitions-v24', 'world-definitions-v25'].includes(d.version)
+  ) {
     ensure(
       d.ageConfig === undefined && d.ageCurves === undefined,
       '旧定義へ年齢変化を追加できません',
@@ -186,7 +191,7 @@ export function initialAgeDevelopment(
 ): AgeDevelopmentGrowthState {
   validateAgeDefinitions(d);
   ensure(
-    ['world-definitions-v23', 'world-definitions-v24'].includes(d.version),
+    ['world-definitions-v23', 'world-definitions-v24', 'world-definitions-v25'].includes(d.version),
     '年齢曲線に対応する定義が必要です',
   );
   const base = initialDevelopment(d, seed);
@@ -206,8 +211,16 @@ export function initialAgeDevelopment(
     },
   };
 }
-export function calculateAgeDevelopmentDay(world: AgeWorld) {
-  const { players, day: previousDay, physical, experienceRng } = calculateDevelopmentDay(world);
+export function calculateAgeDevelopmentDay(
+  world: AgeWorld,
+  override?: import('./camp-types.ts').CampTrainingOverride,
+) {
+  const {
+    players,
+    day: previousDay,
+    physical,
+    experienceRng,
+  } = calculateDevelopmentDay(world, override);
   const day: AgeDevelopmentDay = { ...previousDay, aging: [] };
   const c = world.definitions.ageConfig!;
   const agingRemainders = { ...world.growth.state.agingRemainders };

@@ -1,3 +1,4 @@
+import { createCampHistoryCodec } from './camp-history-codec.ts';
 import { createAwakeningHistoryCodec } from './awakening-history-codec.ts';
 import { createAgeHistoryCodec } from './age-history-codec.ts';
 import { verifySharedBlocks, putSharedBlocks } from './shared-blocks.ts';
@@ -147,11 +148,13 @@ export class DexieWorldStorage implements WorldStorageAdapter {
 
     const { definitions, games, stats, contributions, statApplicationMarkers, ...core } = world;
     const ageCodec =
-      world.version === 'world-prototype-v19'
-        ? createAwakeningHistoryCodec(definitions)
-        : world.version === 'world-prototype-v18'
-          ? createAgeHistoryCodec(definitions)
-          : null;
+      world.version === 'world-prototype-v20'
+        ? createCampHistoryCodec(definitions)
+        : world.version === 'world-prototype-v19'
+          ? createAwakeningHistoryCodec(definitions)
+          : world.version === 'world-prototype-v18'
+            ? createAgeHistoryCodec(definitions)
+            : null;
     const historyValues: [string, string, unknown][] = [];
     let storedCore: unknown = core;
     if ('growth' in core) {
@@ -161,15 +164,19 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ...Object.entries(days).map(([date, day]): [string, string, unknown] => [
           'growth/day/' + date,
           'growthDay',
-          world.version === 'world-prototype-v19'
-            ? (ageCodec as ReturnType<typeof createAwakeningHistoryCodec>).encode(
-                day as import('./awakening-types.ts').RookieAwakeningDay,
+          world.version === 'world-prototype-v20'
+            ? (ageCodec as ReturnType<typeof createCampHistoryCodec>).encode(
+                day as import('./camp-types.ts').CampDevelopmentDay,
               )
-            : world.version === 'world-prototype-v18'
-              ? (ageCodec as ReturnType<typeof createAgeHistoryCodec>).encode(
-                  day as import('./age-types.ts').AgeDevelopmentDay,
+            : world.version === 'world-prototype-v19'
+              ? (ageCodec as ReturnType<typeof createAwakeningHistoryCodec>).encode(
+                  day as import('./awakening-types.ts').RookieAwakeningDay,
                 )
-              : day,
+              : world.version === 'world-prototype-v18'
+                ? (ageCodec as ReturnType<typeof createAgeHistoryCodec>).encode(
+                    day as import('./age-types.ts').AgeDevelopmentDay,
+                  )
+                : day,
         ]),
       );
     }
@@ -184,7 +191,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
               world.version === 'world-prototype-v16' ||
               world.version === 'world-prototype-v17' ||
               world.version === 'world-prototype-v18' ||
-              world.version === 'world-prototype-v19'
+              world.version === 'world-prototype-v19' ||
+              world.version === 'world-prototype-v20'
               ? 'game-prototype-v11'
               : 'game-prototype-v10',
             definitions.matchConfig,
@@ -357,6 +365,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
                 'world-prototype-v17',
                 'world-prototype-v18',
                 'world-prototype-v19',
+                'world-prototype-v20',
               ].includes(snapshot.versions.simulationVersion)
                 ? 625
                 : [

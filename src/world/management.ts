@@ -1,3 +1,4 @@
+import { applyCampPlans } from './camp.ts';
 import { applyGrowthFixture } from './growth-fixture.ts';
 import { initialTrainingPlans, applyTrainingPlans } from './training.ts';
 import { attachBullpen } from './bullpen.ts';
@@ -85,6 +86,7 @@ export function initialManagement(
     'world-definitions-v22',
     'world-definitions-v23',
     'world-definitions-v24',
+    'world-definitions-v25',
   ].includes(definitions.version)
     ? { ...management, version: 'club-management-v2', training: initialTrainingPlans(definitions) }
     : management;
@@ -250,7 +252,8 @@ export function managementFixture(
     world.version === 'world-prototype-v16' ||
     world.version === 'world-prototype-v17' ||
     world.version === 'world-prototype-v18' ||
-    world.version === 'world-prototype-v19'
+    world.version === 'world-prototype-v19' ||
+    world.version === 'world-prototype-v20'
   )
     attachBullpen(world, gameId, fixture);
   validateGameFixture(fixture);
@@ -298,7 +301,9 @@ export function applyManagement(
   const management = structuredClone(world.management);
   const gameLineups = 'gameLineups' in world ? structuredClone(world.gameLineups) : null;
   let updated: ManagedWorld = world;
-  if (action.kind === 'setTrainingPlans') {
+  if (action.kind === 'setCampPlans') {
+    updated = applyCampPlans(world, action);
+  } else if (action.kind === 'setTrainingPlans') {
     ensure(
       management.version === 'club-management-v2',
       '練習設定は対応する新規プレイで利用できます',

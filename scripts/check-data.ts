@@ -1,3 +1,5 @@
+import { createCampDevelopmentDefinitions } from '../src/data/world/camp-development.ts';
+import { createCampDevelopmentWorld } from '../src/world/engine.ts';
 import {
   createRookieDevelopmentDefinitions,
   rookieProfileOverrides,
@@ -431,4 +433,19 @@ for (const calendar of ['short', 'annual'] as const) {
   if (JSON.stringify(ids) !== JSON.stringify(registered))
     throw Error('新人プロフィールJSONの登録と実ファイルが一致しません');
   console.log(`新人プロフィールJSON登録：${ids.length}人（検査成功）`);
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const w = createCampDevelopmentWorld(
+    20260924,
+    undefined,
+    createCampDevelopmentDefinitions(calendar),
+  );
+  for (const period of w.definitions.campInputs!.periods) {
+    if (period.players.length !== 120 || Object.keys(w.camp.plans[period.campId]!).length !== 120)
+      throw Error('キャンプの全選手設定が不足しています');
+    console.log(
+      `キャンプ：${calendar} / ${period.label} / ${period.from}〜${period.through} / 全120人（検査成功）`,
+    );
+  }
 }

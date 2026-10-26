@@ -129,3 +129,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.camp-editor {
+  border-top: 2px solid var(--line, #ccd2d8);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}
+.camp-editor h4 {
+  margin: 0 0 0.5rem;
+}
+.camp-editor > label {
+  display: grid;
+  gap: 0.35rem;
+}
+.camp-editor select {
+  width: 100%;
+  min-width: 0;
+}

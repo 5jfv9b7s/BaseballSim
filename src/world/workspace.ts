@@ -1,9 +1,9 @@
-import { createRookieDevelopmentDefinitions } from '../data/world/rookie-development.ts';
+import { createCampDevelopmentDefinitions } from '../data/world/camp-development.ts';
 import { createNewPlayOptions } from '../data/world/new-play-options.ts';
 import type { NewPlayOptions } from './league-structure-types.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { createRookieDevelopmentWorld } from './engine.ts';
+import { createCampDevelopmentWorld } from './engine.ts';
 import { DexieWorldStorage, WorldDatabase } from './dexie-storage.ts';
 import { WorldController, type WorldCommand, type WorldView } from './controller.ts';
 import type { StorageInspection } from './storage-inspection.ts';
@@ -82,10 +82,10 @@ export class WorldWorkspace {
       '新規作成の前に現在の作業を手動保存してください',
     );
 
-    const world = createRookieDevelopmentWorld(
+    const world = createCampDevelopmentWorld(
       request.seed,
       request.controlledSquadId,
-      createRookieDevelopmentDefinitions(request.calendar),
+      createCampDevelopmentDefinitions(request.calendar),
     );
     const nextStorage = new DexieWorldStorage(this.storage.database, localWorldId);
     const nextRevision = before.revision + 1;

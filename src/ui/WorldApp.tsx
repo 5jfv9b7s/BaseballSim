@@ -1,3 +1,4 @@
+import type { CampDraft } from '../world/camp-types.ts';
 import { TrainingEditor } from './TrainingEditor.tsx';
 import { createTrainingDraft, trainingChanges } from '../world/training.ts';
 import type { TrainingDraft } from '../world/training-types.ts';
@@ -54,6 +55,19 @@ export function WorldApp({
   development?: boolean;
   onOpenTools: () => void;
 }) {
+  const [campDraft, setCampDraftState] = useState<CampDraft>({});
+  const campDraftRef = useRef<CampDraft>({});
+  const campBase = useRef<CampDraft>({});
+  const savingCampId = useRef<string | null>(null);
+  function setCampDraft(next: CampDraft) {
+    campDraftRef.current = next;
+    setCampDraftState(next);
+  }
+  function campFromView(current: WorldView): CampDraft {
+    return Object.fromEntries(
+      (current.camp?.periods ?? []).map((p) => [p.campId, createTrainingDraft(p.plans)]),
+    );
+  }
   const [training, setTraining] = useState<TrainingDraft | null>(null);
   const trainingBase = useRef<TrainingDraft | null>(null);
   const trainingDestination = useRef<MainPage | 'tools' | null>(null);
@@ -114,6 +128,9 @@ export function WorldApp({
   function finishNavigation(destination: MainPage | 'tools') {
     setTraining(null);
     trainingBase.current = null;
+    setCampDraft({});
+    campBase.current = {};
+    savingCampId.current = null;
     setFormation(null);
     formationBase.current = null;
     setSelectedPlayer('');
@@ -144,6 +161,8 @@ export function WorldApp({
     const draft = createTrainingDraft(current.training.plans);
     trainingBase.current = draft;
     setTraining(structuredClone(draft));
+    campBase.current = campFromView(current);
+    setCampDraft(structuredClone(campBase.current));
   }
 
   function saveTraining(destination?: MainPage | 'tools') {
@@ -152,11 +171,39 @@ export function WorldApp({
       return;
     const updates = trainingChanges(trainingBase.current, training);
     if (!updates.length) {
-      if (destination) finishNavigation(destination);
+      if (destination) saveCamp(undefined, destination);
       return;
     }
     trainingDestination.current = destination ?? null;
     send({ kind: 'setTrainingPlans', squadId: current.training.squadId, updates });
+  }
+
+  function saveCamp(campId?: string, destination?: MainPage | 'tools') {
+    const current = latest.current;
+    if (!current?.camp || pending.current || auto.current) {
+      if (destination && !pending.current && !auto.current) finishNavigation(destination);
+      return;
+    }
+    const dirtyId = Object.keys(campBase.current).find(
+      (id) =>
+        (!campId || id === campId) &&
+        trainingChanges(campBase.current[id]!, campDraftRef.current[id]!).length,
+    );
+    if (!dirtyId) {
+      if (destination) {
+        trainingDestination.current = null;
+        finishNavigation(destination);
+      }
+      return;
+    }
+    savingCampId.current = dirtyId;
+    trainingDestination.current = destination ?? null;
+    send({
+      kind: 'setCampPlans',
+      campId: dirtyId,
+      squadId: current.camp.squadId,
+      updates: trainingChanges(campBase.current[dirtyId]!, campDraftRef.current[dirtyId]!),
+    });
   }
 
   function navigate(destination: MainPage | 'tools') {
@@ -169,6 +216,16 @@ export function WorldApp({
       trainingChanges(trainingBase.current, training).length
     ) {
       saveTraining(destination);
+      return;
+    }
+    if (
+      page === 'training' &&
+      destination !== 'training' &&
+      Object.keys(campBase.current).some(
+        (id) => trainingChanges(campBase.current[id]!, campDraftRef.current[id]!).length,
+      )
+    ) {
+      saveCamp(undefined, destination);
       return;
     }
     if (
@@ -267,6 +324,7 @@ export function WorldApp({
     const instance = new Worker(new URL('../world-worker.ts', import.meta.url), { type: 'module' });
     worker.current = instance;
     instance.onmessage = ({ data }: MessageEvent<WorldWorkerResponse>) => {
+      const completedAction = lastAction.current;
       pending.current = false;
       setBusy(false);
       latest.current = data.view;
@@ -310,7 +368,7 @@ export function WorldApp({
         setInspection(data.inspection);
         setMessage('保存容量を確認しました。データは削除していません。');
       }
-      if (lastAction.current === 'completeDay') {
+      if (completedAction === 'completeDay') {
         const target = progressTarget.current;
         const arrived = target && reachedProgressTarget(data.view.currentDate, target);
         if (arrived) {
@@ -332,38 +390,54 @@ export function WorldApp({
         );
       }
       if (
-        lastAction.current === 'setClubPlan' ||
-        lastAction.current === 'setGameStarter' ||
-        lastAction.current === 'setGameLineup' ||
-        lastAction.current === 'setRegistrations' ||
-        lastAction.current === 'setRosterPolicy' ||
-        lastAction.current === 'setRestPolicy' ||
-        lastAction.current === 'setFielderRestPolicy' ||
-        lastAction.current === 'setReliefPolicy' ||
-        lastAction.current === 'setGameBench'
+        completedAction === 'setClubPlan' ||
+        completedAction === 'setGameStarter' ||
+        completedAction === 'setGameLineup' ||
+        completedAction === 'setRegistrations' ||
+        completedAction === 'setRosterPolicy' ||
+        completedAction === 'setRestPolicy' ||
+        completedAction === 'setFielderRestPolicy' ||
+        completedAction === 'setReliefPolicy' ||
+        completedAction === 'setGameBench'
       )
         setMessage('編成を確定し、自動保存しました。');
-      if (lastAction.current === 'setTrainingPlans') {
+      if (completedAction === 'setTrainingPlans') {
         const destination = trainingDestination.current;
         trainingDestination.current = null;
         const saved = data.view.training ? createTrainingDraft(data.view.training.plans) : null;
         trainingBase.current = saved;
         setTraining(saved ? structuredClone(saved) : null);
         setMessage('練習設定をまとめて確定し、自動保存しました。');
-        if (destination) finishNavigation(destination);
+        if (destination) saveCamp(undefined, destination);
       }
-      if (lastAction.current === 'setFormation') {
+      if (completedAction === 'setCampPlans') {
+        const id = savingCampId.current;
+        const destination = trainingDestination.current;
+        savingCampId.current = null;
+        trainingDestination.current = null;
+        if (id) {
+          const saved = campFromView(data.view)[id]!;
+          campBase.current = { ...campBase.current, [id]: saved };
+          setCampDraft({ ...campDraftRef.current, [id]: structuredClone(saved) });
+        }
+        setMessage('キャンプ設定を確定し、自動保存しました。');
+        if (destination) saveCamp(undefined, destination);
+      }
+      if (completedAction === 'setFormation') {
         const destination = formationDestination.current;
         formationDestination.current = null;
         setMessage('編成の変更をまとめて確定し、自動保存しました。');
         if (destination) finishNavigation(destination);
       }
-      if (lastAction.current === 'save') setMessage('世界全体を手動保存しました。');
-      if (lastAction.current === 'load' || lastAction.current === 'openPlay') {
+      if (completedAction === 'save') setMessage('世界全体を手動保存しました。');
+      if (completedAction === 'load' || completedAction === 'openPlay') {
         progressTarget.current = null;
         setSelectedPlayer('');
         setTraining(null);
         trainingBase.current = null;
+        campBase.current = {};
+        setCampDraft({});
+        savingCampId.current = null;
         trainingDestination.current = null;
         setFormation(null);
         formationBase.current = null;
@@ -378,13 +452,16 @@ export function WorldApp({
         setTargetDate('');
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
-      if (lastAction.current === 'new') {
+      if (completedAction === 'new') {
         progressTarget.current = null;
         auto.current = false;
         setRunning(false);
         setSelectedPlayer('');
         setTraining(null);
         trainingBase.current = null;
+        campBase.current = {};
+        setCampDraft({});
+        savingCampId.current = null;
         trainingDestination.current = null;
         setFormation(null);
         formationBase.current = null;
@@ -528,10 +605,15 @@ export function WorldApp({
   const trainingViewDraft = view?.training
     ? (training ?? createTrainingDraft(view.training.plans))
     : null;
-  const trainingPending =
+  const normalTrainingPending =
     !!training &&
     !!trainingBase.current &&
     trainingChanges(trainingBase.current, training).length > 0;
+  const trainingPending =
+    normalTrainingPending ||
+    Object.keys(campBase.current).some(
+      (id) => trainingChanges(campBase.current[id]!, campDraft[id]!).length > 0,
+    );
   const formationView = view && (formation ?? createFormationDraft(view));
   const formationPending =
     !!formation && !!formationBase.current && formationChanged(formationBase.current, formation);
@@ -549,8 +631,25 @@ export function WorldApp({
           key={view.localWorldId + editorEpoch}
           view={view}
           draft={trainingViewDraft}
-          changed={trainingPending}
+          changed={normalTrainingPending}
           locked={!training || disabled || !view.canEditManagement}
+          camp={
+            view.camp && Object.keys(campDraft).length
+              ? {
+                  draft: campDraft,
+                  base: campBase.current,
+                  onChange: setCampDraft,
+                  onSave: (id) => saveCamp(id),
+                  onReset: (id) => {
+                    setCampDraft({
+                      ...campDraftRef.current,
+                      [id]: structuredClone(campBase.current[id]!),
+                    });
+                    setError('');
+                  },
+                }
+              : undefined
+          }
           onChange={setTraining}
           onSave={() => saveTraining()}
           onReset={() => {
@@ -1268,7 +1367,7 @@ export function WorldApp({
             短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日。一軍144試合、二軍72試合（9月15日まで）の暫定構成です。日程構成は暫定仕様です。
           </p>
           <p>
-            係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。能力・状態評価による自動昇降格、試合中の代打/交代・恒久的な成長・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復、試合開始時の状態による能力補正、投手の休養方針を使用します。
+            係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。通常練習・キャンプ・実戦経験・年齢変化・ルーキー覚醒による育成は未校正の試作です。能力・状態評価による自動昇降格、試合中の代打/交代・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復、試合開始時の状態による能力補正、投手の休養方針を使用します。
           </p>
         </details>
       </>

@@ -12,7 +12,11 @@ export function RookieAwakeningResults({
   playerId?: string;
   onSelectPlayer?: (id: string) => void;
 }) {
-  if (view.growth?.version !== 'daily-development-v4') return null;
+  if (
+    view.growth?.version !== 'daily-development-v4' &&
+    view.growth?.version !== 'daily-development-v5'
+  )
+    return null;
   const own = view.definitions.squads.find(
     (s) => s.squadId === view.management?.controlledSquadId,
   )!;

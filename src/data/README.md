@@ -1,5 +1,9 @@
 # 選手・持ち球・球団の編集
 
+## キャンプ（0.43.0・未校正の試作）
+
+期間・初期メニューは[camps/](camps/README.md)、倍率・爆発の確率/量は[config/camp.ts](../../config/camp.ts)に分離しました。通常指定を保ち、期間中だけ専用指定へ切り替えます。短期9/25〜26・年間6/1〜7は架空の検証期間です。新規v20/定義v25/保存v021限定で、旧保存へ後付けしません。詳しい式・操作は[育成ガイド](../../TRAINING-IMPLEMENTATION.md#0430キャンプ専用メニューと成長)を参照してください。
+
 0.38.0の通常練習は[training/](training/README.md)で初期指定と対象辞書、[../../config/growth.ts](../../config/growth.ts)で試作係数を調整します。[日次効果・現在値・成長履歴の操作と式](../../TRAINING-IMPLEMENTATION.md)を参照してください。変更は新規プレイだけに反映し、既存の初期選手JSONや提供候補を書き換えません。
 
 0.42.0の新規プレイは[world/rookie-development.ts](world/rookie-development.ts)の定義v24です。ルーキー覚醒の架空8人のプロ入り年は[profiles/rookies-2026/](profiles/rookies-2026/README.md)、係数は[config/awakening.ts](../../config/awakening.ts)で編集します。元プロフィール・旧保存には差分を適用しません。

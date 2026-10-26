@@ -18,7 +18,10 @@ import type {
 
 type DevelopmentWorld = Extract<
   WorldRecord,
-  { version: 'world-prototype-v17' | 'world-prototype-v18' | 'world-prototype-v19' }
+  {
+    version:
+      'world-prototype-v17' | 'world-prototype-v18' | 'world-prototype-v19' | 'world-prototype-v20';
+  }
 >;
 export const EXPERIENCE_DOMAINS = ['batting', 'pitching', 'fielding'] as const;
 
@@ -31,9 +34,12 @@ function fields(value: unknown, keys: string[], label: string) {
 }
 export function validateExperienceDefinitions(definitions: WorldDefinitions) {
   if (
-    !['world-definitions-v22', 'world-definitions-v23', 'world-definitions-v24'].includes(
-      definitions.version,
-    )
+    ![
+      'world-definitions-v22',
+      'world-definitions-v23',
+      'world-definitions-v24',
+      'world-definitions-v25',
+    ].includes(definitions.version)
   ) {
     ensure(definitions.experienceConfig === undefined, '旧定義へ実戦経験モデルを追加できません');
     return;
@@ -66,9 +72,12 @@ export function initialDevelopment(
 ): DevelopmentGrowthState {
   validateExperienceDefinitions(definitions);
   ensure(
-    ['world-definitions-v22', 'world-definitions-v23', 'world-definitions-v24'].includes(
-      definitions.version,
-    ),
+    [
+      'world-definitions-v22',
+      'world-definitions-v23',
+      'world-definitions-v24',
+      'world-definitions-v25',
+    ].includes(definitions.version),
     '実戦経験に対応する定義が必要です',
   );
   const training = initialGrowth(definitions, seed);
@@ -245,8 +254,11 @@ export function experienceBudget(
 }
 
 /** 通常練習→実戦経験→既存の日次回復。出場済みの負荷を二重に加えない。 */
-export function calculateDevelopmentDay(world: DevelopmentWorld) {
-  const { players, day: trainingDay, physical } = calculateTrainingDay(world);
+export function calculateDevelopmentDay(
+  world: DevelopmentWorld,
+  override?: import('./camp-types.ts').CampTrainingOverride,
+) {
+  const { players, day: trainingDay, physical } = calculateTrainingDay(world, override);
   const config = world.definitions.experienceConfig!;
   const experienceRng = { ...world.growth.state.experienceRng };
   const day: DevelopmentDay = { ...trainingDay, experience: [] };

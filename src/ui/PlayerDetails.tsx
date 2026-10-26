@@ -265,15 +265,17 @@ export function PlayerDetails({
 
           <p>体力は高いほど余力があり、疲労は高いほど蓄積しています。</p>
           <p className="hint">
-            {view.growth?.version === 'daily-development-v4'
-              ? '通常練習・実戦経験・年齢変化・ルーキー覚醒の確定実績を表示します。怪我・移籍覚醒・キャンプは工事中です。'
-              : view.growth?.version === 'daily-development-v3'
-                ? '通常練習・実戦経験・年齢変化の確定実績を表示します。怪我・覚醒・キャンプは工事中です。'
-                : view.growth?.version === 'daily-development-v2'
-                  ? '通常練習と実戦経験の確定実績を表示します。怪我・加齢・覚醒・キャンプは工事中です。'
-                  : view.growth
-                    ? '怪我・実戦経験・加齢・覚醒・キャンプは工事中です。通常練習の実績だけを表示します。'
-                    : '怪我・恒久的成長・成長履歴は工事中です。記録のない状態を健康・成長なしとは判定しません。'}
+            {view.growth?.version === 'daily-development-v5'
+              ? '通常練習・キャンプ・実戦経験・年齢変化・ルーキー覚醒の確定実績を表示します。怪我・移籍覚醒は工事中です。'
+              : view.growth?.version === 'daily-development-v4'
+                ? '通常練習・実戦経験・年齢変化・ルーキー覚醒の確定実績を表示します。怪我・移籍覚醒・キャンプは工事中です。'
+                : view.growth?.version === 'daily-development-v3'
+                  ? '通常練習・実戦経験・年齢変化の確定実績を表示します。怪我・覚醒・キャンプは工事中です。'
+                  : view.growth?.version === 'daily-development-v2'
+                    ? '通常練習と実戦経験の確定実績を表示します。怪我・加齢・覚醒・キャンプは工事中です。'
+                    : view.growth
+                      ? '怪我・実戦経験・加齢・覚醒・キャンプは工事中です。通常練習の実績だけを表示します。'
+                      : '怪我・恒久的成長・成長履歴は工事中です。記録のない状態を健康・成長なしとは判定しません。'}
           </p>
         </>
       )}

@@ -1,3 +1,4 @@
+import { campView } from './camp.ts';
 import { seasonGrowthReport } from './season-growth.ts';
 import { growthView } from './growth-view.ts';
 import { trainingView } from './training.ts';
@@ -17,7 +18,7 @@ import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
-import { advanceWorld, completeDay, createRookieDevelopmentWorld, worldPhase } from './engine.ts';
+import { advanceWorld, completeDay, createCampDevelopmentWorld, worldPhase } from './engine.ts';
 import { leagueStandings } from './league-standings.ts';
 import { standings, statsForScope } from './stats.ts';
 import {
@@ -45,6 +46,7 @@ export type WorldCommand = WorldAction & {
 };
 
 export interface WorldView {
+  camp: ReturnType<typeof campView>;
   seasonGrowth: Record<'firstRegular' | 'farmRegular', ReturnType<typeof seasonGrowthReport>>;
   growth: ReturnType<typeof growthView>;
   training: ReturnType<typeof trainingView>;
@@ -114,7 +116,7 @@ export interface WorldView {
 
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createRookieDevelopmentWorld();
+  private world: WorldRecord = createCampDevelopmentWorld();
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -171,6 +173,7 @@ export class WorldController {
     return structuredClone({
       growth: growthView(world),
       training: trainingView(world),
+      camp: campView(world),
       playerStatuses: playerStatuses(world),
       localWorldId: this.localWorldId,
       memorial: {
@@ -183,7 +186,8 @@ export class WorldController {
         world.version === 'world-prototype-v16' ||
         world.version === 'world-prototype-v17' ||
         world.version === 'world-prototype-v18' ||
-        world.version === 'world-prototype-v19'
+        world.version === 'world-prototype-v19' ||
+        world.version === 'world-prototype-v20'
           ? bullpenView(world)
           : null,
       relief: 'reliefControl' in world ? reliefView(world) : null,
@@ -200,7 +204,8 @@ export class WorldController {
         world.version === 'world-prototype-v16' ||
         world.version === 'world-prototype-v17' ||
         world.version === 'world-prototype-v18' ||
-        world.version === 'world-prototype-v19'
+        world.version === 'world-prototype-v19' ||
+        world.version === 'world-prototype-v20'
           ? performanceView(world)
           : null,
       condition: 'condition' in world ? conditionView(world) : null,
@@ -290,6 +295,7 @@ export class WorldController {
         'save',
         'load',
         'setTrainingPlans',
+        'setCampPlans',
         'setFormation',
         'setClubPlan',
         'setGameStarter',
@@ -319,6 +325,7 @@ export class WorldController {
 
     if (
       command.kind === 'setTrainingPlans' ||
+      command.kind === 'setCampPlans' ||
       command.kind === 'setFormation' ||
       command.kind === 'setClubPlan' ||
       command.kind === 'setGameStarter' ||
@@ -354,7 +361,7 @@ export class WorldController {
           this.storageError = null;
         } catch (error) {
           this.storageError =
-            command.kind === 'setTrainingPlans'
+            command.kind === 'setTrainingPlans' || command.kind === 'setCampPlans'
               ? '練習設定の自動保存に失敗しました。変更はまだ適用していません。'
               : '編成の自動保存に失敗しました。変更はまだ適用していません。';
           throw error;

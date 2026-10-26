@@ -40,7 +40,8 @@ export function growthView(world: WorldRecord): GrowthView | null {
   const last = dates.at(-1);
   const view: GrowthView = {
     version: world.growth.version,
-    ...(world.growth.version === 'daily-development-v4'
+    ...(world.growth.version === 'daily-development-v4' ||
+    world.growth.version === 'daily-development-v5'
       ? {
           rookieAwakening: {
             events: Object.values(world.growth.state.days)
@@ -54,6 +55,24 @@ export function growthView(world: WorldRecord): GrowthView | null {
           },
         }
       : {}),
+    ...(world.growth.version === 'daily-development-v5'
+      ? {
+          campBursts: Object.values(world.growth.state.days).flatMap((day) =>
+            (day.camp?.outcomes ?? [])
+              .filter((o) => o.status === 'occurred')
+              .map((outcome) => ({
+                campId: day.camp!.campId,
+                date: day.date,
+                outcome: structuredClone(outcome),
+                changes: structuredClone(
+                  day.changes.filter(
+                    (c) => c.reason === 'campBurst' && c.playerId === outcome.playerId,
+                  ),
+                ),
+              })),
+          ),
+        }
+      : {}),
     current,
     periods,
     dates,
@@ -65,7 +84,8 @@ export function growthView(world: WorldRecord): GrowthView | null {
           date: last,
           outcomes: structuredClone(state.days[last]!.outcomes),
           ...(world.growth.version === 'daily-development-v3' ||
-          world.growth.version === 'daily-development-v4'
+          world.growth.version === 'daily-development-v4' ||
+          world.growth.version === 'daily-development-v5'
             ? { aging: structuredClone(world.growth.state.days[last]!.aging) }
             : {}),
           ...(world.growth.version !== 'daily-training-v1'

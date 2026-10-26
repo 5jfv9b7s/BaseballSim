@@ -15,7 +15,7 @@ import type {
 import type { TrainingAbilityRef } from './training-types.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
 
-type AgeWorld = Extract<WorldRecord, { version: 'world-prototype-v18' }>;
+type AgeWorld = Extract<WorldRecord, { version: 'world-prototype-v18' | 'world-prototype-v19' }>;
 /** 平均グレゴリオ年365.2425日。日次への変換は整数端数を繰り越す。 */
 export const AGE_YEAR_DENOMINATOR = 3652425;
 function fields(value: unknown, keys: string[], label: string): void {
@@ -26,7 +26,7 @@ function fields(value: unknown, keys: string[], label: string): void {
   );
 }
 export function validateAgeDefinitions(d: WorldDefinitions): void {
-  if (d.version !== 'world-definitions-v23') {
+  if (!['world-definitions-v23', 'world-definitions-v24'].includes(d.version)) {
     ensure(
       d.ageConfig === undefined && d.ageCurves === undefined,
       '旧定義へ年齢変化を追加できません',
@@ -185,7 +185,10 @@ export function initialAgeDevelopment(
   seed: number,
 ): AgeDevelopmentGrowthState {
   validateAgeDefinitions(d);
-  ensure(d.version === 'world-definitions-v23', '年齢曲線に対応する定義が必要です');
+  ensure(
+    ['world-definitions-v23', 'world-definitions-v24'].includes(d.version),
+    '年齢曲線に対応する定義が必要です',
+  );
   const base = initialDevelopment(d, seed);
   return {
     modelId: 'daily-development',
@@ -203,7 +206,7 @@ export function initialAgeDevelopment(
     },
   };
 }
-export function applyAgeDevelopmentDay(world: AgeWorld) {
+export function calculateAgeDevelopmentDay(world: AgeWorld) {
   const { players, day: previousDay, physical, experienceRng } = calculateDevelopmentDay(world);
   const day: AgeDevelopmentDay = { ...previousDay, aging: [] };
   const c = world.definitions.ageConfig!;
@@ -257,6 +260,14 @@ export function applyAgeDevelopmentDay(world: AgeWorld) {
       0,
     );
   }
+  return { players, day, physical, experienceRng, agingRemainders };
+}
+/** 旧v18の計算・状態・保存を維持する。 */
+export function applyAgeDevelopmentDay(
+  world: Extract<WorldRecord, { version: 'world-prototype-v18' }>,
+) {
+  const { players, day, physical, experienceRng, agingRemainders } =
+    calculateAgeDevelopmentDay(world);
   const growth: AgeDevelopmentGrowthState = {
     ...world.growth,
     state: {

@@ -6,7 +6,7 @@ import { commonTrainingRef } from '../src/world/training.ts';
 
 // 3画面幅の照合と実保存/再開を含むため、Windowsの年間検証併走時にも待機できる上限。
 test.setTimeout(240000);
-async function observe(page: Page, legacy: boolean | 'training' | 'experience' = false) {
+async function observe(page: Page, legacy: boolean | 'training' | 'experience' | 'aging' = false) {
   await page.addInitScript((legacy) => {
     const NativeWorker = Worker;
     Reflect.set(window, 'growthCommands', []);
@@ -17,7 +17,15 @@ async function observe(page: Page, legacy: boolean | 'training' | 'experience' =
           this.addEventListener('message', (event) => {
             if (!event.data?.view) return;
             // 旧版の表示だけを投影。旧保存の実際の復元はNodeで確認する。
-            if (legacy === 'experience') {
+            if (legacy) {
+              if (event.data.view.growth) delete event.data.view.growth.rookieAwakening;
+              delete event.data.view.definitions.awakeningConfig;
+            }
+            if (legacy === 'aging') {
+              event.data.view.growth.version = 'daily-development-v3';
+              event.data.view.definitions.version = 'world-definitions-v23';
+              event.data.view.modelVersion = 'world-prototype-v18';
+            } else if (legacy === 'experience') {
               event.data.view.growth.version = 'daily-development-v2';
               if (event.data.view.growth.latest) delete event.data.view.growth.latest.aging;
               delete event.data.view.definitions.ageConfig;
@@ -93,8 +101,8 @@ for (const width of [1280, 390, 320])
       timeout: 60000,
     });
     const after = await read(page);
-    expect(after.modelVersion).toBe('world-prototype-v18');
-    expect(after.growth!.version).toBe('daily-development-v3');
+    expect(after.modelVersion).toBe('world-prototype-v19');
+    expect(after.growth!.version).toBe('daily-development-v4');
     expect(after.growth!.latest!.experience!.length).toBeGreaterThan(0);
     expect(after.growth!.dates).toEqual(['2026-09-24']);
     expect(after.growth!.latest!.outcomes).toHaveLength(120);
@@ -240,4 +248,13 @@ test('年齢変化：旧v17相当の表示では年齢変化を記録済みと�
   await expect(panel).toContainText('加齢・覚醒・キャンプは工事中');
   await expect(panel.locator('.age-results')).toHaveCount(0);
   expect(await count(page)).toBe(0);
+});
+
+test('旧v18の表示：年齢変化を維持し、覚醒を後付けしない', async ({ page }) => {
+  await observe(page, 'aging');
+  await training(page);
+  const panel = page.getByRole('region', { name: '育成・練習設定', exact: true });
+  await expect(panel).toContainText('通常練習・実戦経験・年齢変化を反映します');
+  await expect(panel.locator('.age-results')).toHaveCount(1);
+  await expect(panel.locator('.rookie-results')).toHaveCount(0);
 });

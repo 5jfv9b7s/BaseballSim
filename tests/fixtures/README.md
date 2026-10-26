@@ -98,3 +98,11 @@ Python 3.13の標準zipfileで作成したSTORE形式の独立検体です。man
 年齢変化を導入する前の0.40.0（c6554ac43f217c9ed1245b83785a96bce6e447c8）で、seed31の`advanceWorld(createDevelopmentWorld(31), 17)`を実行した途中検体です。世界v17/定義v22/daily-development-v2。canonicalJsonのUTF-8をgzip化したWorldRecordで、DB全体のダンプではありません。変更前ソースで固定してから実装に着手しました。
 
 展開後canonicalJson SHA-256は`060b02af676e0f690a87239293487136eb96cdce757862d17cc5c0d16d684eef`、gzip自体は`4f6ebc395545e87f3c3f68d82b1e953188a1fbd4d6ba768f0423a7064b8e79e3`。初日を完了して日次確定した全状態のSHA-256は`b26aae8f960576a418f259e491de0477f03055e35751d0e9ef75fcc333ae6727`です。tests/aging.test.tsで旧v018保存/復元/バックアップと継続を照合し、将来のモデルに合わせて再生成しません。
+
+## 0.41.0の途中v18保存（0.42.0の互換性検査）
+
+`world-v18-in-progress.json.gz`は変更前99badc502d2fe3ea0c1e969502aaf7975b8efb9bで、seed31のcreateAgeDevelopmentWorldを17ステップ進めて固定しました。再生成しません。tests/rookie-awakening.test.tsで旧v019の実保存・復元・バックアップと1日終了までの続行を確認します。
+
+- canonical JSON SHA-256: `5e43e8cf65ff531b725211ddff407a9c11fa262b5ca68f4dc55454e6b2dc82e8`
+- gzip SHA-256: `7d706e6c27fdb3307a5aad9902ffbfe1c2ac503664ee0d9da00f2dc0e68242f4`
+- 1日終了の全状態SHA-256: `976068daf1fd36fedddc11ae07eaff40ee338b1082948209e9e8f2289cb0ec2e`

@@ -16,7 +16,8 @@ export type BullpenWorld = Extract<
       | 'world-prototype-v15'
       | 'world-prototype-v16'
       | 'world-prototype-v17'
-      | 'world-prototype-v18';
+      | 'world-prototype-v18'
+      | 'world-prototype-v19';
   }
 >;
 

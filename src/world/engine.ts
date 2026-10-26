@@ -1,3 +1,9 @@
+import { createRookieDevelopmentDefinitions } from '../data/world/rookie-development.ts';
+import {
+  initialRookieDevelopment,
+  applyRookieDevelopmentDay,
+  validateAwakeningDefinitions,
+} from './awakening.ts';
 import { createAgeDevelopmentDefinitions } from '../data/world/age-development.ts';
 import { initialAgeDevelopment, applyAgeDevelopmentDay, validateAgeDefinitions } from './aging.ts';
 import { createDevelopmentDefinitions } from '../data/world/development.ts';
@@ -136,6 +142,7 @@ export function scheduledFixture(
           'world-definitions-v21',
           'world-definitions-v22',
           'world-definitions-v23',
+          'world-definitions-v24',
         ].includes(definitions.version) || activeIds.includes(player.playerId),
     ),
     pitches: [...away.pitches, ...home.pitches],
@@ -174,6 +181,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version),
     '未対応の世界定義です',
   );
@@ -232,6 +240,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
         'world-definitions-v21',
         'world-definitions-v22',
         'world-definitions-v23',
+        'world-definitions-v24',
       ].includes(definitions.version)
     ) {
       ensure(Array.isArray(squad.reserveBatterIds), '控え野手の名簿がありません');
@@ -270,6 +279,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
           'world-definitions-v21',
           'world-definitions-v22',
           'world-definitions-v23',
+          'world-definitions-v24',
         ].includes(definitions.version)
           ? 58
           : 17,
@@ -328,6 +338,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateFarmDefinitions(definitions);
@@ -380,6 +391,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateRegistrationDefinitions(definitions);
@@ -410,6 +422,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateRosterPolicyDefinitions(definitions);
@@ -437,6 +450,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validatePhysicalDefinitions(definitions);
@@ -464,6 +478,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateRestDefinitions(definitions);
@@ -489,6 +504,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateConditionDefinitions(definitions);
@@ -514,6 +530,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validatePerformanceConfig(definitions.performanceConfig!);
@@ -533,6 +550,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateFielderRestDefinitions(definitions);
@@ -556,6 +574,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateReliefDefinitions(definitions);
@@ -577,6 +596,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validateBullpenDefinitions(definitions);
@@ -597,6 +617,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   )
     validatePitchProfiles(definitions.pitchProfiles!);
@@ -607,6 +628,7 @@ export function validateDefinitions(definitions: WorldDefinitions): void {
   validateGrowthDefinitions(definitions);
   validateExperienceDefinitions(definitions);
   validateAgeDefinitions(definitions);
+  validateAwakeningDefinitions(definitions);
   validateLeagueStructure(definitions);
   validateMatchConfig(definitions.matchConfig);
   validateErrorConfig(definitions.errorConfig);
@@ -675,7 +697,8 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
     world.version === 'world-prototype-v15' ||
       world.version === 'world-prototype-v16' ||
       world.version === 'world-prototype-v17' ||
-      world.version === 'world-prototype-v18'
+      world.version === 'world-prototype-v18' ||
+      world.version === 'world-prototype-v19'
       ? 'game-prototype-v11'
       : 'game-prototype-v10',
     world.definitions.matchConfig,
@@ -692,7 +715,8 @@ export function createScheduledGame(world: WorldRecord, gameId: string): GameRec
     world.version === 'world-prototype-v15' ||
     world.version === 'world-prototype-v16' ||
     world.version === 'world-prototype-v17' ||
-    world.version === 'world-prototype-v18'
+    world.version === 'world-prototype-v18' ||
+    world.version === 'world-prototype-v19'
   ) {
     ensure(scheduled.date === world.currentDate, '試合前補正は当日の状態から作成します');
     game.performance = performanceSnapshot(world, gameId, game.fixture);
@@ -760,13 +784,15 @@ export function completeDay(world: WorldRecord, expectedDate: string): WorldReco
     );
   }
   const trained =
-    world.version === 'world-prototype-v18'
-      ? { ...world, ...applyAgeDevelopmentDay(world) }
-      : world.version === 'world-prototype-v17'
-        ? { ...world, ...applyDevelopmentDay(world) }
-        : world.version === 'world-prototype-v16'
-          ? { ...world, ...applyTrainingDay(world) }
-          : world;
+    world.version === 'world-prototype-v19'
+      ? { ...world, ...applyRookieDevelopmentDay(world) }
+      : world.version === 'world-prototype-v18'
+        ? { ...world, ...applyAgeDevelopmentDay(world) }
+        : world.version === 'world-prototype-v17'
+          ? { ...world, ...applyDevelopmentDay(world) }
+          : world.version === 'world-prototype-v16'
+            ? { ...world, ...applyTrainingDay(world) }
+            : world;
   const currentDate = nextDate(expectedDate);
   const next: WorldRecord = {
     ...trained,
@@ -1217,6 +1243,38 @@ export function createAgeDevelopmentWorld(
     ...base,
     version: 'world-prototype-v18',
     growth: initialAgeDevelopment(saved, seed),
+    reliefControl: initialRelief(saved),
+    fielderRest: initialFielderRest(saved),
+    seasonSummary: null,
+    farmSummary: null,
+    gameLineups: {},
+    registration: initialRegistration(saved),
+    rosterControl: initialRosterControl(saved),
+    physical: initialPhysical(saved),
+    restControl: initialRest(saved),
+    condition: initialCondition(saved, seed),
+  };
+  validateTodayRosters(world);
+  return reconcileRosterPolicies(world);
+}
+
+/** 初年度のルーキー覚醒を持つ新規世界。 */
+export function createRookieDevelopmentWorld(
+  seed = 20260924,
+  controlledSquadId?: string,
+  definitions = createRookieDevelopmentDefinitions(),
+): Extract<WorldRecord, { version: 'world-prototype-v19' }> {
+  ensure(
+    definitions.version === 'world-definitions-v24',
+    'ルーキー覚醒に対応する初期定義が必要です',
+  );
+  const base = createManagedWorld(seed, definitions, controlledSquadId);
+  freezeGrowthData(base.definitions);
+  const saved = base.definitions;
+  const world: Extract<WorldRecord, { version: 'world-prototype-v19' }> = {
+    ...base,
+    version: 'world-prototype-v19',
+    growth: initialRookieDevelopment(saved, seed),
     reliefControl: initialRelief(saved),
     fielderRest: initialFielderRest(saved),
     seasonSummary: null,

@@ -126,6 +126,7 @@ export function validatePlayerDevelopment(definitions: WorldDefinitions): void {
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   ) {
     ensure(definitions.playerDevelopment === undefined, '旧定義へ追加能力・適性を後付けできません');

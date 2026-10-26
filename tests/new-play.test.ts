@@ -54,6 +54,10 @@ test('新規プレイ：初回自動保存後に公開し、同じseedでも独�
     const firstStorage = new DexieWorldStorage(db, first.view.localWorldId);
     const initialWorld = (await firstStorage.load('auto')).world;
     assert.equal(initialWorld.seed, 101);
+    assert.ok(initialWorld.version === 'world-prototype-v19');
+    assert.equal(initialWorld.definitions.version, 'world-definitions-v24');
+    assert.equal(first.view.growth!.version, 'daily-development-v4');
+    assert.equal(Object.keys(initialWorld.growth.state.awakeningState.players).length, 8);
 
     ok(await workspace.handle(await command(workspace, { kind: 'save' })));
     const second = ok(await workspace.handle(await command(workspace, { kind: 'new', seed: 101 })));

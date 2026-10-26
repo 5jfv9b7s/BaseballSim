@@ -1,3 +1,8 @@
+import {
+  createRookieDevelopmentDefinitions,
+  rookieProfileOverrides,
+} from '../src/data/world/rookie-development.ts';
+import { createRookieDevelopmentWorld } from '../src/world/engine.ts';
 import { createAgeDevelopmentWorld } from '../src/world/engine.ts';
 import { createAgeDevelopmentDefinitions } from '../src/data/world/age-development.ts';
 import { createDevelopmentWorld } from '../src/world/engine.ts';
@@ -398,4 +403,32 @@ for (const calendar of ['short', 'annual'] as const) {
   if (JSON.stringify(ids) !== JSON.stringify(catalog.players.map((p) => p.playerId).sort()))
     throw Error('年齢曲線JSONの登録と実ファイルが一致しません');
   console.log('年齢曲線JSONの登録照合: ' + ids.length + '人（検査成功）');
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createRookieDevelopmentWorld(
+    20260924,
+    undefined,
+    createRookieDevelopmentDefinitions(calendar),
+  );
+  console.log(
+    `ルーキー覚醒：${calendar} / プロ1年目${Object.keys(world.growth.state.awakeningState.players).length}人（検査成功）`,
+  );
+}
+{
+  const folder = 'src/data/profiles/rookies-2026';
+  const ids = readdirSync(folder)
+    .filter((name) => name.endsWith('.json'))
+    .flatMap((name) =>
+      JSON.parse(readFileSync(folder + '/' + name, 'utf8')).map(
+        (p: { playerId: string }) => p.playerId,
+      ),
+    )
+    .sort();
+  const registered = rookieProfileOverrides()
+    .map((p) => p.playerId)
+    .sort();
+  if (JSON.stringify(ids) !== JSON.stringify(registered))
+    throw Error('新人プロフィールJSONの登録と実ファイルが一致しません');
+  console.log(`新人プロフィールJSON登録：${ids.length}人（検査成功）`);
 }

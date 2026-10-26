@@ -43,7 +43,7 @@ export interface AbilityChange {
   changeKind: 'value';
   beforeValue: number;
   afterValue: number;
-  reason: 'training' | 'experience' | 'aging';
+  reason: 'training' | 'experience' | 'aging' | 'rookieAwakening';
   sourceEventId: string;
   abilityCatalogVersion: 'common-abilities-v1';
 }
@@ -81,6 +81,7 @@ export interface TrainingGrowthState {
 
 export interface GrowthView {
   version: GrowthState['version'];
+  rookieAwakening?: { events: import('./awakening-types.ts').RookieAwakeningEvent[] };
   current: Record<string, Record<string, number>>;
   periods: Record<
     'season' | 'last30' | 'last7' | 'lastDay',
@@ -155,4 +156,7 @@ export interface DevelopmentGrowthState {
 }
 
 export type GrowthState =
-  TrainingGrowthState | DevelopmentGrowthState | import('./age-types.ts').AgeDevelopmentGrowthState;
+  | TrainingGrowthState
+  | DevelopmentGrowthState
+  | import('./age-types.ts').AgeDevelopmentGrowthState
+  | import('./awakening-types.ts').RookieDevelopmentGrowthState;

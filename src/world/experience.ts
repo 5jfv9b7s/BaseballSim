@@ -18,7 +18,7 @@ import type {
 
 type DevelopmentWorld = Extract<
   WorldRecord,
-  { version: 'world-prototype-v17' | 'world-prototype-v18' }
+  { version: 'world-prototype-v17' | 'world-prototype-v18' | 'world-prototype-v19' }
 >;
 export const EXPERIENCE_DOMAINS = ['batting', 'pitching', 'fielding'] as const;
 
@@ -30,7 +30,11 @@ function fields(value: unknown, keys: string[], label: string) {
   );
 }
 export function validateExperienceDefinitions(definitions: WorldDefinitions) {
-  if (!['world-definitions-v22', 'world-definitions-v23'].includes(definitions.version)) {
+  if (
+    !['world-definitions-v22', 'world-definitions-v23', 'world-definitions-v24'].includes(
+      definitions.version,
+    )
+  ) {
     ensure(definitions.experienceConfig === undefined, '旧定義へ実戦経験モデルを追加できません');
     return;
   }
@@ -62,7 +66,9 @@ export function initialDevelopment(
 ): DevelopmentGrowthState {
   validateExperienceDefinitions(definitions);
   ensure(
-    ['world-definitions-v22', 'world-definitions-v23'].includes(definitions.version),
+    ['world-definitions-v22', 'world-definitions-v23', 'world-definitions-v24'].includes(
+      definitions.version,
+    ),
     '実戦経験に対応する定義が必要です',
   );
   const training = initialGrowth(definitions, seed);

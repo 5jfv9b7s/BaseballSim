@@ -1,10 +1,10 @@
-import { createAgeDevelopmentDefinitions } from './age-development.ts';
+import { createRookieDevelopmentDefinitions } from './rookie-development.ts';
 import type { NewPlayOptions, StadiumRef } from '../../world/league-structure-types.ts';
 
 /** 新規作成の確認用。読込中の旧プレイではなく、Worker内の現行初期データから作る。 */
 export function createNewPlayOptions(): NewPlayOptions {
   const option = (calendar: 'short' | 'annual') => {
-    const definitions = createAgeDevelopmentDefinitions(calendar),
+    const definitions = createRookieDevelopmentDefinitions(calendar),
       data = definitions.leagueStructure!;
     const stadiumName = (ref: StadiumRef) =>
       data.stadiums.find((s) => s.stadiumId === ref.stadiumId && s.version === ref.version)!

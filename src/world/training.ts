@@ -83,6 +83,7 @@ export function validateTrainingDefinitions(definitions: WorldDefinitions): void
       'world-definitions-v21',
       'world-definitions-v22',
       'world-definitions-v23',
+      'world-definitions-v24',
     ].includes(definitions.version)
   ) {
     ensure(definitions.trainingPlans === undefined, '旧定義へ練習設定を後付けできません');

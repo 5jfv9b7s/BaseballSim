@@ -40,6 +40,20 @@ export function growthView(world: WorldRecord): GrowthView | null {
   const last = dates.at(-1);
   const view: GrowthView = {
     version: world.growth.version,
+    ...(world.growth.version === 'daily-development-v4'
+      ? {
+          rookieAwakening: {
+            events: Object.values(world.growth.state.days)
+              .flatMap((day) =>
+                day.awakening.filter(
+                  (o): o is import('./awakening-types.ts').RookieAwakeningEvent =>
+                    o.status === 'occurred',
+                ),
+              )
+              .map((o) => structuredClone(o)),
+          },
+        }
+      : {}),
     current,
     periods,
     dates,
@@ -50,7 +64,8 @@ export function growthView(world: WorldRecord): GrowthView | null {
       ? {
           date: last,
           outcomes: structuredClone(state.days[last]!.outcomes),
-          ...(world.growth.version === 'daily-development-v3'
+          ...(world.growth.version === 'daily-development-v3' ||
+          world.growth.version === 'daily-development-v4'
             ? { aging: structuredClone(world.growth.state.days[last]!.aging) }
             : {}),
           ...(world.growth.version !== 'daily-training-v1'

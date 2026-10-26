@@ -8,7 +8,11 @@ const points = (value: number) => {
 
 /** 将来の能力予測や内部の成長期は表示せず、確定した年齢変化だけを示す。 */
 export function AgeResults({ view, playerId }: { view: WorldView; playerId: string }) {
-  if (view.growth?.version !== 'daily-development-v3') return null;
+  if (
+    view.growth?.version !== 'daily-development-v3' &&
+    view.growth?.version !== 'daily-development-v4'
+  )
+    return null;
   const latest = view.growth.latest;
   const row = latest?.aging?.find((p) => p.playerId === playerId);
   return (

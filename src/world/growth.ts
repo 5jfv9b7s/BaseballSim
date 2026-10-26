@@ -19,9 +19,12 @@ function fields(value: unknown, keys: string[], name: string): void {
 
 export function validateGrowthDefinitions(definitions: WorldDefinitions): void {
   if (
-    !['world-definitions-v21', 'world-definitions-v22', 'world-definitions-v23'].includes(
-      definitions.version,
-    )
+    ![
+      'world-definitions-v21',
+      'world-definitions-v22',
+      'world-definitions-v23',
+      'world-definitions-v24',
+    ].includes(definitions.version)
   ) {
     ensure(definitions.growthConfig === undefined, '旧定義へ成長モデルを追加できません');
     return;
@@ -109,9 +112,12 @@ export function freezeGrowthData<T>(value: T): T {
 export function initialGrowth(definitions: WorldDefinitions, seed: number): TrainingGrowthState {
   validateGrowthDefinitions(definitions);
   ensure(
-    ['world-definitions-v21', 'world-definitions-v22', 'world-definitions-v23'].includes(
-      definitions.version,
-    ),
+    [
+      'world-definitions-v21',
+      'world-definitions-v22',
+      'world-definitions-v23',
+      'world-definitions-v24',
+    ].includes(definitions.version),
     '通常練習に対応する初期定義が必要です',
   );
   return {
@@ -206,7 +212,13 @@ export function trainingBudget(
 export function calculateTrainingDay(
   world: Extract<
     WorldRecord,
-    { version: 'world-prototype-v16' | 'world-prototype-v17' | 'world-prototype-v18' }
+    {
+      version:
+        | 'world-prototype-v16'
+        | 'world-prototype-v17'
+        | 'world-prototype-v18'
+        | 'world-prototype-v19';
+    }
   >,
 ) {
   const date = world.currentDate;

@@ -1,3 +1,4 @@
+import { RookieAwakeningResults } from './RookieAwakeningResults.tsx';
 import { growthAbilityKey } from '../world/growth-basis.ts';
 import { PlayerGrowth } from './PlayerGrowth.tsx';
 import { useState } from 'react';
@@ -104,13 +105,15 @@ export function TrainingEditor({
         </div>
       </div>
       <p className="training-scope-note">
-        {view.growth?.version === 'daily-development-v3'
-          ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化を反映します。現在の指定は次の通常練習に使用します。覚醒・キャンプは工事中です。'
-          : view.growth?.version === 'daily-development-v2'
-            ? '全試合終了後の日次確定で通常練習と実戦経験を反映します。現在の指定は次の通常練習に使用します。加齢・覚醒・キャンプは工事中です。'
-            : view.growth
-              ? '全試合終了後の日次確定で通常練習を実施します。現在の指定は次の練習に使用します。実戦経験・加齢・覚醒・キャンプは工事中です。'
-              : 'この保存は練習の指定・保存まで対応しています。日次の練習効果・疲労調整・経験・恒久成長は工事中です。設定だけで能力や疲労は変化しません。'}
+        {view.growth?.version === 'daily-development-v4'
+          ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化・ルーキー覚醒を反映します。現在の指定は次の通常練習に使用します。移籍覚醒・キャンプは工事中です。'
+          : view.growth?.version === 'daily-development-v3'
+            ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化を反映します。現在の指定は次の通常練習に使用します。覚醒・キャンプは工事中です。'
+            : view.growth?.version === 'daily-development-v2'
+              ? '全試合終了後の日次確定で通常練習と実戦経験を反映します。現在の指定は次の通常練習に使用します。加齢・覚醒・キャンプは工事中です。'
+              : view.growth
+                ? '全試合終了後の日次確定で通常練習を実施します。現在の指定は次の練習に使用します。実戦経験・加齢・覚醒・キャンプは工事中です。'
+                : 'この保存は練習の指定・保存まで対応しています。日次の練習効果・疲労調整・経験・恒久成長は工事中です。設定だけで能力や疲労は変化しません。'}
       </p>
       {locked && (
         <p className="hint">
@@ -390,6 +393,7 @@ export function TrainingEditor({
               </div>
             </>
           )}
+          <RookieAwakeningResults view={view} onSelectPlayer={onSelectPlayer} />
           {single && <PlayerGrowth key={single} view={view} playerId={single} />}
           <details className="training-help">
             <summary>対応範囲と未実装の機能</summary>

@@ -1,3 +1,4 @@
+import { createAwakeningHistoryCodec } from './awakening-history-codec.ts';
 import { createAgeHistoryCodec } from './age-history-codec.ts';
 import { verifySharedBlocks, putSharedBlocks } from './shared-blocks.ts';
 import { exportStoredPlay, importStoredPlay, listStoredPlays } from './backup-storage.ts';
@@ -146,7 +147,11 @@ export class DexieWorldStorage implements WorldStorageAdapter {
 
     const { definitions, games, stats, contributions, statApplicationMarkers, ...core } = world;
     const ageCodec =
-      world.version === 'world-prototype-v18' ? createAgeHistoryCodec(definitions) : null;
+      world.version === 'world-prototype-v19'
+        ? createAwakeningHistoryCodec(definitions)
+        : world.version === 'world-prototype-v18'
+          ? createAgeHistoryCodec(definitions)
+          : null;
     const historyValues: [string, string, unknown][] = [];
     let storedCore: unknown = core;
     if ('growth' in core) {
@@ -156,9 +161,15 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ...Object.entries(days).map(([date, day]): [string, string, unknown] => [
           'growth/day/' + date,
           'growthDay',
-          world.version === 'world-prototype-v18'
-            ? ageCodec!.encode(day as import('./age-types.ts').AgeDevelopmentDay)
-            : day,
+          world.version === 'world-prototype-v19'
+            ? (ageCodec as ReturnType<typeof createAwakeningHistoryCodec>).encode(
+                day as import('./awakening-types.ts').RookieAwakeningDay,
+              )
+            : world.version === 'world-prototype-v18'
+              ? (ageCodec as ReturnType<typeof createAgeHistoryCodec>).encode(
+                  day as import('./age-types.ts').AgeDevelopmentDay,
+                )
+              : day,
         ]),
       );
     }
@@ -172,7 +183,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
             world.version === 'world-prototype-v15' ||
               world.version === 'world-prototype-v16' ||
               world.version === 'world-prototype-v17' ||
-              world.version === 'world-prototype-v18'
+              world.version === 'world-prototype-v18' ||
+              world.version === 'world-prototype-v19'
               ? 'game-prototype-v11'
               : 'game-prototype-v10',
             definitions.matchConfig,
@@ -340,9 +352,12 @@ export class DexieWorldStorage implements WorldStorageAdapter {
         ensure(
           snapshot.blockRefs.length >= 3 &&
             snapshot.blockRefs.length <=
-              (['world-prototype-v16', 'world-prototype-v17', 'world-prototype-v18'].includes(
-                snapshot.versions.simulationVersion,
-              )
+              ([
+                'world-prototype-v16',
+                'world-prototype-v17',
+                'world-prototype-v18',
+                'world-prototype-v19',
+              ].includes(snapshot.versions.simulationVersion)
                 ? 625
                 : [
                       'world-prototype-v3',

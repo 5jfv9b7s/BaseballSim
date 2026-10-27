@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises';
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -465,13 +466,38 @@ test('連続日次保存：確定履歴ブロックを再利用し、過去日�
   }
 });
 
+/** 全項目を比較するが、元世界と復元世界・188日分の巨大文字列を同時に保持しない。 */
+async function annualTrainingHashes(world: WorldRecord) {
+  assert.ok('growth' in world);
+  const { games, growth, ...core } = world;
+  const { days, ...state } = growth.state;
+  const gameHashes: Record<string, string> = {};
+  const dayHashes: Record<string, string> = {};
+  for (const id of Object.keys(games).sort())
+    gameHashes[id] = await sha256(canonicalJson(games[id]));
+  for (const date of Object.keys(days).sort())
+    dayHashes[date] = await sha256(canonicalJson(days[date]));
+  return {
+    core: await sha256(canonicalJson(core)),
+    growth: await sha256(canonicalJson({ ...growth, state })),
+    games: gameHashes,
+    days: dayHashes,
+  };
+}
+
 test('成長付き年間：188日216試合を完走し、日別履歴を分割して保存・バックアップを再現', async () => {
-  let world = createDailyTrainingWorld(
+  let world: Current | null = createDailyTrainingWorld(
     20260924,
     undefined,
     createDailyTrainingDefinitions('annual'),
   );
-  while (worldPhase(world) !== 'scheduleComplete') world = finish(world);
+  while (worldPhase(world) !== 'scheduleComplete') {
+    world = finish(world);
+    if (world.completedDates.length % 30 === 0) {
+      console.log(`通常練習の年間検証：${world.completedDates.length} / 188日`);
+      await setImmediate();
+    }
+  }
   assert.equal(world.completedDates.length, 188);
   assert.equal(Object.keys(world.games).length, 216);
   assert.equal(Object.keys(world.growth.state.days).length, 188);
@@ -480,30 +506,34 @@ test('成長付き年間：188日216試合を完走し、日別履歴を分割�
   for (const id of Object.keys(world.growth.state.players))
     for (const a of growthBasis(world.definitions, id))
       assert.ok(world.growth.state.players[id]!.values[a.key]! <= a.ceilingMilli);
+  const expected = await annualTrainingHashes(world);
   const db = new WorldDatabase('growth-annual');
   try {
-    const storage = new DexieWorldStorage(db);
-    await storage.save(world, 1, 'manual', 0);
+    // StorageAdapterが保持する検証済み世界の参照も、保存後は残さない。
+    const save = async (value: Current) => {
+      const storage = new DexieWorldStorage(db);
+      await storage.save(value, 1, 'manual', 0);
+      return storage.localWorldId;
+    };
+    console.log('通常練習の年間検証：完走、保存');
+    const localWorldId = await save(world);
+    world = null;
     const snapshot = (await db.save_snapshots.toArray())[0]!;
     assert.equal(snapshot.blockRefs.length, 407);
     assert.equal(snapshot.blockRefs.filter((v) => v.kind === 'growthDay').length, 188);
     assert.ok(snapshot.blockRefs.every((v) => v.rawBytes <= 16 * 1024 * 1024));
-    // 復元は順に行い、複数年分の展開データを同時に保持しない。
-    // 巨大な比較エラーに全試合を展開せず、各試合と成長をハッシュで照合する。
-    for (const load of [
-      async () => (await storage.load('manual')).world,
-      async () =>
-        (await decodeBackup(await exportStoredPlay(db, storage.localWorldId, 'manual'))).world,
-    ]) {
-      const restored = await load();
-      assert.ok('growth' in restored);
-      const { games: a, growth: ga, ...ca } = restored;
-      const { games: b, growth: gb, ...cb } = world;
-      assert.deepEqual(ca, cb);
-      assert.equal(await sha256(canonicalJson(ga)), await sha256(canonicalJson(gb)));
-      for (const id of Object.keys(b))
-        assert.equal(await sha256(canonicalJson(a[id])), await sha256(canonicalJson(b[id])));
-    }
+    console.log('通常練習の年間検証：DB復元');
+    assert.deepEqual(
+      await annualTrainingHashes((await new DexieWorldStorage(db).load('manual')).world),
+      expected,
+    );
+    console.log('通常練習の年間検証：バックアップ復元');
+    assert.deepEqual(
+      await annualTrainingHashes(
+        (await decodeBackup(await exportStoredPlay(db, localWorldId, 'manual'))).world,
+      ),
+      expected,
+    );
   } finally {
     db.close();
     await db.delete();

@@ -1,4 +1,5 @@
 import type { WorldView } from '../world/controller.ts';
+import { SeasonPerformersPanel } from './SeasonPerformersPanel.tsx';
 import { SeasonGrowthPanel } from './SeasonGrowthPanel.tsx';
 import type { SeasonSummary } from '../world/types.ts';
 import { StandingsTable } from './LeagueStandingsPanel.tsx';
@@ -48,6 +49,13 @@ export function SeasonSummaryPanel({
             : '勝敗未観測、または同率首位の決着規則が未定のため、優勝は未確定です。'}
         </p>
       )}
+      <SeasonPerformersPanel
+        key={JSON.stringify(['performers', view.worldId, summary.statScope])}
+        summary={summary}
+        view={view}
+        ownSquadId={ownSquadId}
+        onSelectPlayer={onSelectPlayer}
+      />
       <SeasonGrowthPanel
         key={JSON.stringify([view.worldId, summary.statScope])}
         view={view}

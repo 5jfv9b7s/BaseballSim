@@ -87,6 +87,7 @@ export function initialManagement(
     'world-definitions-v23',
     'world-definitions-v24',
     'world-definitions-v25',
+    'world-definitions-v26',
   ].includes(definitions.version)
     ? { ...management, version: 'club-management-v2', training: initialTrainingPlans(definitions) }
     : management;
@@ -253,7 +254,8 @@ export function managementFixture(
     world.version === 'world-prototype-v17' ||
     world.version === 'world-prototype-v18' ||
     world.version === 'world-prototype-v19' ||
-    world.version === 'world-prototype-v20'
+    world.version === 'world-prototype-v20' ||
+    world.version === 'world-prototype-v21'
   )
     attachBullpen(world, gameId, fixture);
   validateGameFixture(fixture);

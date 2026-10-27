@@ -14,7 +14,8 @@ export function RookieAwakeningResults({
 }) {
   if (
     view.growth?.version !== 'daily-development-v4' &&
-    view.growth?.version !== 'daily-development-v5'
+    view.growth?.version !== 'daily-development-v5' &&
+    view.growth?.version !== 'daily-development-v6'
   )
     return null;
   const own = view.definitions.squads.find(
@@ -95,7 +96,9 @@ export function RookieAwakeningResults({
           </table>
         </div>
       )}
-      <p className="hint">能力は個別の成長上限を守ります。移籍覚醒・キャンプは工事中です。</p>
+      <p className="hint">
+        能力は個別の成長上限を守ります。移籍覚醒は工事中です。キャンプは対応する新規プレイで利用できます。
+      </p>
     </details>
   );
 }

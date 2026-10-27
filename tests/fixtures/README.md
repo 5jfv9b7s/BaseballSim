@@ -116,3 +116,11 @@ HEAD 8a895b8からseed31・短期の17球進行時点を保存したv19検体で
 - 初日確定後 SHA256: `82da14a894766886e523f9ab355843173aa1bb0e515c723225695516c180695c`
 
 `tests/camp.test.ts`で旧v020のDB保存・復元・バックアップ・続行とハッシュを検査します。
+
+## world-v20-initial.json.gz
+
+0.44.0（e07541ef）の変更前実装から `createCampDevelopmentWorld(7)` を採取。正規化world SHA-256は `86daf2d96b05c169de87d9c072778d53cc765c1988a5e742b4a172c9b430c5d4`。旧v20初期保存の固定基準。以後再生成しません。
+
+続行基準：e07541efコミットを独立した一時フォルダへgit archiveし、旧v20を1日進めた全world SHA-256は `5d7a0c4f83df81622f120b6afd5a945f2699de27e40610484f8a4c9aab9a90c4`。初期の固定検体を現行の旧モデルで続行して照合する。固定検体の再生成・置換は行わない。
+
+キャンプ初日の2日後world SHAも `93af616b09a69dd3eac6f5067050efe19d9b01cda57fe3c8f3607d3d21a44c36` と一致させる。

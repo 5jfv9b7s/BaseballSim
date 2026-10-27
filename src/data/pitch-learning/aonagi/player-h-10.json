@@ -1,0 +1,35 @@
+[
+  {
+    "pitchId": "learning-player-h-10-curve",
+    "playerId": "player-h-10",
+    "pitchTypeCode": "curve",
+    "acquisitionProgressMilli": 0,
+    "control": {
+      "valueMilli": 36400,
+      "ceilingMilli": 110000
+    },
+    "repeatability": {
+      "valueMilli": 51800,
+      "ceilingMilli": 110000
+    },
+    "velocity": {
+      "typicalCentiKph": 11680,
+      "maxCentiKph": 12080,
+      "spreadCentiKph": 450
+    },
+    "delivery": {
+      "spinRateRpm": 2400,
+      "spinSpreadRpm": 200,
+      "spinAxis": {
+        "xPpm": 800000,
+        "yPpm": 0,
+        "zPpm": 600000
+      },
+      "release": {
+        "lateralMm": -460,
+        "heightMm": 1810,
+        "extensionMm": 1690
+      }
+    }
+  }
+]

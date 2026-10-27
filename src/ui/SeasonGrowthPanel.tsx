@@ -280,7 +280,8 @@ export function SeasonGrowthPanel({
               保存済みの初期値と日別履歴から、選択した大会の最終日時点を表示します。一軍・二軍の値を重複加算しません。球団合計は検索条件にかかわらず所属全選手が対象です。
             </p>
             <p>
-              {view.growth?.version === 'daily-development-v5'
+              {view.growth?.version === 'daily-development-v5' ||
+              view.growth?.version === 'daily-development-v6'
                 ? '通常練習・キャンプ・実戦経験・年齢変化・ルーキー覚醒の実績を集計しています。移籍覚醒は工事中です。'
                 : view.growth?.version === 'daily-development-v4'
                   ? '通常練習・実戦経験・年齢変化・ルーキー覚醒の実績を集計しています。移籍覚醒・キャンプは工事中です。'

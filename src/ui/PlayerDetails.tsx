@@ -1,3 +1,4 @@
+import { PitchLearningResults } from './PitchLearningResults.tsx';
 import { PlayerGrowth } from './PlayerGrowth.tsx';
 import { growthAbilityKey } from '../world/growth-basis.ts';
 import { PlayerAbilities } from './PlayerAbilities.tsx';
@@ -65,6 +66,9 @@ export function PlayerDetails({
     .filter((pitch) => pitch.playerId === playerId)
     .map((pitch) => ({
       ...pitch,
+      acquisitionProgressMilli:
+        view.growth?.pitchLearning?.acquisition[pitch.pitchId]?.progressMilli ??
+        pitch.acquisitionProgressMilli,
       control: {
         ...pitch.control,
         valueMilli:
@@ -150,6 +154,7 @@ export function PlayerDetails({
             current={current}
           />
           <h3>持ち球</h3>
+          <PitchLearningResults view={view} playerId={playerId} />
           {pitches.length === 0 ? (
             <p>持ち球の登録がありません。</p>
           ) : (
@@ -265,7 +270,8 @@ export function PlayerDetails({
 
           <p>体力は高いほど余力があり、疲労は高いほど蓄積しています。</p>
           <p className="hint">
-            {view.growth?.version === 'daily-development-v5'
+            {view.growth?.version === 'daily-development-v5' ||
+            view.growth?.version === 'daily-development-v6'
               ? '通常練習・キャンプ・実戦経験・年齢変化・ルーキー覚醒の確定実績を表示します。怪我・移籍覚醒は工事中です。'
               : view.growth?.version === 'daily-development-v4'
                 ? '通常練習・実戦経験・年齢変化・ルーキー覚醒の確定実績を表示します。怪我・移籍覚醒・キャンプは工事中です。'

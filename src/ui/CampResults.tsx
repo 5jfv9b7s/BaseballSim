@@ -3,7 +3,11 @@ import { growthBasis, growthAbilityKey } from '../world/growth-basis.ts';
 
 /** 保存済みの実績のみ。抽選済みかどうかや将来の確率は表示しない。 */
 export function CampResults({ view, playerId }: { view: WorldView; playerId: string }) {
-  if (view.growth?.version !== 'daily-development-v5') return null;
+  if (
+    view.growth?.version !== 'daily-development-v5' &&
+    view.growth?.version !== 'daily-development-v6'
+  )
+    return null;
   const events = view.growth.campBursts!.filter((e) => e.outcome.playerId === playerId);
   const basis = growthBasis(view.definitions, playerId);
   const points = (n: number) => (n / 1000).toFixed(3).replace(/\.?0+$/, '');

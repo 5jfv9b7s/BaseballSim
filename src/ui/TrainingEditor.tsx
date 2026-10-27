@@ -1,3 +1,4 @@
+import { PitchLearningResults } from './PitchLearningResults.tsx';
 import { CampEditor, type CampEditorProps } from './CampEditor.tsx';
 import { RookieAwakeningResults } from './RookieAwakeningResults.tsx';
 import { growthAbilityKey } from '../world/growth-basis.ts';
@@ -73,11 +74,19 @@ export function TrainingEditor({
   const intensity = same(selectedPlans.map((plan) => plan.intensity));
   const autoAdjust = same(selectedPlans.map((plan) => plan.autoAdjustForFatigue));
   const options = selected.length
-    ? trainingTargetOptions(view.definitions, selected[0]!).filter((option) =>
+    ? trainingTargetOptions(
+        view.definitions,
+        selected[0]!,
+        view.growth?.pitchLearning?.acquisition,
+      ).filter((option) =>
         selected
           .slice(1)
           .every((id) =>
-            trainingTargetOptions(view.definitions, id).some((other) => other.key === option.key),
+            trainingTargetOptions(
+              view.definitions,
+              id,
+              view.growth?.pitchLearning?.acquisition,
+            ).some((other) => other.key === option.key),
           ),
       )
     : [];
@@ -116,7 +125,8 @@ export function TrainingEditor({
         </div>
       </div>
       <p className="training-scope-note">
-        {view.growth?.version === 'daily-development-v5'
+        {view.growth?.version === 'daily-development-v5' ||
+        view.growth?.version === 'daily-development-v6'
           ? '日次確定で通常練習・キャンプ練習・実戦経験・年齢変化・ルーキー覚醒を反映します。期間中はキャンプ専用メニューを使います。移籍覚醒は工事中です。'
           : view.growth?.version === 'daily-development-v4'
             ? '全試合終了後の日次確定で通常練習・実戦経験・年齢変化・ルーキー覚醒を反映します。現在の指定は次の通常練習に使用します。移籍覚醒・キャンプは工事中です。'
@@ -362,6 +372,7 @@ export function TrainingEditor({
           {camp && <CampEditor view={view} selected={selected} locked={locked} {...camp} />}
           {single && (
             <>
+              <PitchLearningResults view={view} playerId={single} />
               <p className="hint">
                 保存済みの指定開始日：{view.training!.plans[single]!.effectiveFrom} / 終了指定なし
               </p>
@@ -416,7 +427,7 @@ export function TrainingEditor({
             </p>
             <p>
               {view.growth
-                ? '通常練習は才能・向上心と指定を使用し、指定外にも基礎練習を配分します。疲労の自動調整は全試合後の体力・疲労・出場負荷で強度を下げます。将来の成長予測・新球種習得・傾向変更は工事中です。キャンプは対応する新規プレイで利用できます。'
+                ? '通常練習は才能・向上心と指定を使用し、指定外にも基礎練習を配分します。疲労の自動調整は全試合後の体力・疲労・出場負荷で強度を下げます。将来の成長予測・傾向変更は工事中です。キャンプ・新球種習得は対応する新規プレイで利用できます。'
                 : 'キャンプ、新球種習得、傾向変更、成長履歴・成長予測は工事中です。疲労による自動調整は希望の保存のみです。'}
             </p>
           </details>

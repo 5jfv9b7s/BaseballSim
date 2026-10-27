@@ -2,7 +2,7 @@ import { ensure, integer } from '../engine/validation.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
 import { commonTrainingRef } from './training.ts';
-import { growthAbilityKey, growthBasis } from './growth-basis.ts';
+import { activeGrowthBasis, growthAbilityKey } from './growth-basis.ts';
 import { calculateTrainingDay, freezeGrowthData, initialGrowth } from './growth.ts';
 import { playerDevelopment } from './player-development.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
@@ -20,7 +20,11 @@ type DevelopmentWorld = Extract<
   WorldRecord,
   {
     version:
-      'world-prototype-v17' | 'world-prototype-v18' | 'world-prototype-v19' | 'world-prototype-v20';
+      | 'world-prototype-v17'
+      | 'world-prototype-v18'
+      | 'world-prototype-v19'
+      | 'world-prototype-v20'
+      | 'world-prototype-v21';
   }
 >;
 export const EXPERIENCE_DOMAINS = ['batting', 'pitching', 'fielding'] as const;
@@ -39,6 +43,7 @@ export function validateExperienceDefinitions(definitions: WorldDefinitions) {
       'world-definitions-v23',
       'world-definitions-v24',
       'world-definitions-v25',
+      'world-definitions-v26',
     ].includes(definitions.version)
   ) {
     ensure(definitions.experienceConfig === undefined, '旧定義へ実戦経験モデルを追加できません');
@@ -77,6 +82,7 @@ export function initialDevelopment(
       'world-definitions-v23',
       'world-definitions-v24',
       'world-definitions-v25',
+      'world-definitions-v26',
     ].includes(definitions.version),
     '実戦経験に対応する定義が必要です',
   );
@@ -275,7 +281,7 @@ export function calculateDevelopmentDay(
         ? experienceBudget(config, domain, traits.talentMilli, activity.units, factor)
         : 0;
       const values = players[playerId]!.values;
-      const basis = new Map(growthBasis(world.definitions, playerId).map((a) => [a.key, a]));
+      const basis = new Map(activeGrowthBasis(world, playerId).map((a) => [a.key, a]));
       let applied = 0,
         allocated = 0,
         cumulative = 0;
@@ -322,7 +328,7 @@ export function calculateDevelopmentDay(
     }
   // 通常練習と経験を合算後、各能力の表示端点から日別整数差を一度だけ作る。
   for (const playerId of Object.keys(players))
-    day.displayDeltas[playerId] = growthBasis(world.definitions, playerId).reduce(
+    day.displayDeltas[playerId] = activeGrowthBasis(world, playerId).reduce(
       (sum, a) =>
         sum +
         Math.floor(players[playerId]!.values[a.key]! / 1000) -

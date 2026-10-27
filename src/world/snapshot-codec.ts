@@ -1,3 +1,4 @@
+import { createPitchLearningHistoryCodec } from './pitch-learning-history-codec.ts';
 import { createCampHistoryCodec } from './camp-history-codec.ts';
 import { createAwakeningHistoryCodec } from './awakening-history-codec.ts';
 import { createAgeHistoryCodec } from './age-history-codec.ts';
@@ -68,7 +69,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
   ensure(['dailyAuto', 'manual', 'actionAuto'].includes(snapshot.saveKind), '保存種別が不正です');
   exactKeys(snapshot.versions, ['saveFormatVersion', 'simulationVersion'], '保存形式');
   ensure(
-    /^world-prototype-v([1-9]|1[0-9]|20)$/.test(snapshot.versions.simulationVersion) &&
+    /^world-prototype-v([1-9]|1[0-9]|2[01])$/.test(snapshot.versions.simulationVersion) &&
       snapshot.versions.saveFormatVersion === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
   );
@@ -86,6 +87,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
           'v019-world-snapshot-v18',
           'v020-world-snapshot-v19',
           'v021-world-snapshot-v20',
+          'v022-world-snapshot-v21',
         ].includes(snapshot.versions.saveFormatVersion)
           ? 625
           : 259),
@@ -113,6 +115,7 @@ export function validateSnapshot(snapshot: Snapshot): void {
             'v019-world-snapshot-v18',
             'v020-world-snapshot-v19',
             'v021-world-snapshot-v20',
+            'v022-world-snapshot-v21',
           ].includes(snapshot.versions.saveFormatVersion) &&
             /^growth\/day\/\d{4}-\d{2}-\d{2}$/.test(ref.logicalKey) &&
             ref.kind === 'growthDay'
@@ -193,6 +196,7 @@ export async function decodeWorldSnapshot(
       'world-prototype-v18',
       'world-prototype-v19',
       'world-prototype-v20',
+      'world-prototype-v21',
     ].includes(snapshot.versions.simulationVersion) &&
       format === formatFor(snapshot.versions.simulationVersion),
     '未対応の世界保存形式です',
@@ -235,6 +239,7 @@ export async function decodeWorldSnapshot(
             'v019-world-snapshot-v18',
             'v020-world-snapshot-v19',
             'v021-world-snapshot-v20',
+            'v022-world-snapshot-v21',
           ].includes(format)
             ? MAX_ANNUAL_RAW_BYTES
             : MAX_BYTES) &&
@@ -261,13 +266,15 @@ export async function decodeWorldSnapshot(
     '世界保存の必須ブロックが不足しています',
   );
   const ageCodec =
-    format === 'v021-world-snapshot-v20'
-      ? createCampHistoryCodec(definitions.world)
-      : format === 'v020-world-snapshot-v19'
-        ? createAwakeningHistoryCodec(definitions.world)
-        : format === 'v019-world-snapshot-v18'
-          ? createAgeHistoryCodec(definitions.world)
-          : null;
+    format === 'v022-world-snapshot-v21'
+      ? createPitchLearningHistoryCodec(definitions.world)
+      : format === 'v021-world-snapshot-v20'
+        ? createCampHistoryCodec(definitions.world)
+        : format === 'v020-world-snapshot-v19'
+          ? createAwakeningHistoryCodec(definitions.world)
+          : format === 'v019-world-snapshot-v18'
+            ? createAgeHistoryCodec(definitions.world)
+            : null;
   const growthDays: Record<string, import('./growth-types.ts').TrainingDay> = {};
   const games: WorldRecord['games'] = {};
   for (const [key, value] of values) {
@@ -292,7 +299,16 @@ export async function decodeWorldSnapshot(
       decoded.growth?.state && !Object.hasOwn(decoded.growth.state, 'days'),
       '練習履歴の格納位置が不正です',
     );
-    if (decoded.growth.version === 'daily-development-v5') {
+    if (decoded.growth.version === 'daily-development-v6') {
+      ensure(
+        Object.values(growthDays).every((day) => Object.hasOwn(day, 'pitchLearning')),
+        '球種習得履歴がありません',
+      );
+      decoded.growth.state.days = growthDays as Record<
+        string,
+        import('./pitch-learning-types.ts').PitchLearningDay
+      >;
+    } else if (decoded.growth.version === 'daily-development-v5') {
       ensure(
         Object.values(growthDays).every((day) => Object.hasOwn(day, 'camp')),
         'キャンプ履歴がありません',
@@ -353,7 +369,8 @@ export async function decodeWorldSnapshot(
             world.version === 'world-prototype-v17' ||
             world.version === 'world-prototype-v18' ||
             world.version === 'world-prototype-v19' ||
-            world.version === 'world-prototype-v20'
+            world.version === 'world-prototype-v20' ||
+            world.version === 'world-prototype-v21'
             ? 'game-prototype-v11'
             : 'game-prototype-v10',
           world.definitions.matchConfig,

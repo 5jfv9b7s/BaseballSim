@@ -11,7 +11,8 @@ export function AgeResults({ view, playerId }: { view: WorldView; playerId: stri
   if (
     view.growth?.version !== 'daily-development-v3' &&
     view.growth?.version !== 'daily-development-v4' &&
-    view.growth?.version !== 'daily-development-v5'
+    view.growth?.version !== 'daily-development-v5' &&
+    view.growth?.version !== 'daily-development-v6'
   )
     return null;
   const latest = view.growth.latest;

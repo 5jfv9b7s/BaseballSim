@@ -1,3 +1,4 @@
+import { SeasonPitchLearning } from './SeasonPitchLearning.tsx';
 import type { WorldView } from '../world/controller.ts';
 import { SeasonPerformersPanel } from './SeasonPerformersPanel.tsx';
 import { SeasonGrowthPanel } from './SeasonGrowthPanel.tsx';
@@ -56,6 +57,7 @@ export function SeasonSummaryPanel({
         ownSquadId={ownSquadId}
         onSelectPlayer={onSelectPlayer}
       />
+      <SeasonPitchLearning view={view} summary={summary} onSelectPlayer={onSelectPlayer} />
       <SeasonGrowthPanel
         key={JSON.stringify([view.worldId, summary.statScope])}
         view={view}

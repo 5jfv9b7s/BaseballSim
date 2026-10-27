@@ -1,3 +1,6 @@
+import { pitchLearningCandidates } from '../src/data/pitch-learning/index.ts';
+import { createPitchLearningDefinitions } from '../src/data/world/pitch-learning.ts';
+import { createPitchLearningWorld } from '../src/world/engine.ts';
 import { createCampDevelopmentDefinitions } from '../src/data/world/camp-development.ts';
 import { createCampDevelopmentWorld } from '../src/world/engine.ts';
 import {
@@ -448,4 +451,31 @@ for (const calendar of ['short', 'annual'] as const) {
       `キャンプ：${calendar} / ${period.label} / ${period.from}〜${period.through} / 全120人（検査成功）`,
     );
   }
+}
+
+for (const calendar of ['short', 'annual'] as const) {
+  const world = createPitchLearningWorld(
+    20260924,
+    undefined,
+    createPitchLearningDefinitions(calendar),
+  );
+  console.log(
+    `新球種習得：${calendar} / ${Object.keys(world.growth.state.acquisition).length}候補（検査成功）`,
+  );
+}
+
+{
+  const root = new URL('../src/data/pitch-learning/', import.meta.url);
+  const files = readdirSync(root, { recursive: true })
+    .map(String)
+    .filter((p) => p.endsWith('.json'));
+  const ids = files
+    .flatMap((file) =>
+      JSON.parse(readFileSync(new URL(file.replaceAll('\\', '/'), root), 'utf8')).map(
+        (p: { pitchId: string }) => p.pitchId,
+      ),
+    )
+    .sort();
+  if (JSON.stringify(ids) !== JSON.stringify(pitchLearningCandidates.map((p) => p.pitchId).sort()))
+    throw Error('球種習得JSONと登録が一致しません');
 }

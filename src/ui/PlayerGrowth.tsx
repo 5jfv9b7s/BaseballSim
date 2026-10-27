@@ -43,7 +43,8 @@ export function PlayerGrowth({ view, playerId }: { view: WorldView; playerId: st
   );
   const changed = comparison.rows.filter((row) => row.beforeValue !== row.afterValue);
   const dates = growth.dates.filter((date) => date >= range.from);
-  const deltas = growth.dailyDeltas[playerId]!.slice(-dates.length);
+  const deltas =
+    range.dailyDeltas?.[playerId] ?? growth.dailyDeltas[playerId]!.slice(-dates.length);
   const limit = Math.max(1, ...deltas.map(Math.abs));
   const x = (i: number) => 32 + (deltas.length === 1 ? 130 : (i * 260) / (deltas.length - 1));
   const y = (v: number) => 73 - (v * 42) / limit;

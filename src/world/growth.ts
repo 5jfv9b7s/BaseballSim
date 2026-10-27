@@ -2,7 +2,7 @@ import { ensure, integer } from '../engine/validation.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
 import { activityKey } from './physical.ts';
-import { growthBasis, growthAbilityKey } from './growth-basis.ts';
+import { activeGrowthBasis, growthBasis, growthAbilityKey } from './growth-basis.ts';
 import { playerDevelopment } from './player-development.ts';
 import { trainingSettings, trainingTargetAbilities } from './training.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
@@ -25,6 +25,7 @@ export function validateGrowthDefinitions(definitions: WorldDefinitions): void {
       'world-definitions-v23',
       'world-definitions-v24',
       'world-definitions-v25',
+      'world-definitions-v26',
     ].includes(definitions.version)
   ) {
     ensure(definitions.growthConfig === undefined, '旧定義へ成長モデルを追加できません');
@@ -119,6 +120,7 @@ export function initialGrowth(definitions: WorldDefinitions, seed: number): Trai
       'world-definitions-v23',
       'world-definitions-v24',
       'world-definitions-v25',
+      'world-definitions-v26',
     ].includes(definitions.version),
     '通常練習に対応する初期定義が必要です',
   );
@@ -220,7 +222,8 @@ export function calculateTrainingDay(
         | 'world-prototype-v17'
         | 'world-prototype-v18'
         | 'world-prototype-v19'
-        | 'world-prototype-v20';
+        | 'world-prototype-v20'
+        | 'world-prototype-v21';
     }
   >,
   override?: import('./camp-types.ts').CampTrainingOverride,
@@ -270,11 +273,11 @@ export function calculateTrainingDay(
     const background = opportunity ? nextRandom(opportunity.state) : null;
     const occurred = opportunity !== null && opportunity.value * 100000 < chance;
     const budget = occurred ? trainingBudget(config, traits.talentMilli, decision.intensity) : 0;
-    const basis = growthBasis(world.definitions, playerId);
+    const basis = activeGrowthBasis(world, playerId);
     const byKey = new Map(basis.map((row) => [row.key, row]));
-    const targets = trainingTargetAbilities(world.definitions, playerId, settings.target).map(
-      (row) => growthAbilityKey(row.abilityRef),
-    );
+    const targets = trainingTargetAbilities(world.definitions, playerId, settings.target)
+      .map((row) => growthAbilityKey(row.abilityRef))
+      .filter((key) => byKey.has(key));
     const others = basis.filter((row) => !targets.includes(row.key));
     function grow(key: string, amount: number) {
       const ability = byKey.get(key)!;
@@ -309,9 +312,9 @@ export function calculateTrainingDay(
         ((budget - outside) * (override?.focusAmountPermille ?? 1000)) / 1000,
       );
       allocatedBudget = focus + outside;
-      const share = Math.floor(focus / targets.length),
-        remainder = focus % targets.length;
-      const start = world.completedDates.length % targets.length;
+      const share = targets.length ? Math.floor(focus / targets.length) : 0,
+        remainder = targets.length ? focus % targets.length : 0;
+      const start = targets.length ? world.completedDates.length % targets.length : 0;
       targets.forEach((key, index) =>
         grow(key, share + ((index - start + targets.length) % targets.length < remainder ? 1 : 0)),
       );

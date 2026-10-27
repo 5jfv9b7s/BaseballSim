@@ -9,7 +9,9 @@ export type TrainingAbilityRef =
   | { scope: 'pitch'; pitchId: string; code: 'control' | 'repeatability' }
   | { scope: 'position'; positionCode: FieldPosition; code: 'familiarity' };
 export type TrainingTarget =
-  { kind: 'ability'; abilityRef: TrainingAbilityRef } | { kind: 'group'; groupId: string };
+  | { kind: 'pitchAcquisition'; pitchId: string }
+  | { kind: 'ability'; abilityRef: TrainingAbilityRef }
+  | { kind: 'group'; groupId: string };
 export interface TrainingSettings {
   target: TrainingTarget;
   intensity: 'light' | 'normal' | 'hard' | 'rest';

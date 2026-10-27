@@ -90,7 +90,7 @@ for (const width of [1280, 390, 320]) {
     const detail = panel.getByRole('region', { name: '選択選手の練習内容', exact: true });
     const roster = panel.getByRole('table', { name: '練習選手一覧', exact: true });
     await expect(roster.locator('tbody tr')).toHaveCount(30);
-    expect(before.growth!.version).toBe('daily-development-v5');
+    expect(before.growth!.version).toBe('daily-development-v6');
     await expect(panel).toContainText(
       '日次確定で通常練習・キャンプ練習・実戦経験・年齢変化・ルーキー覚醒を反映します',
     );

@@ -1,0 +1,35 @@
+[
+  {
+    "pitchId": "learning-player-a-11-curve",
+    "playerId": "player-a-11",
+    "pitchTypeCode": "curve",
+    "acquisitionProgressMilli": 0,
+    "control": {
+      "valueMilli": 39900,
+      "ceilingMilli": 110000
+    },
+    "repeatability": {
+      "valueMilli": 45500,
+      "ceilingMilli": 110000
+    },
+    "velocity": {
+      "typicalCentiKph": 11800,
+      "maxCentiKph": 12200,
+      "spreadCentiKph": 450
+    },
+    "delivery": {
+      "spinRateRpm": 2400,
+      "spinSpreadRpm": 200,
+      "spinAxis": {
+        "xPpm": 800000,
+        "yPpm": 0,
+        "zPpm": 600000
+      },
+      "release": {
+        "lateralMm": -510,
+        "heightMm": 1740,
+        "extensionMm": 1810
+      }
+    }
+  }
+]

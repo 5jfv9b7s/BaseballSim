@@ -1,0 +1,35 @@
+[
+  {
+    "pitchId": "learning-asagiri-player-h-12-curve",
+    "playerId": "asagiri-player-h-12",
+    "pitchTypeCode": "curve",
+    "acquisitionProgressMilli": 0,
+    "control": {
+      "valueMilli": 43400,
+      "ceilingMilli": 110000
+    },
+    "repeatability": {
+      "valueMilli": 50400,
+      "ceilingMilli": 110000
+    },
+    "velocity": {
+      "typicalCentiKph": 11920,
+      "maxCentiKph": 12320,
+      "spreadCentiKph": 450
+    },
+    "delivery": {
+      "spinRateRpm": 2400,
+      "spinSpreadRpm": 200,
+      "spinAxis": {
+        "xPpm": 800000,
+        "yPpm": 0,
+        "zPpm": 600000
+      },
+      "release": {
+        "lateralMm": -470,
+        "heightMm": 1790,
+        "extensionMm": 1780
+      }
+    }
+  }
+]

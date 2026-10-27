@@ -58,7 +58,14 @@ export function seasonGrowthReport(
       squad.players.map((player) => {
         const playerId = player.playerId;
         const initial = Object.fromEntries(
-          growthBasis(world.definitions, playerId).map((row) => [row.key, row.valueMilli]),
+          growthBasis(world.definitions, playerId)
+            .filter(
+              (row) =>
+                row.abilityRef.scope !== 'pitch' ||
+                !('acquisition' in state) ||
+                !Object.hasOwn(state.acquisition, row.abilityRef.pitchId),
+            )
+            .map((row) => [row.key, row.valueMilli]),
         );
         const comparison = growthComparison(
           world.definitions,

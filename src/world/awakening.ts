@@ -3,7 +3,7 @@ import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
 import { initialAgeDevelopment, calculateAgeDevelopmentDay } from './aging.ts';
 import { freezeGrowthData } from './growth.ts';
-import { growthBasis } from './growth-basis.ts';
+import { activeGrowthBasis } from './growth-basis.ts';
 import { playerDevelopment } from './player-development.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
 import type {
@@ -12,7 +12,10 @@ import type {
   RookieAwakeningDay,
 } from './awakening-types.ts';
 
-type RookieWorld = Extract<WorldRecord, { version: 'world-prototype-v19' | 'world-prototype-v20' }>;
+type RookieWorld = Extract<
+  WorldRecord,
+  { version: 'world-prototype-v19' | 'world-prototype-v20' | 'world-prototype-v21' }
+>;
 function fields(value: unknown, keys: string[], name: string) {
   ensure(value && typeof value === 'object' && !Array.isArray(value), name + 'が不正です');
   ensure(
@@ -21,7 +24,9 @@ function fields(value: unknown, keys: string[], name: string) {
   );
 }
 export function validateAwakeningDefinitions(d: WorldDefinitions): void {
-  if (!['world-definitions-v24', 'world-definitions-v25'].includes(d.version)) {
+  if (
+    !['world-definitions-v24', 'world-definitions-v25', 'world-definitions-v26'].includes(d.version)
+  ) {
     ensure(d.awakeningConfig === undefined, '旧定義へ覚醒モデルを追加できません');
     return;
   }
@@ -61,7 +66,7 @@ export function initialRookieDevelopment(
 ): RookieDevelopmentGrowthState {
   validateAwakeningDefinitions(d);
   ensure(
-    ['world-definitions-v24', 'world-definitions-v25'].includes(d.version),
+    ['world-definitions-v24', 'world-definitions-v25', 'world-definitions-v26'].includes(d.version),
     '覚醒に対応する定義が必要です',
   );
   const base = initialAgeDevelopment(d, seed);
@@ -125,9 +130,7 @@ export function calculateRookieDevelopmentDay(
     )
       continue;
     const values = players[id]!.values;
-    const targets = growthBasis(world.definitions, id).filter(
-      (a) => values[a.key]! < a.ceilingMilli,
-    );
+    const targets = activeGrowthBasis(world, id).filter((a) => values[a.key]! < a.ceilingMilli);
     if (!targets.length) {
       day.awakening.push({ playerId: id, status: 'noRoom' });
       continue;
@@ -177,7 +180,7 @@ export function calculateRookieDevelopmentDay(
     });
   }
   for (const id of Object.keys(players)) {
-    day.displayDeltas[id] = growthBasis(world.definitions, id).reduce(
+    day.displayDeltas[id] = activeGrowthBasis(world, id).reduce(
       (sum, a) =>
         sum +
         Math.floor(players[id]!.values[a.key]! / 1000) -

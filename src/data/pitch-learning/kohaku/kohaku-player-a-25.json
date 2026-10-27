@@ -1,0 +1,35 @@
+[
+  {
+    "pitchId": "learning-kohaku-player-a-25-changeup",
+    "playerId": "kohaku-player-a-25",
+    "pitchTypeCode": "changeup",
+    "acquisitionProgressMilli": 0,
+    "control": {
+      "valueMilli": 36400,
+      "ceilingMilli": 110000
+    },
+    "repeatability": {
+      "valueMilli": 42000,
+      "ceilingMilli": 110000
+    },
+    "velocity": {
+      "typicalCentiKph": 12702,
+      "maxCentiKph": 13137,
+      "spreadCentiKph": 450
+    },
+    "delivery": {
+      "spinRateRpm": 1200,
+      "spinSpreadRpm": 170,
+      "spinAxis": {
+        "xPpm": -600000,
+        "yPpm": 0,
+        "zPpm": -800000
+      },
+      "release": {
+        "lateralMm": -530,
+        "heightMm": 1720,
+        "extensionMm": 1870
+      }
+    }
+  }
+]

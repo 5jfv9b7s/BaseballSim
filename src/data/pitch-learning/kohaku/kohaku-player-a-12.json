@@ -1,0 +1,35 @@
+[
+  {
+    "pitchId": "learning-kohaku-player-a-12-curve",
+    "playerId": "kohaku-player-a-12",
+    "pitchTypeCode": "curve",
+    "acquisitionProgressMilli": 0,
+    "control": {
+      "valueMilli": 43400,
+      "ceilingMilli": 110000
+    },
+    "repeatability": {
+      "valueMilli": 56000,
+      "ceilingMilli": 110000
+    },
+    "velocity": {
+      "typicalCentiKph": 11920,
+      "maxCentiKph": 12320,
+      "spreadCentiKph": 450
+    },
+    "delivery": {
+      "spinRateRpm": 2400,
+      "spinSpreadRpm": 200,
+      "spinAxis": {
+        "xPpm": 800000,
+        "yPpm": 0,
+        "zPpm": 600000
+      },
+      "release": {
+        "lateralMm": -370,
+        "heightMm": 1920,
+        "extensionMm": 1660
+      }
+    }
+  }
+]

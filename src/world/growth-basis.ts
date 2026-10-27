@@ -77,3 +77,14 @@ export function currentCommonAbilities(
     ability.valueMilli = values[growthAbilityKey(commonTrainingRef(code as CommonAbilityCode))]!;
   return abilities;
 }
+
+/** 新球種が使用可能になる翌日から、既存の能力成長へ含める。 */
+export function activeGrowthBasis(world: WorldRecord, playerId: string) {
+  const basis = growthBasis(world.definitions, playerId);
+  if (world.version !== 'world-prototype-v21') return basis;
+  return basis.filter(
+    (a) =>
+      a.abilityRef.scope !== 'pitch' ||
+      (world.growth.state.acquisition[a.abilityRef.pitchId]?.progressMilli ?? 100000) === 100000,
+  );
+}

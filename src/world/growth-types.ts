@@ -82,6 +82,10 @@ export interface TrainingGrowthState {
 
 export interface GrowthView {
   version: GrowthState['version'];
+  pitchLearning?: {
+    acquisition: Record<string, import('./pitch-learning-types.ts').PitchAcquisition>;
+    latest: import('./pitch-learning-types.ts').PitchLearningOutcome[];
+  };
   campBursts?: {
     campId: string;
     date: string;
@@ -96,6 +100,7 @@ export interface GrowthView {
       from: string;
       through: string | null;
       start: Record<string, Record<string, number>>;
+      dailyDeltas?: Record<string, number[]>;
     }
   >;
   dates: string[];
@@ -167,4 +172,5 @@ export type GrowthState =
   | DevelopmentGrowthState
   | import('./age-types.ts').AgeDevelopmentGrowthState
   | import('./awakening-types.ts').RookieDevelopmentGrowthState
-  | import('./camp-types.ts').CampDevelopmentGrowthState;
+  | import('./camp-types.ts').CampDevelopmentGrowthState
+  | import('./pitch-learning-types.ts').PitchLearningGrowthState;

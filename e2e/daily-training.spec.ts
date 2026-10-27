@@ -105,8 +105,8 @@ for (const width of [1280, 390, 320])
       timeout: 60000,
     });
     const after = await read(page);
-    expect(after.modelVersion).toBe('world-prototype-v20');
-    expect(after.growth!.version).toBe('daily-development-v5');
+    expect(after.modelVersion).toBe('world-prototype-v21');
+    expect(after.growth!.version).toBe('daily-development-v6');
     expect(after.growth!.latest!.experience!.length).toBeGreaterThan(0);
     expect(after.growth!.dates).toEqual(['2026-09-24']);
     expect(after.growth!.latest!.outcomes).toHaveLength(120);

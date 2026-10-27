@@ -18,6 +18,10 @@ export function applyGrowthFixture(world: WorldRecord, fixture: GameFixture): vo
     player.armStrength = abilities['fielding.armStrength'];
   }
   for (const pitch of fixture.pitches) {
+    if (world.version === 'world-prototype-v21')
+      pitch.acquisitionProgressMilli =
+        world.growth.state.acquisition[pitch.pitchId]?.progressMilli ??
+        pitch.acquisitionProgressMilli;
     const values = world.growth.state.players[pitch.playerId]!.values;
     for (const code of ['control', 'repeatability'] as const)
       pitch[code] = {

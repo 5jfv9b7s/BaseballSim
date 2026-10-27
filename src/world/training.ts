@@ -70,6 +70,20 @@ export function validateTrainingSettings(
       definitions.trainingPlans?.catalog.groups.some((g) => g.groupId === target.groupId),
       '保存内の練習対象群を指定してください',
     );
+  } else if (target.kind === 'pitchAcquisition') {
+    fields(target, ['kind', 'pitchId'], '新球種習得の指定');
+    ensure(
+      definitions.version === 'world-definitions-v26' &&
+        definitions.squads.some((s) =>
+          s.pitches.some(
+            (p) =>
+              p.playerId === playerId &&
+              p.pitchId === target.pitchId &&
+              p.acquisitionProgressMilli < 100000,
+          ),
+        ),
+      '本人の未習得候補を指定してください',
+    );
   } else {
     fields(target, ['kind', 'abilityRef'], '個別練習の指定');
     ensure(target.kind === 'ability', '未対応の練習対象です');
@@ -85,6 +99,7 @@ export function validateTrainingDefinitions(definitions: WorldDefinitions): void
       'world-definitions-v23',
       'world-definitions-v24',
       'world-definitions-v25',
+      'world-definitions-v26',
     ].includes(definitions.version)
   ) {
     ensure(definitions.trainingPlans === undefined, '旧定義へ練習設定を後付けできません');
@@ -183,6 +198,16 @@ export function applyTrainingPlans(
     );
     ids.add(row.playerId);
     validateTrainingSettings(world.definitions, row.playerId, row.settings);
+    if (
+      world.version === 'world-prototype-v21' &&
+      row.settings.target.kind === 'ability' &&
+      row.settings.target.abilityRef.scope === 'pitch'
+    )
+      ensure(
+        (world.growth.state.acquisition[row.settings.target.abilityRef.pitchId]?.progressMilli ??
+          100000) === 100000,
+        '未習得球は球種習得の練習を指定してください',
+      );
   }
   const control = structuredClone(world.management.training);
   for (const row of action.updates) {
@@ -252,7 +277,13 @@ export function trainingTargetAbilities(
       ? definitions
           .trainingPlans!.catalog.groups.find((g) => g.groupId === target.groupId)!
           .members.map(commonTrainingRef)
-      : [target.abilityRef];
+      : target.kind === 'pitchAcquisition'
+        ? (['control', 'repeatability'] as const).map((code) => ({
+            scope: 'pitch' as const,
+            pitchId: target.pitchId,
+            code,
+          }))
+        : [target.abilityRef];
   const abilities = playerBaseAbilities(definitions, playerId)!;
   return refs.map((abilityRef) => {
     if (abilityRef.scope === 'pitch') {
@@ -276,7 +307,11 @@ export function trainingTargetAbilities(
     return { abilityRef, label: COMMON_ABILITIES[code], ...abilities[code] };
   });
 }
-export function trainingTargetOptions(definitions: WorldDefinitions, playerId: string) {
+export function trainingTargetOptions(
+  definitions: WorldDefinitions,
+  playerId: string,
+  acquisition?: Record<string, import('./pitch-learning-types.ts').PitchAcquisition>,
+) {
   const options: { key: string; label: string; target: TrainingTarget }[] = [];
   const add = (label: string, target: TrainingTarget) =>
     options.push({ key: canonicalJson(target), label, target });
@@ -292,6 +327,16 @@ export function trainingTargetOptions(definitions: WorldDefinitions, playerId: s
   for (const pitch of definitions.squads
     .flatMap((s) => s.pitches)
     .filter((p) => p.playerId === playerId)) {
+    if (definitions.version === 'world-definitions-v26' && pitch.acquisitionProgressMilli < 100000)
+      add(`${PITCH_TYPES[pitch.pitchTypeCode].name}の習得`, {
+        kind: 'pitchAcquisition',
+        pitchId: pitch.pitchId,
+      });
+    if (
+      definitions.version === 'world-definitions-v26' &&
+      (acquisition?.[pitch.pitchId]?.progressMilli ?? pitch.acquisitionProgressMilli) < 100000
+    )
+      continue;
     for (const code of ['control', 'repeatability'] as const)
       add(
         `${PITCH_TYPES[pitch.pitchTypeCode].name}・${code === 'control' ? '制球' : '再現性'}（${(pitch.velocity.typicalCentiKph / 100).toFixed(1)}km/h）`,
@@ -305,6 +350,11 @@ export function trainingTargetLabel(
   playerId: string,
   target: TrainingTarget,
 ): string {
+  if (target.kind === 'ability' && target.abilityRef.scope === 'pitch') {
+    const pitchId = target.abilityRef.pitchId;
+    const pitch = definitions.squads.flatMap((s) => s.pitches).find((p) => p.pitchId === pitchId)!;
+    return `${trainingTargetAbilities(definitions, playerId, target)[0]!.label}（${(pitch.velocity.typicalCentiKph / 100).toFixed(1)}km/h）`;
+  }
   return trainingTargetOptions(definitions, playerId).find(
     (option) => option.key === canonicalJson(target),
   )!.label;

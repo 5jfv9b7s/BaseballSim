@@ -2,7 +2,7 @@ import { ensure, integer } from '../engine/validation.ts';
 import { COMMON_ABILITIES } from '../players/abilities.ts';
 import { playerAge, isDateOnly } from './player-profiles.ts';
 import { playerDevelopment } from './player-development.ts';
-import { growthBasis } from './growth-basis.ts';
+import { activeGrowthBasis } from './growth-basis.ts';
 import { freezeGrowthData } from './growth.ts';
 import { initialDevelopment, calculateDevelopmentDay } from './experience.ts';
 import { AGE_GROUPS } from './age-types.ts';
@@ -17,7 +17,10 @@ import type { WorldDefinitions, WorldRecord } from './types.ts';
 
 type AgeWorld = Extract<
   WorldRecord,
-  { version: 'world-prototype-v18' | 'world-prototype-v19' | 'world-prototype-v20' }
+  {
+    version:
+      'world-prototype-v18' | 'world-prototype-v19' | 'world-prototype-v20' | 'world-prototype-v21';
+  }
 >;
 /** 平均グレゴリオ年365.2425日。日次への変換は整数端数を繰り越す。 */
 export const AGE_YEAR_DENOMINATOR = 3652425;
@@ -30,7 +33,12 @@ function fields(value: unknown, keys: string[], label: string): void {
 }
 export function validateAgeDefinitions(d: WorldDefinitions): void {
   if (
-    !['world-definitions-v23', 'world-definitions-v24', 'world-definitions-v25'].includes(d.version)
+    ![
+      'world-definitions-v23',
+      'world-definitions-v24',
+      'world-definitions-v25',
+      'world-definitions-v26',
+    ].includes(d.version)
   ) {
     ensure(
       d.ageConfig === undefined && d.ageCurves === undefined,
@@ -191,7 +199,12 @@ export function initialAgeDevelopment(
 ): AgeDevelopmentGrowthState {
   validateAgeDefinitions(d);
   ensure(
-    ['world-definitions-v23', 'world-definitions-v24', 'world-definitions-v25'].includes(d.version),
+    [
+      'world-definitions-v23',
+      'world-definitions-v24',
+      'world-definitions-v25',
+      'world-definitions-v26',
+    ].includes(d.version),
     '年齢曲線に対応する定義が必要です',
   );
   const base = initialDevelopment(d, seed);
@@ -234,7 +247,7 @@ export function calculateAgeDevelopmentDay(
     const age = ageAtMilli(profile.birthDate, world.currentDate);
     const talent = playerDevelopment(world.definitions, playerId)!.growthProfile.talentMilli;
     const groups = AGE_GROUPS.map((group) => ({ group, increaseMilli: 0, decreaseMilli: 0 }));
-    for (const a of growthBasis(world.definitions, playerId)) {
+    for (const a of activeGrowthBasis(world, playerId)) {
       const group = ageAbilityGroup(c, a.abilityRef);
       const rate = ageAnnualRate(c, curves[group], group, age, talent);
       if (!c.enabled) continue;
@@ -265,7 +278,7 @@ export function calculateAgeDevelopmentDay(
     }
     agingRemainders[playerId] = remainders;
     day.aging.push({ playerId, ageMilli: age, groups });
-    day.displayDeltas[playerId] = growthBasis(world.definitions, playerId).reduce(
+    day.displayDeltas[playerId] = activeGrowthBasis(world, playerId).reduce(
       (sum, a) =>
         sum +
         Math.floor(values[a.key]! / 1000) -

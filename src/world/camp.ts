@@ -3,7 +3,7 @@ import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
 import { initialRookieDevelopment, calculateRookieDevelopmentDay } from './awakening.ts';
 import { freezeGrowthData } from './growth.ts';
-import { growthBasis, growthAbilityKey } from './growth-basis.ts';
+import { activeGrowthBasis, growthAbilityKey } from './growth-basis.ts';
 import { playerDevelopment } from './player-development.ts';
 import { validateTrainingSettings, trainingSettings, trainingTargetAbilities } from './training.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
@@ -16,7 +16,7 @@ import type {
   CampTrainingOverride,
 } from './camp-types.ts';
 
-type CampWorld = Extract<WorldRecord, { version: 'world-prototype-v20' }>;
+type CampWorld = Extract<WorldRecord, { version: 'world-prototype-v20' | 'world-prototype-v21' }>;
 // IDにハイフンが含まれても、期間と選手の境界を一意にする。
 const campPlayerKey = (campId: string, playerId: string) =>
   `${campId.length}-${campId}-${playerId}`;
@@ -28,7 +28,7 @@ function fields(value: unknown, keys: string[], label: string) {
   );
 }
 export function validateCampDefinitions(d: WorldDefinitions) {
-  if (d.version !== 'world-definitions-v25') {
+  if (!['world-definitions-v25', 'world-definitions-v26'].includes(d.version)) {
     ensure(
       d.campConfig === undefined && d.campInputs === undefined,
       '旧定義へキャンプを後付けできません',
@@ -101,7 +101,10 @@ export function validateCampDefinitions(d: WorldDefinitions) {
 }
 export function initialCampPlans(d: WorldDefinitions): CampPlanControl {
   validateCampDefinitions(d);
-  ensure(d.version === 'world-definitions-v25', 'キャンプに対応する定義が必要です');
+  ensure(
+    ['world-definitions-v25', 'world-definitions-v26'].includes(d.version),
+    'キャンプに対応する定義が必要です',
+  );
   return {
     version: 'camp-plans-v1',
     revision: 0,
@@ -174,7 +177,10 @@ export function activeCamp(world: CampWorld) {
     : null;
 }
 export function applyCampPlans(world: WorldRecord, action: CampPlansAction): CampWorld {
-  ensure(world.version === 'world-prototype-v20', 'キャンプ設定は対応する新規プレイで利用できます');
+  ensure(
+    world.version === 'world-prototype-v20' || world.version === 'world-prototype-v21',
+    'キャンプ設定は対応する新規プレイで利用できます',
+  );
   fields(action, ['kind', 'campId', 'squadId', 'updates'], 'キャンプ変更');
   const period = world.definitions.campInputs!.periods.find((p) => p.campId === action.campId);
   ensure(
@@ -197,6 +203,16 @@ export function applyCampPlans(world: WorldRecord, action: CampPlansAction): Cam
     );
     seen.add(row.playerId);
     validateTrainingSettings(world.definitions, row.playerId, row.settings);
+    if (
+      world.version === 'world-prototype-v21' &&
+      row.settings.target.kind === 'ability' &&
+      row.settings.target.abilityRef.scope === 'pitch'
+    )
+      ensure(
+        (world.growth.state.acquisition[row.settings.target.abilityRef.pitchId]?.progressMilli ??
+          100000) === 100000,
+        '未習得球は球種習得の練習を指定してください',
+      );
   }
   const camp = structuredClone(world.camp);
   for (const row of action.updates)
@@ -252,7 +268,11 @@ export function applyCampDevelopmentDay(world: CampWorld) {
       const values = base.players[playerId]!.values;
       const targets = trainingTargetAbilities(world.definitions, playerId, outcome.settings.target)
         .map((a) => ({ ...a, key: growthAbilityKey(a.abilityRef) }))
-        .filter((a) => values[a.key]! < a.ceilingMilli);
+        .filter(
+          (a) =>
+            activeGrowthBasis(world, playerId).some((b) => b.key === a.key) &&
+            values[a.key]! < a.ceilingMilli,
+        );
       if (!targets.length) {
         record.status = 'noRoom';
         continue;
@@ -302,7 +322,7 @@ export function applyCampDevelopmentDay(world: CampWorld) {
     }
   }
   for (const playerId of Object.keys(base.players))
-    day.displayDeltas[playerId] = growthBasis(world.definitions, playerId).reduce(
+    day.displayDeltas[playerId] = activeGrowthBasis(world, playerId).reduce(
       (sum, a) =>
         sum +
         Math.floor(base.players[playerId]!.values[a.key]! / 1000) -
@@ -326,7 +346,8 @@ export function applyCampDevelopmentDay(world: CampWorld) {
   return { growth, physical: base.physical };
 }
 export function campView(world: WorldRecord) {
-  if (world.version !== 'world-prototype-v20') return null;
+  if (world.version !== 'world-prototype-v20' && world.version !== 'world-prototype-v21')
+    return null;
   const squadId = world.management.controlledSquadId;
   const ids = world.definitions.squads
     .find((s) => s.squadId === squadId)!

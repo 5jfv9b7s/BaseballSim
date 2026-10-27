@@ -33,11 +33,19 @@ export function CampEditor({
   const intensity = same(rows.map((p) => p.intensity));
   const autoAdjust = same(rows.map((p) => p.autoAdjustForFatigue));
   const options = selected.length
-    ? trainingTargetOptions(view.definitions, selected[0]!).filter((o) =>
+    ? trainingTargetOptions(
+        view.definitions,
+        selected[0]!,
+        view.growth?.pitchLearning?.acquisition,
+      ).filter((o) =>
         selected
           .slice(1)
           .every((id) =>
-            trainingTargetOptions(view.definitions, id).some((other) => other.key === o.key),
+            trainingTargetOptions(
+              view.definitions,
+              id,
+              view.growth?.pitchLearning?.acquisition,
+            ).some((other) => other.key === o.key),
           ),
       )
     : [];

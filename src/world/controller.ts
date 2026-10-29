@@ -5,7 +5,8 @@ import { trainingView } from './training.ts';
 import { applyFormation } from './formation.ts';
 import type { FormationAction } from './formation-draft.ts';
 import { playerStatuses } from './player-status.ts';
-import { singleGameHomeRunRecord } from './memorial.ts';
+import { singleGameHomeRunRecords } from './memorial.ts';
+import type { HomeRunRecord } from './memorial.ts';
 import { gameDisplay } from './game-display.ts';
 import { bullpenView } from './bullpen.ts';
 import { reliefView } from './relief.ts';
@@ -53,8 +54,12 @@ export interface WorldView {
   playerStatuses: ReturnType<typeof playerStatuses>;
   localWorldId: string;
   memorial: {
-    firstRegular: ReturnType<typeof singleGameHomeRunRecord>;
-    farmRegular: ReturnType<typeof singleGameHomeRunRecord> | null;
+    firstRegular: HomeRunRecord;
+    farmRegular: HomeRunRecord | null;
+  };
+  clubMemorial: {
+    firstRegular: Record<string, HomeRunRecord>;
+    farmRegular: Record<string, HomeRunRecord> | null;
   };
   bullpen: ReturnType<typeof bullpenView> | null;
   relief: ReturnType<typeof reliefView> | null;
@@ -170,6 +175,10 @@ export class WorldController {
     const controlledFarm = world.definitions.farm?.squads.find(
       (squad) => squad.team.clubId === controlledClub,
     );
+    const firstRecords = singleGameHomeRunRecords(world);
+    const farmRecords = world.definitions.farm
+      ? singleGameHomeRunRecords(world, 'farmRegular')
+      : null;
     return structuredClone({
       growth: growthView(world),
       training: trainingView(world),
@@ -177,8 +186,12 @@ export class WorldController {
       playerStatuses: playerStatuses(world),
       localWorldId: this.localWorldId,
       memorial: {
-        firstRegular: singleGameHomeRunRecord(world),
-        farmRegular: world.definitions.farm ? singleGameHomeRunRecord(world, 'farmRegular') : null,
+        firstRegular: firstRecords.overall,
+        farmRegular: farmRecords?.overall ?? null,
+      },
+      clubMemorial: {
+        firstRegular: firstRecords.byClub,
+        farmRegular: farmRecords?.byClub ?? null,
       },
       bullpen:
         world.version === 'world-prototype-v14' ||

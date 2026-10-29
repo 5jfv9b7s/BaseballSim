@@ -24,6 +24,7 @@ import {
   type ProgressTarget,
 } from '../world/period-progress.ts';
 import { MemorialPanel } from './MemorialPanel.tsx';
+import type { HomeRunRecordEntry } from '../world/memorial.ts';
 import { BackupPanel, SavedPlayPicker } from './BackupPanel.tsx';
 import { MAX_PACKAGE_BYTES } from '../world/backup-zip.ts';
 import type { StoredPlay, WorldSlotKind } from '../world/storage.ts';
@@ -203,6 +204,16 @@ export function WorldApp({
       campId: dirtyId,
       squadId: current.camp.squadId,
       updates: trainingChanges(campBase.current[dirtyId]!, campDraftRef.current[dirtyId]!),
+    });
+  }
+
+  function openRecordGame(entry: HomeRunRecordEntry) {
+    setSelectedDate(entry.achievedOn);
+    setSelectedGame(entry.gameId);
+    if (!development) setPage('results');
+    requestAnimationFrame(() => {
+      resultsRef.current?.focus();
+      resultsRef.current?.scrollIntoView({ block: 'start' });
     });
   }
 
@@ -971,6 +982,7 @@ export function WorldApp({
         onSelectPlayer={setSelectedPlayer}
         onOpenStats={() => navigate('stats')}
         onOpenMemorial={() => navigate('memorial')}
+        onSelectGame={openRecordGame}
         onHome={() => navigate('home')}
       />
     ),
@@ -1058,13 +1070,14 @@ export function WorldApp({
         {view && view.memorial[displayScope] && (
           <MemorialPanel
             record={view.memorial[displayScope]}
-            onSelectGame={(entry) => {
-              setSelectedDate(entry.achievedOn);
-              setSelectedGame(entry.gameId);
-              if (!development) setPage('results');
-              resultsRef.current?.focus();
-              resultsRef.current?.scrollIntoView({ block: 'start' });
-            }}
+            seasonYear={view.definitions.startDate.slice(0, 4)}
+            ownRecord={
+              controlledClubId
+                ? (view.clubMemorial[displayScope]?.[controlledClubId] ?? null)
+                : null
+            }
+            ownSquadId={displayOwnSquadId}
+            onSelectGame={openRecordGame}
           />
         )}
       </>

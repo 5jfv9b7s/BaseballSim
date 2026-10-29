@@ -1,0 +1,85 @@
+.memorial-filter,
+.memorial-heading,
+.memorial-result {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.memorial-filter select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.memorial-result strong {
+  font-size: 2rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.memorial-result small {
+  margin-left: 0.25rem;
+  font-size: 1rem;
+}
+
+.memorial-table {
+  max-width: 100%;
+  overflow-x: auto;
+  box-shadow: inset -6px 0 6px -6px var(--muted, #68766f);
+}
+
+.memorial-table table {
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.memorial-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--panel, #fff);
+  box-shadow: 2px 0 0 var(--line, #dadfd4);
+}
+
+.memorial-table tr[data-own-club='true'] > :first-child {
+  border-left: 3px solid var(--ink, #355b49);
+}
+
+.memorial-own {
+  display: inline-block;
+  padding: 0 0.25rem;
+  margin-right: 0.35rem;
+  border: 1px solid currentColor;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.memorial-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.memorial-table button {
+  min-height: 44px;
+}
+
+.memorial-notes {
+  margin-top: 1rem;
+}
+
+.season-records {
+  min-width: 0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line, #dadfd4);
+}
+
+.memorial-heading > span {
+  color: var(--muted, #68766f);
+}
+
+.memorial-heading time {
+  white-space: nowrap;
+}

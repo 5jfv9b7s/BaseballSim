@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { canonicalJson, sha256 } from '../src/storage/codec.ts';
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { singleGameHomeRunRecord } from '../src/world/memorial.ts';
+import { singleGameHomeRunRecord, singleGameHomeRunRecords } from '../src/world/memorial.ts';
 import { gameDisplay } from '../src/world/game-display.ts';
 import { gameScope } from '../src/world/squads.ts';
 import {
@@ -175,6 +178,12 @@ test('メモリアル：読込巻戻し・別プレイ復元・Worker照会で�
     };
     await load('auto');
     const expected = structuredClone(view.memorial);
+    const expectedClubs = structuredClone(view.clubMemorial);
+    assert.deepEqual(expectedClubs.firstRegular, singleGameHomeRunRecords(played).byClub);
+    assert.deepEqual(
+      expectedClubs.farmRegular,
+      singleGameHomeRunRecords(played, 'farmRegular').byClub,
+    );
     assert.ok(expected.firstRegular.entries.length > 0);
     assert.ok(expected.farmRegular!.entries.length > 0);
     assert.deepEqual(expected.firstRegular, singleGameHomeRunRecord(played));
@@ -184,11 +193,14 @@ test('メモリアル：読込巻戻し・別プレイ復元・Worker照会で�
     }
     const beforeSlots = await storage.listSlots();
     view.memorial.firstRegular.maximum = 999;
+    Object.values(view.clubMemorial.firstRegular)[0]!.maximum = 999;
+    assert.deepEqual(controller.query().clubMemorial, expectedClubs);
     assert.deepEqual(controller.query().memorial, expected);
     assert.deepEqual(await storage.listSlots(), beforeSlots);
     await load('manual');
     assert.equal(view.memorial.firstRegular.maximum, null);
     assert.equal(view.memorial.farmRegular!.completedGames, 0);
+    assert.ok(Object.values(view.clubMemorial.firstRegular).every((r) => r.maximum === null));
     await load('auto');
     assert.deepEqual(view.memorial, expected);
     const bytes = await storage.exportSnapshot('auto');
@@ -203,7 +215,143 @@ test('メモリアル：読込巻戻し・別プレイ復元・Worker照会で�
       expectedStateRevision: opened.revision,
     });
     assert.deepEqual(restored.memorial, expected);
+    assert.deepEqual(restored.clubMemorial, expectedClubs);
   } finally {
     await db.delete();
   }
+});
+
+test('球団記録：他球団の球界最多より少なくても自球団内の最多と同率者を残す', () => {
+  const world = zeroed(true);
+  const game = Object.values(world.games)[0]!;
+  const away = game.fixture.teams.away;
+  const home = game.fixture.teams.home;
+  const awayLines = game.result!.batting.filter((line) =>
+    game.fixture.clubs
+      .find((club) => club.clubId === away.clubId)!
+      .playerIds.includes(line.playerId),
+  );
+  const homeLine = game.result!.batting.find((line) =>
+    game.fixture.clubs
+      .find((club) => club.clubId === home.clubId)!
+      .playerIds.includes(line.playerId),
+  )!;
+  awayLines[0]!.homeRuns = 2;
+  awayLines[1]!.homeRuns = 2;
+  homeLine.homeRuns = 4;
+  const before = structuredClone(world);
+  const records = singleGameHomeRunRecords(world);
+  const own = records.byClub[away.clubId]!;
+  assert.equal(records.overall.maximum, 4);
+  assert.equal(own.maximum, 2);
+  assert.deepEqual(
+    own.entries.map((e) => e.playerId).sort(),
+    awayLines
+      .slice(0, 2)
+      .map((l) => l.playerId)
+      .sort(),
+  );
+  assert.equal(own.completedGames, 1);
+  assert.equal(own.scheduledGames, 3);
+  assert.equal(records.overall.completedGames, 2);
+  assert.equal(records.overall.scheduledGames, 6);
+  assert.equal(records.byClub[home.clubId]!.entries[0]!.display.teamName, home.name);
+  assert.deepEqual(world, before);
+  world.definitions.schedule.reverse();
+  assert.deepEqual(singleGameHomeRunRecords(world), records);
+});
+
+test('球団記録：0本・未反映試合を除外し、一軍と二軍の同じ球団を混ぜない', () => {
+  const world = zeroed(true);
+  const firstMatch = world.definitions.schedule.find(
+    (match) => gameScope(world.definitions, match) === 'firstRegular',
+  )!;
+  const farmMatch = world.definitions.schedule.find(
+    (match) => gameScope(world.definitions, match) === 'farmRegular',
+  )!;
+  const first = world.games[firstMatch.gameId]!;
+  const farm = world.games[farmMatch.gameId]!;
+  const clubId = first.fixture.teams.away.clubId;
+  const firstIndex = singleGameHomeRunRecords(world);
+  assert.equal(firstIndex.byClub[clubId]!.maximum, null);
+  assert.deepEqual(firstIndex.byClub[clubId]!.entries, []);
+  const line = farm.result!.batting.find((row) =>
+    farm.fixture.clubs.find((club) => club.clubId === clubId)!.playerIds.includes(row.playerId),
+  )!;
+  line.homeRuns = 3;
+  assert.equal(singleGameHomeRunRecords(world).byClub[clubId]!.maximum, null);
+  assert.equal(singleGameHomeRunRecords(world, 'farmRegular').byClub[clubId]!.maximum, 3);
+  delete world.statApplicationMarkers[farmMatch.gameId];
+  assert.equal(singleGameHomeRunRecords(world, 'farmRegular').byClub[clubId]!.maximum, null);
+  assert.equal(singleGameHomeRunRecords(world, 'farmRegular').byClub[clubId]!.completedGames, 0);
+});
+
+test('球団記録：現在の所属から移し替えず、索引間と正本の参照も共有しない', () => {
+  const world = zeroed(true);
+  const game = Object.values(world.games)[0]!;
+  const playerId = game.fixture.teams.away.lineup[0]!.playerId;
+  const clubId = game.fixture.teams.away.clubId;
+  game.result!.batting.find((row) => row.playerId === playerId)!.homeRuns = 2;
+  const expected = singleGameHomeRunRecords(world);
+  // 集計境界用の変更。実保存/エンジン入力には使わない。
+  for (const squad of world.definitions.squads) {
+    squad.players = [];
+    squad.team.name = '現在の改称';
+  }
+  const before = structuredClone(world);
+  const actual = singleGameHomeRunRecords(world);
+  assert.deepEqual(actual, expected);
+  actual.byClub[clubId]!.entries[0]!.display.playerName = '表示だけ変更';
+  assert.notEqual(actual.overall.entries[0]!.display.playerName, '表示だけ変更');
+  assert.deepEqual(world, before);
+  assert.deepEqual(singleGameHomeRunRecords(world), expected);
+});
+
+test('球団記録：同じ選手の別試合の同率を残し、大会終了の日次確定まで暫定にする', () => {
+  const world = zeroed(true);
+  const match = world.definitions.schedule[0]!;
+  const game = world.games[match.gameId]!;
+  const playerId = game.fixture.teams.away.lineup[0]!.playerId;
+  const clubId = game.fixture.teams.away.clubId;
+  game.result!.batting.find((row) => row.playerId === playerId)!.homeRuns = 2;
+  const another = { ...match, gameId: 'club-record-second-game', date: '2026-09-25' };
+  world.definitions.schedule.push(another);
+  world.games[another.gameId] = structuredClone(game);
+  world.games[another.gameId]!.result!.gameId = another.gameId;
+  world.statApplicationMarkers[another.gameId] = world.statApplicationMarkers[match.gameId]!;
+  const own = () => singleGameHomeRunRecords(world).byClub[clubId]!;
+  assert.equal(own().entries.length, 2);
+  assert.equal(new Set(own().entries.map((e) => e.recordId)).size, 2);
+  assert.equal(own().status, 'inProgress');
+  world.definitions.schedule = world.definitions.schedule.filter((m) => world.games[m.gameId]);
+  world.currentDate = '2026-10-01';
+  assert.equal(own().status, 'inProgress');
+  world.completedDates.push(world.definitions.endDate);
+  assert.equal(own().status, 'final');
+  world.games[another.gameId]!.result!.batting.find((row) => row.playerId === playerId)!.homeRuns =
+    3;
+  assert.equal(own().maximum, 3);
+  assert.deepEqual(
+    own().entries.map((e) => e.gameId),
+    [another.gameId],
+  );
+});
+
+test('球団記録：固定旧v19の全状態SHAを保ち、その保存内の試合から集計する', async () => {
+  const world = JSON.parse(
+    gunzipSync(
+      readFileSync(new URL('./fixtures/world-v19-in-progress.json.gz', import.meta.url)),
+    ).toString('utf8'),
+  ) as WorldRecord;
+  const before = await sha256(canonicalJson(world));
+  assert.equal(before, 'd5d3ffb05563f11e039dbea7c5625673a73341a94deeaae2741ad6e7b815a823');
+  const records = singleGameHomeRunRecords(world);
+  assert.equal(
+    records.overall.maximum,
+    Math.max(...Object.values(records.byClub).map((r) => r.maximum ?? 0)) || null,
+  );
+  for (const record of Object.values(records.byClub)) {
+    for (const entry of record.entries) assert.ok(world.games[entry.gameId]?.result);
+  }
+  assert.equal(await sha256(canonicalJson(world)), before);
 });

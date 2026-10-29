@@ -1,3 +1,5 @@
+import { SeasonRecordsPanel } from './SeasonRecordsPanel.tsx';
+import type { HomeRunRecordEntry } from '../world/memorial.ts';
 import { SeasonPitchLearning } from './SeasonPitchLearning.tsx';
 import type { WorldView } from '../world/controller.ts';
 import { SeasonPerformersPanel } from './SeasonPerformersPanel.tsx';
@@ -14,6 +16,7 @@ export function SeasonSummaryPanel({
   onSelectPlayer,
   onOpenStats,
   onOpenMemorial,
+  onSelectGame,
   onHome,
 }: {
   summary: SeasonSummary;
@@ -23,6 +26,7 @@ export function SeasonSummaryPanel({
   onSelectPlayer: (id: string) => void;
   onOpenStats: () => void;
   onOpenMemorial: () => void;
+  onSelectGame: (entry: HomeRunRecordEntry) => void;
   onHome: () => void;
 }) {
   return (
@@ -56,6 +60,12 @@ export function SeasonSummaryPanel({
         view={view}
         ownSquadId={ownSquadId}
         onSelectPlayer={onSelectPlayer}
+      />
+      <SeasonRecordsPanel
+        summary={summary}
+        view={view}
+        ownSquadId={ownSquadId}
+        onSelectGame={onSelectGame}
       />
       <SeasonPitchLearning view={view} summary={summary} onSelectPlayer={onSelectPlayer} />
       <SeasonGrowthPanel

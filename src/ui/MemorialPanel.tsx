@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { HomeRunRecord, HomeRunRecordEntry } from '../world/memorial.ts';
+import type { HitStreakGame, HitStreakRecords } from '../world/hit-streaks.ts';
+import { HitStreakPanel } from './HitStreakPanel.tsx';
 import { HomeRunRecordTable } from './HomeRunRecordTable.tsx';
 
 /** 読み取り専用の表示。対象の切替でも進行・保存の指示は送らない。 */
@@ -9,14 +11,19 @@ export function MemorialPanel({
   ownRecord,
   ownSquadId,
   onSelectGame,
+  hitStreaks,
+  ownClubId,
 }: {
   record: HomeRunRecord;
   seasonYear: string;
   ownRecord: HomeRunRecord | null;
   ownSquadId?: string;
-  onSelectGame: (entry: HomeRunRecordEntry) => void;
+  onSelectGame: (entry: Pick<HomeRunRecordEntry, 'gameId' | 'achievedOn'> | HitStreakGame) => void;
+  hitStreaks: HitStreakRecords;
+  ownClubId?: string;
 }) {
   const [target, setTarget] = useState('all');
+  const [kind, setKind] = useState('homeRuns');
   const own = target === 'own' && ownRecord !== null;
   const display = own ? ownRecord : record;
   return (
@@ -31,33 +38,51 @@ export function MemorialPanel({
           </option>
         </select>
       </label>
-      <h3>1試合最多本塁打</h3>
-      <p>
-        {seasonYear}年度 ／ {display.statScope === 'firstRegular' ? '一軍' : '二軍'}・
-        {display.status === 'final' ? '今季確定' : '今季ここまで'}
-        （確定試合 {display.completedGames} / {display.scheduledGames}）
-      </p>
-      {display.maximum === null ? (
-        <p>
-          {own
-            ? '自球団の確定試合での本塁打記録はまだありません。'
-            : '確定試合での本塁打記録はまだありません。'}
-        </p>
+      <label className="memorial-filter">
+        記録の種類
+        <select value={kind} onChange={(event) => setKind(event.target.value)}>
+          <option value="homeRuns">1試合最多本塁打</option>
+          <option value="hitStreaks">連続試合安打（試作）</option>
+        </select>
+      </label>
+      {kind === 'hitStreaks' ? (
+        <HitStreakPanel
+          record={own && ownClubId ? hitStreaks.byClub[ownClubId]! : hitStreaks.overall}
+          seasonYear={seasonYear}
+          ownSquadId={ownSquadId}
+          onSelectGame={onSelectGame}
+        />
       ) : (
         <>
-          <p className="memorial-result">
-            <span>{own ? '自球団の最多' : '球界全体の最多'}</span>
-            <strong>
-              {display.maximum}
-              <small>本</small>
-            </strong>
-            <span>同数の全{display.entries.length}件</span>
+          <h3>1試合最多本塁打</h3>
+          <p>
+            {seasonYear}年度 ／ {display.statScope === 'firstRegular' ? '一軍' : '二軍'}・
+            {display.status === 'final' ? '今季確定' : '今季ここまで'}
+            （確定試合 {display.completedGames} / {display.scheduledGames}）
           </p>
-          <HomeRunRecordTable
-            record={display}
-            ownSquadId={ownSquadId}
-            onSelectGame={onSelectGame}
-          />
+          {display.maximum === null ? (
+            <p>
+              {own
+                ? '自球団の確定試合での本塁打記録はまだありません。'
+                : '確定試合での本塁打記録はまだありません。'}
+            </p>
+          ) : (
+            <>
+              <p className="memorial-result">
+                <span>{own ? '自球団の最多' : '球界全体の最多'}</span>
+                <strong>
+                  {display.maximum}
+                  <small>本</small>
+                </strong>
+                <span>同数の全{display.entries.length}件</span>
+              </p>
+              <HomeRunRecordTable
+                record={display}
+                ownSquadId={ownSquadId}
+                onSelectGame={onSelectGame}
+              />
+            </>
+          )}
         </>
       )}
       <details className="memorial-notes">
@@ -67,7 +92,11 @@ export function MemorialPanel({
           自球団は達成当時の所属で集計し、球界全体の最多とは別に求めます。
           同じ選手が別の試合で並んだ記録もすべて表示します。
         </p>
-        <p>継続記録・投手の連勝敗・タイトル・B9・GGは工事中です。</p>
+        <p>
+          連続試合安打の細則は未決定のため試作です。同日複数試合は日付・試合ID順で扱い、
+          球団別は各期間の最後の安打時の所属で集計します。一二軍や年度をまたいで接続しません。
+          無安打記録・投手の連勝敗・タイトル・B9・GGは工事中です。
+        </p>
       </details>
     </section>
   );

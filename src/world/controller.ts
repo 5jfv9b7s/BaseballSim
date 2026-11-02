@@ -5,6 +5,8 @@ import { trainingView } from './training.ts';
 import { applyFormation } from './formation.ts';
 import type { FormationAction } from './formation-draft.ts';
 import { playerStatuses } from './player-status.ts';
+import { consecutiveGameHits } from './hit-streaks.ts';
+import type { HitStreakRecords } from './hit-streaks.ts';
 import { singleGameHomeRunRecords } from './memorial.ts';
 import type { HomeRunRecord } from './memorial.ts';
 import { gameDisplay } from './game-display.ts';
@@ -60,6 +62,10 @@ export interface WorldView {
   clubMemorial: {
     firstRegular: Record<string, HomeRunRecord>;
     farmRegular: Record<string, HomeRunRecord> | null;
+  };
+  hitStreaks: {
+    firstRegular: HitStreakRecords;
+    farmRegular: HitStreakRecords | null;
   };
   bullpen: ReturnType<typeof bullpenView> | null;
   relief: ReturnType<typeof reliefView> | null;
@@ -192,6 +198,10 @@ export class WorldController {
       clubMemorial: {
         firstRegular: firstRecords.byClub,
         farmRegular: farmRecords?.byClub ?? null,
+      },
+      hitStreaks: {
+        firstRegular: consecutiveGameHits(world),
+        farmRegular: world.definitions.farm ? consecutiveGameHits(world, 'farmRegular') : null,
       },
       bullpen:
         world.version === 'world-prototype-v14' ||

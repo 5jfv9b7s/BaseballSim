@@ -24,6 +24,8 @@
 }
 
 .memorial-table {
+  color: var(--ink, #22382f);
+  background: var(--paper, #fbfaf5);
   max-width: 100%;
   overflow-x: auto;
   box-shadow: inset -6px 0 6px -6px var(--muted, #68766f);
@@ -82,4 +84,57 @@
 
 .memorial-heading time {
   white-space: nowrap;
+}
+
+.streak-state {
+  display: block;
+  width: 4em;
+  white-space: normal;
+  font-size: 0.875rem;
+}
+
+.streak-periods {
+  min-width: 14rem;
+  max-width: 24rem;
+  white-space: normal;
+}
+
+.streak-periods summary {
+  min-height: 44px;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+.streak-periods li {
+  margin-bottom: 1rem;
+}
+
+.streak-periods li > strong,
+.streak-periods li > span {
+  display: block;
+}
+
+.streak-game-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.streak-caption {
+  color: var(--muted, #68766f);
+}
+
+/* 開発用の暗い画面でも、淡色の自球団行・固定氏名列の文字を読めるようにする。 */
+.memorial-table th,
+.memorial-table summary,
+.memorial-table .secondary {
+  color: inherit;
+}
+
+.streak-table th,
+.streak-table td {
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
 }

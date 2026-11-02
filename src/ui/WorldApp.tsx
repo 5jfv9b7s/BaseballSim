@@ -207,7 +207,7 @@ export function WorldApp({
     });
   }
 
-  function openRecordGame(entry: HomeRunRecordEntry) {
+  function openRecordGame(entry: Pick<HomeRunRecordEntry, 'achievedOn' | 'gameId'>) {
     setSelectedDate(entry.achievedOn);
     setSelectedGame(entry.gameId);
     if (!development) setPage('results');
@@ -1069,6 +1069,8 @@ export function WorldApp({
       <>
         {view && view.memorial[displayScope] && (
           <MemorialPanel
+            hitStreaks={view.hitStreaks[displayScope]!}
+            ownClubId={controlledClubId}
             record={view.memorial[displayScope]}
             seasonYear={view.definitions.startDate.slice(0, 4)}
             ownRecord={

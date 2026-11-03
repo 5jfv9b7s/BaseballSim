@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { AwardsPanel } from './AwardsPanel.tsx';
+import { HitlessStreakPanel } from './HitlessStreakPanel.tsx';
+import type { SeasonHonors } from '../world/awards-types.ts';
+import type { HitlessRecords } from '../world/hitless-streaks.ts';
 import type { HomeRunRecord, HomeRunRecordEntry } from '../world/memorial.ts';
 import type { HitStreakGame, HitStreakRecords } from '../world/hit-streaks.ts';
 import { HitStreakPanel } from './HitStreakPanel.tsx';
@@ -12,6 +16,9 @@ export function MemorialPanel({
   ownSquadId,
   onSelectGame,
   hitStreaks,
+  hitlessStreaks,
+  referenceHonors,
+  onSelectPlayer,
   ownClubId,
 }: {
   record: HomeRunRecord;
@@ -20,6 +27,9 @@ export function MemorialPanel({
   ownSquadId?: string;
   onSelectGame: (entry: Pick<HomeRunRecordEntry, 'gameId' | 'achievedOn'> | HitStreakGame) => void;
   hitStreaks: HitStreakRecords;
+  hitlessStreaks: HitlessRecords;
+  referenceHonors: SeasonHonors | null;
+  onSelectPlayer: (id: string) => void;
   ownClubId?: string;
 }) {
   const [target, setTarget] = useState('all');
@@ -43,9 +53,25 @@ export function MemorialPanel({
         <select value={kind} onChange={(event) => setKind(event.target.value)}>
           <option value="homeRuns">1試合最多本塁打</option>
           <option value="hitStreaks">連続試合安打（試作）</option>
+          <option value="hitlessStreaks">連続打数無安打（試作）</option>
+          <option value="awards">表彰の参考選考</option>
         </select>
       </label>
-      {kind === 'hitStreaks' ? (
+      {kind === 'awards' ? (
+        <AwardsPanel
+          report={referenceHonors}
+          ownClubId={ownClubId}
+          onlyOwn={own}
+          onSelectPlayer={onSelectPlayer}
+        />
+      ) : kind === 'hitlessStreaks' ? (
+        <HitlessStreakPanel
+          record={own && ownClubId ? hitlessStreaks.byClub[ownClubId]! : hitlessStreaks.overall}
+          seasonYear={seasonYear}
+          ownSquadId={ownSquadId}
+          onSelectGame={onSelectGame}
+        />
+      ) : kind === 'hitStreaks' ? (
         <HitStreakPanel
           record={own && ownClubId ? hitStreaks.byClub[ownClubId]! : hitStreaks.overall}
           seasonYear={seasonYear}
@@ -95,7 +121,7 @@ export function MemorialPanel({
         <p>
           連続試合安打の細則は未決定のため試作です。同日複数試合は日付・試合ID順で扱い、
           球団別は各期間の最後の安打時の所属で集計します。一二軍や年度をまたいで接続しません。
-          無安打記録・投手の連勝敗・タイトル・B9・GGは工事中です。
+          無安打記録も期間の最後の打数時の所属で集計する試作です。投手の連勝敗・確定受賞履歴の保存は工事中です。
         </p>
       </details>
     </section>

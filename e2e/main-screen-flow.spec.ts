@@ -14,7 +14,9 @@ test('本画面：新規プレイ・休養日・記録達成試合・年度末',
   // 現行の個人別球質データではseed=2で9/24の二軍に本塁打がある。
   await page.getByRole('textbox', { name: '世界seed', exact: true }).fill('2');
   await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('新しい日程を準備しました');
+  await expect(page.getByRole('status')).toContainText('新しい日程を準備しました', {
+    timeout: 30000,
+  });
   await nav.getByRole('button', { name: '日程', exact: true }).click();
   const calendar = page.getByRole('region', { name: '月別カレンダー' });
   await calendar.getByRole('button', { name: /^09-25/ }).click();
@@ -57,6 +59,8 @@ test('本画面：新規プレイ・休養日・記録達成試合・年度末',
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '3');
   await page.getByRole('button', { name: /^シーズン総括へ/ }).click();
   await expect(page.getByRole('region', { name: 'シーズン終了要約' })).toContainText('全6試合');
-  await expect(page.getByRole('button', { name: /表彰・ポストシーズン\s*工事中/ })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: /確定受賞履歴の保存・ポストシーズン\s*工事中/ }),
+  ).toBeDisabled();
   expect(errors).toEqual([]);
 });

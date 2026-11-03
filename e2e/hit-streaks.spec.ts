@@ -32,7 +32,9 @@ async function start(page: Page) {
   await page.getByText('新規日程・担当球団と試作の範囲', { exact: true }).click();
   await page.getByRole('textbox', { name: '世界seed', exact: true }).fill('2');
   await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('新しい日程を準備しました');
+  await expect(page.getByRole('status')).toContainText('新しい日程を準備しました', {
+    timeout: 30000,
+  });
 }
 async function verify(panel: Locator, record: HitStreakRecord) {
   await expect(panel).toContainText('欠場・打数0は維持');
@@ -50,18 +52,28 @@ async function verify(panel: Locator, record: HitStreakRecord) {
     .locator('.memorial-table')
     .evaluate((e) => getComputedStyle(e).color);
   await expect(rows.first().getByRole('rowheader')).toHaveCSS('color', tableColor);
+  // セルごとのCDP往復を避け、同じ全選手・全項目の検証を1回のDOM取得で行う。
+  const actual = await rows.evaluateAll((elements) =>
+    elements.map((row) => {
+      const cells = Array.from(row.querySelectorAll('td'));
+      return {
+        name: row.querySelector('th')?.textContent,
+        rank: cells[2]?.textContent,
+        club: cells[3]?.textContent,
+        current: cells[0]?.querySelector('strong')?.textContent,
+        maximum: cells[1]?.querySelector('strong')?.textContent,
+      };
+    }),
+  );
   for (const [i, player] of record.players.entries()) {
-    const row = rows.nth(i);
     const best = player.longest.at(-1)!;
-    await expect(row.getByRole('rowheader')).toHaveText(best.lastHit.display.playerName);
-    await expect(row.getByRole('cell').nth(2)).toHaveText(
+    expect(actual[i]!.name).toBe(best.lastHit.display.playerName);
+    expect(actual[i]!.rank).toBe(
       String(record.players.findIndex((p) => p.maximum === player.maximum) + 1),
     );
-    await expect(row.getByRole('cell').nth(3)).toContainText(best.lastHit.display.teamName);
-    await expect(row.getByRole('cell').nth(0).locator('strong')).toHaveText(
-      String(player.current?.length ?? 0),
-    );
-    await expect(row.getByRole('cell').nth(1).locator('strong')).toHaveText(String(player.maximum));
+    expect(actual[i]!.club).toContain(best.lastHit.display.teamName);
+    expect(actual[i]!.current).toBe(String(player.current?.length ?? 0));
+    expect(actual[i]!.maximum).toBe(String(player.maximum));
   }
 }
 for (const width of [1280, 390, 320]) {

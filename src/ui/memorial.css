@@ -138,3 +138,45 @@
   padding-right: 0.5rem;
   padding-left: 0.5rem;
 }
+
+.awards-list,
+.awards-player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.awards-list li + li,
+.awards-player-list li + li {
+  margin-top: 0.75rem;
+}
+.awards-list span,
+.awards-player-list span {
+  display: block;
+}
+.awards-list .memorial-own {
+  display: inline-block;
+}
+.awards-table th:first-child {
+  min-width: 5em;
+  max-width: 8em;
+  white-space: normal;
+}
+.awards-table td {
+  vertical-align: top;
+}
+.awards-list li {
+  min-height: 70px;
+}
+.awards-player-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line, #dadfd4);
+}
+
+/* 候補なしの理由は、横スクロールする前にも読める位置に置く。 */
+.awards-table td[colspan] {
+  text-align: left;
+  white-space: normal;
+}
+.awards-table th[scope='row'] {
+  vertical-align: top;
+}

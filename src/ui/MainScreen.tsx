@@ -339,7 +339,7 @@ export function MainScreen({
             {page === 'summary' && (
               <>
                 {panels.summary || <p>全日程を終えると、確定した記録を表示します。</p>}
-                <Construction title="表彰・ポストシーズン" />
+                <Construction title="確定受賞履歴の保存・ポストシーズン" />
               </>
             )}
           </>

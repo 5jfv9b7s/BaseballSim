@@ -1,3 +1,4 @@
+import { AwardsPanel } from './AwardsPanel.tsx';
 import { SeasonRecordsPanel } from './SeasonRecordsPanel.tsx';
 import type { HomeRunRecordEntry } from '../world/memorial.ts';
 import { SeasonPitchLearning } from './SeasonPitchLearning.tsx';
@@ -67,6 +68,14 @@ export function SeasonSummaryPanel({
         ownSquadId={ownSquadId}
         onSelectGame={onSelectGame}
       />
+      <AwardsPanel
+        report={view.referenceHonors[summary.statScope]}
+        ownClubId={
+          view.definitions.squads.find((s) => s.squadId === view.management?.controlledSquadId)
+            ?.team.clubId
+        }
+        onSelectPlayer={onSelectPlayer}
+      />
       <SeasonPitchLearning view={view} summary={summary} onSelectPlayer={onSelectPlayer} />
       <SeasonGrowthPanel
         key={JSON.stringify([view.worldId, summary.statScope])}
@@ -87,7 +96,7 @@ export function SeasonSummaryPanel({
         </button>
       </div>
       <p>
-        成績メニューから今季の確定記録を確認できます。ポストシーズン・表彰・翌年度更新は未対応です。
+        成績メニューから今季の確定記録を確認できます。ポストシーズン・確定受賞履歴の保存・翌年度更新は未対応です。
       </p>
     </section>
   );

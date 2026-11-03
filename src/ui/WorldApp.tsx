@@ -1070,6 +1070,9 @@ export function WorldApp({
         {view && view.memorial[displayScope] && (
           <MemorialPanel
             hitStreaks={view.hitStreaks[displayScope]!}
+            hitlessStreaks={view.hitlessStreaks[displayScope]!}
+            referenceHonors={view.referenceHonors[displayScope]}
+            onSelectPlayer={setSelectedPlayer}
             ownClubId={controlledClubId}
             record={view.memorial[displayScope]}
             seasonYear={view.definitions.startDate.slice(0, 4)}

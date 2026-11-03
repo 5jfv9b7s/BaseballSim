@@ -1,3 +1,4 @@
+import { PlayerAwardCandidates } from './AwardsPanel.tsx';
 import { PitchLearningResults } from './PitchLearningResults.tsx';
 import { PlayerGrowth } from './PlayerGrowth.tsx';
 import { growthAbilityKey } from '../world/growth-basis.ts';
@@ -33,7 +34,7 @@ export function PlayerDetails({
 }) {
   const headingId = useId();
   const dialog = useRef<HTMLDialogElement>(null);
-  const [tab, setTab] = useState<'ability' | 'stats' | 'state' | 'contract'>('ability');
+  const [tab, setTab] = useState<'ability' | 'stats' | 'state' | 'contract' | 'honors'>('ability');
   const [scope, setScope] = useState<'firstRegular' | 'farmRegular'>('firstRegular');
   const squad = view.definitions.squads.find((item) =>
     item.players.some((player) => player.playerId === playerId),
@@ -136,6 +137,7 @@ export function PlayerDetails({
             ['stats', '成績'],
             ['state', '状態・成長'],
             ['contract', '契約・経歴'],
+            ['honors', '表彰候補'],
           ] as const
         )
           .filter(([id]) => !inline || id !== 'contract')
@@ -286,6 +288,9 @@ export function PlayerDetails({
         </>
       )}
       {tab === 'state' && <PlayerGrowth key={playerId} view={view} playerId={playerId} />}
+      {tab === 'honors' && (
+        <PlayerAwardCandidates reports={view.referenceHonors} playerId={playerId} />
+      )}
       {tab === 'contract' && (
         <>
           <h3>プロフィール</h3>

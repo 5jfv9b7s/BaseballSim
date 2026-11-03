@@ -6,6 +6,10 @@ import { applyFormation } from './formation.ts';
 import type { FormationAction } from './formation-draft.ts';
 import { playerStatuses } from './player-status.ts';
 import { consecutiveGameHits } from './hit-streaks.ts';
+import { consecutiveHitlessAtBats, type HitlessRecords } from './hitless-streaks.ts';
+import { selectSeasonHonors } from './awards.ts';
+import { AWARDS_RULES } from '../../config/awards.ts';
+import type { WorldHonors } from './awards-types.ts';
 import type { HitStreakRecords } from './hit-streaks.ts';
 import { singleGameHomeRunRecords } from './memorial.ts';
 import type { HomeRunRecord } from './memorial.ts';
@@ -63,6 +67,8 @@ export interface WorldView {
     firstRegular: Record<string, HomeRunRecord>;
     farmRegular: Record<string, HomeRunRecord> | null;
   };
+  referenceHonors: WorldHonors;
+  hitlessStreaks: { firstRegular: HitlessRecords; farmRegular: HitlessRecords | null };
   hitStreaks: {
     firstRegular: HitStreakRecords;
     farmRegular: HitStreakRecords | null;
@@ -198,6 +204,20 @@ export class WorldController {
       clubMemorial: {
         firstRegular: firstRecords.byClub,
         farmRegular: farmRecords?.byClub ?? null,
+      },
+      referenceHonors: {
+        firstRegular:
+          'seasonSummary' in world && world.seasonSummary?.version === 'season-summary-v2'
+            ? selectSeasonHonors(world, world.seasonSummary, AWARDS_RULES)
+            : null,
+        farmRegular:
+          'farmSummary' in world && world.farmSummary?.version === 'season-summary-v2'
+            ? selectSeasonHonors(world, world.farmSummary, AWARDS_RULES)
+            : null,
+      },
+      hitlessStreaks: {
+        firstRegular: consecutiveHitlessAtBats(world),
+        farmRegular: world.definitions.farm ? consecutiveHitlessAtBats(world, 'farmRegular') : null,
       },
       hitStreaks: {
         firstRegular: consecutiveGameHits(world),

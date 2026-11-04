@@ -13,11 +13,19 @@ export interface WorldSlots {
   manual: WorldSlot | null;
 }
 
+/** 一覧表示用の読取結果。保存形式やゲーム状態には追加しない。 */
+export interface StoredSavePoint extends WorldSlot {
+  createdAt: string | null;
+  saveFormatVersion: string | null;
+  simulationVersion: string | null;
+}
+
 export interface StoredPlay {
   localWorldId: string;
   label: string;
   gameDate: string | null;
   slots: WorldSlotKind[];
+  slotDetails: Partial<Record<WorldSlotKind, StoredSavePoint>>;
 }
 
 export interface WorldStorageAdapter {

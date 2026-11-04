@@ -1,3 +1,4 @@
+import { SavePointDetails } from './SavePointDetails.tsx';
 import { useEffect, useState } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import type { StoredPlay, WorldSlotKind } from '../world/storage.ts';
@@ -38,6 +39,7 @@ export function SavedPlayPicker({
   const target = plays.find((p) => p.localWorldId === chosen);
   const current = plays.find((p) => p.localWorldId === view.localWorldId);
   const actualSlot = target?.slots.includes(openSlot) ? openSlot : target?.slots[0];
+  const selectedPoint = actualSlot ? target?.slotDetails[actualSlot] : undefined;
   const needsSave = view.unsavedChanges && view.revision > 0;
   const resumeHint = disabled
     ? '処理が終わるか、進行を一時停止してから開けます。'
@@ -86,12 +88,13 @@ export function SavedPlayPicker({
             {!target && <option value="">先にプレイを選択</option>}
             {target?.slots.map((kind) => (
               <option key={kind} value={kind}>
-                {names[kind]}
+                {names[kind]}：{target?.slotDetails[kind]?.gameDate ?? '日付未取得'}
               </option>
             ))}
           </select>
         </label>
       </div>
+      {selectedPoint && <SavePointDetails point={selectedPoint} />}
       <p className="action-hint" id="resume-hint">
         {resumeHint}
       </p>

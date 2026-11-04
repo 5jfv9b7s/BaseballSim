@@ -11,17 +11,37 @@ export async function listStoredPlays(db: WorldDatabase): Promise<StoredPlay[]> 
   return db.transaction('r', db.local_worlds, db.save_slots, db.save_snapshots, async () => {
     const slots = await db.save_slots.toArray();
     const locals = await db.local_worlds.toArray();
-    return locals.map((local) => ({
-      localWorldId: local.localWorldId,
-      label: local.displayName ?? '初期プレイ',
-      slots: (['auto', 'manual', 'previousAuto'] as const).filter((kind) =>
-        slots.some((s) => s.localWorldId === local.localWorldId && s.slotKind === kind),
-      ),
-      gameDate:
-        slots.find(
-          (s) => s.localWorldId === local.localWorldId && s.snapshotId === local.selectedSnapshotId,
-        )?.gameDate ?? null,
-    }));
+    // 大きな試合・成長ブロックは読まず、保存枠と目録のメタデータだけを参照する。
+    const snapshots = new Map(
+      (await db.save_snapshots.bulkGet([...new Set(slots.map((slot) => slot.snapshotId))]))
+        .filter((snapshot) => snapshot !== undefined)
+        .map((snapshot) => [snapshot.snapshotId, snapshot]),
+    );
+    return locals.map((local) => {
+      const ownSlots = slots.filter(
+        (slot) => slot.localWorldId === local.localWorldId && slot.slotNo === 1,
+      );
+      const slotDetails: StoredPlay['slotDetails'] = {};
+      for (const slot of ownSlots) {
+        const snapshot = snapshots.get(slot.snapshotId);
+        slotDetails[slot.slotKind] = {
+          snapshotId: slot.snapshotId,
+          gameDate: slot.gameDate,
+          updatedAt: slot.updatedAt,
+          createdAt: snapshot?.createdAt ?? null,
+          saveFormatVersion: snapshot?.versions?.saveFormatVersion ?? null,
+          simulationVersion: snapshot?.versions?.simulationVersion ?? null,
+        };
+      }
+      return {
+        localWorldId: local.localWorldId,
+        label: local.displayName ?? '初期プレイ',
+        slots: (['auto', 'manual', 'previousAuto'] as const).filter((kind) => !!slotDetails[kind]),
+        gameDate:
+          ownSlots.find((slot) => slot.snapshotId === local.selectedSnapshotId)?.gameDate ?? null,
+        slotDetails,
+      };
+    });
   });
 }
 

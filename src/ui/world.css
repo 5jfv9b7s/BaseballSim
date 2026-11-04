@@ -218,3 +218,34 @@
     color: #50665c;
   }
 }
+
+/* タイトルとシステム画面で共通の、保存時点の確認欄。 */
+.save-point-details {
+  margin: 16px 0;
+  padding: 12px 0;
+  border-block: 1px solid #96a89a;
+  overflow-wrap: anywhere;
+}
+.save-point-details h4 {
+  margin: 0 0 12px;
+}
+.save-point-details dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px 20px;
+  margin: 12px 0;
+}
+.save-point-details dt {
+  color: inherit;
+  font-size: 13px;
+  opacity: 0.85;
+}
+.save-point-details dd {
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.save-point-details summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+}

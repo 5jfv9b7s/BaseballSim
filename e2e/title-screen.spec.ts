@@ -117,7 +117,39 @@ for (const width of [1280, 390, 320]) {
     await page.screenshot({ path: `.tmp/title-qa/saved-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: '続きから', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '保存済みプレイ', exact: true })).toBeVisible();
-    await page.screenshot({ path: `.tmp/title-qa/picker-${width}.png`, fullPage: true });
+    await page
+      .getByRole('combobox', { name: '保存済みプレイ', exact: true })
+      .selectOption({ index: 1 });
+    const point = page.getByRole('region', { name: '選んだ保存時点', exact: true });
+    await expect(point).toBeVisible();
+    const saved = await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve) => {
+        const request = indexedDB.open('BaseballSim-v02-worlds');
+        request.onsuccess = () => resolve(request.result);
+      });
+      try {
+        return await new Promise<{ gameDate: string; updatedAt: string }>((resolve) => {
+          const request = db
+            .transaction('save_slots', 'readonly')
+            .objectStore('save_slots')
+            .getAll();
+          request.onsuccess = () =>
+            resolve(request.result.find((slot) => slot.slotKind === 'auto'));
+        });
+      } finally {
+        db.close();
+      }
+    });
+    await expect(point.locator('time').nth(0)).toHaveAttribute('datetime', saved.gameDate);
+    await expect(point.locator('time').nth(1)).toHaveAttribute('datetime', saved.updatedAt);
+    await point.getByText('保存データの確認情報', { exact: true }).click();
+    await expect(point).toContainText('v022-world-snapshot-v21');
+    await expect(point).toContainText('world-prototype-v21');
+    await expect(point).toContainText('記録なし');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({ path: `.tmp/save-point-qa/picker-${width}.png`, fullPage: true });
     expect(await storedState(page)).toEqual(before);
     await page.getByRole('button', { name: '開いているプレイへ戻る', exact: true }).click();
     expect(await storedState(page)).toEqual(before);

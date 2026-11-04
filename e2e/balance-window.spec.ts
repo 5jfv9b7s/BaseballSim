@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 
@@ -25,7 +26,7 @@ async function observe(page: Page) {
       }
     };
   });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   await page.getByRole('button', { name: /^今日の試合へ/ }).click();
   await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();

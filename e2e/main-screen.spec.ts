@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1280, 390]) {
@@ -32,7 +33,7 @@ for (const width of [1280, 390]) {
         original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await openDevelopmentHome(page);
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     const date = page.getByTestId('main-date');
     await expect(date).toHaveAttribute('datetime', '2026-09-24');
@@ -92,7 +93,7 @@ for (const width of [1280, 390]) {
     await expect(date).toHaveAttribute('datetime', '2026-09-25', { timeout: 30000 });
     expect(await page.evaluate(() => Reflect.get(window, 'worldQueries'))).toBe(queryCount);
     await nav.getByRole('button', { name: 'ホーム', exact: true }).click();
-    await page.reload();
+    await reloadDevelopmentHome(page);
     await expect(page.getByRole('button', { name: 'セーブから再開 →', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
     await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();

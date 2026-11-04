@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page, type Locator } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 import type { HitStreakRecord } from '../src/world/hit-streaks.ts';
@@ -183,7 +184,7 @@ for (const width of [1280, 390, 320]) {
       await expect(page.getByRole('status')).toContainText('世界全体を手動保存', {
         timeout: 30000,
       });
-      await page.reload();
+      await reloadDevelopmentHome(page);
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
       await page
         .getByRole('combobox', { name: '保存済みプレイ', exact: true })
@@ -198,7 +199,7 @@ for (const width of [1280, 390, 320]) {
       await verify(panel, overall);
     }
     // 本画面でも同じ実保存を開き、メニューから追加した記録へ到達する。
-    await page.goto('/');
+    await openDevelopmentHome(page);
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
     await page
       .getByRole('combobox', { name: '保存済みプレイ', exact: true })

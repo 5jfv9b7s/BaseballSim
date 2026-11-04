@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
 async function enableControls(page: Page) {
@@ -45,7 +46,7 @@ for (const width of [1280, 390]) {
         original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await openDevelopmentHome(page);
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -106,7 +107,7 @@ for (const width of [1280, 390]) {
     await expect(
       page.getByRole('button', { name: '手動保存を読み込む', exact: true }),
     ).toBeEnabled();
-    await page.reload();
+    await reloadDevelopmentHome(page);
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
     await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
     await expect(
@@ -120,7 +121,7 @@ for (const width of [1280, 390]) {
 }
 
 test('編成エラー：先発0人では退出せず、取消後は保存なしで移動する', async ({ page }) => {
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -143,7 +144,7 @@ test('編成エラー：先発0人では退出せず、取消後は保存なし�
 
 test('編成ドラッグ：選手と守備位置の交換を分け、開発画面への退出でも保存する', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 960 });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -200,7 +201,7 @@ test('編成ドラッグ：選手と守備位置の交換を分け、開発画�
 
 test('編成登録：最終差分だけを確定し、抹消した選手の再登録日を表示する', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 960 });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -243,7 +244,7 @@ test('進行中の編成は閲覧のみで、翌日から新しい編集案を�
       else original.call(this, message, options as StructuredSerializeOptions);
     };
   });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   await page.getByRole('button', { name: /^今日の試合へ/ }).click();
@@ -268,7 +269,7 @@ for (const width of [1280, 390]) {
   test(`編成仕様：役割ドラッグ・共有起用方針・情報タブの維持 (${width}px)`, async ({ page }) => {
     test.setTimeout(90000);
     await page.setViewportSize({ width, height: 960 });
-    await page.goto('/');
+    await openDevelopmentHome(page);
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -359,7 +360,7 @@ for (const width of [1280, 390]) {
 test('編成の欠員：二軍へ移した選手を別の打順へ戻しても重複せず、補充後に退出できる', async ({
   page,
 }) => {
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -394,7 +395,7 @@ test('編成の欠員：二軍へ移した選手を別の打順へ戻しても�
 
 test('ドラッグを基本操作にする：控え交代・一二軍交換・空き領域の往復', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 960 });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -451,7 +452,7 @@ test('ドラッグを基本操作にする：控え交代・一二軍交換・�
 test('投手カードのドラッグ：先発順・役割間・役割内優先順・二軍から配置', async ({ page }) => {
   test.setTimeout(90000);
   await page.setViewportSize({ width: 1280, height: 960 });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '編成', exact: true }).click();
@@ -530,7 +531,7 @@ test('投手カードのドラッグ：先発順・役割間・役割内優先�
 
 test('自動登録中：二軍からのドロップは編集案を変えない', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 960 });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   await page
     .getByRole('navigation', { name: 'メインメニュー', exact: true })

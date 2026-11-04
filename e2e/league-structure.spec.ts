@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect } from '@playwright/test';
 import type { WorldWorkerResponse } from '../src/world-worker.ts';
 
@@ -31,7 +32,7 @@ async function observe(page: import('@playwright/test').Page, legacy = false) {
       }
     };
   }, legacy);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
     timeout: 30000,
   });

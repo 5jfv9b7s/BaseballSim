@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { expect, test, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 
@@ -34,7 +35,7 @@ async function openCalendar(page: Page) {
       },
     );
   });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   await page
     .getByRole('navigation', { name: 'メインメニュー', exact: true })

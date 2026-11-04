@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { InitialDataResponse } from '../src/initial-data/controller.ts';
 import type { WorldView } from '../src/world/controller.ts';
@@ -38,7 +39,7 @@ async function openCandidates(page: Page) {
       }
     };
   });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   await page.getByRole('button', { name: 'シミュレーション開発ツール ↗', exact: true }).click();
   await page

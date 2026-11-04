@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 
@@ -49,7 +50,7 @@ async function observe(page: Page, mode: 'current' | 'legacy' | 'failOnce' = 'cu
       }
     };
   }, mode);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   // Worker/保存領域の初期化完了を待つ。機能操作の検査とは待機境界を分ける。
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
     timeout: 30000,
@@ -150,7 +151,7 @@ for (const width of [1280, 390, 320]) {
     expect(await commands(page)).toHaveLength(1);
     if (width === 1280) {
       await home(page);
-      await page.reload();
+      await reloadDevelopmentHome(page);
       await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
       await page.getByRole('button', { name: '自動保存を読み込む', exact: true }).click();
       await expect(

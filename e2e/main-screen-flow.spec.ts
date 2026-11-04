@@ -1,10 +1,11 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect } from '@playwright/test';
 
 test('本画面：新規プレイ・休養日・記録達成試合・年度末', async ({ page }) => {
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
+  await openDevelopmentHome(page);
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   const date = page.getByTestId('main-date');
   await expect(date).toHaveAttribute('datetime', '2026-09-24');

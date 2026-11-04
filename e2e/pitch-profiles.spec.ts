@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1280, 390]) {
@@ -5,7 +6,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await openDevelopmentHome(page);
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
     await page
       .getByRole('navigation', { name: 'メインメニュー', exact: true })

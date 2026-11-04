@@ -1,0 +1,335 @@
+﻿/* S24の入口。既存の試合・本画面へスタイルを漏らさない。 */
+.title-shell {
+  min-height: 100svh;
+  background: #f1f2e9;
+  color: #22382f;
+  padding: 36px 20px;
+}
+.title-screen {
+  max-width: 760px;
+  padding: 0;
+}
+.title-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 24px;
+  border: 0;
+}
+.title-brand > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.title-brand b {
+  padding: 7px 8px;
+  background: #22382f;
+  color: #e9d49a;
+}
+.title-brand span {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.title-development {
+  padding: 4px 8px;
+  border: 1px solid #96a89a;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.title-screen h1 {
+  font-size: 26px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.title-screen h1:focus {
+  outline: none;
+}
+.title-screen .title-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.title-screen p {
+  font-size: 14px;
+}
+.title-screen button {
+  min-height: 44px;
+  font-size: 15px;
+}
+.title-screen button:focus-visible,
+.title-screen summary:focus-visible,
+.title-screen input:focus-visible,
+.title-screen select:focus-visible {
+  outline: 3px solid #8b4a14;
+  outline-offset: 3px;
+}
+.title-screen button:disabled {
+  opacity: 1;
+  border: 1px dashed #96a89a;
+  color: #647368;
+  background: #e7eae1;
+  cursor: default;
+}
+.title-hero {
+  position: relative;
+  overflow: hidden;
+  background: #1a3f31;
+  color: #f1f2ea;
+  padding: 32px;
+  border-radius: 12px;
+}
+.title-hero::before {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  right: -90px;
+  top: -100px;
+  border: 1px solid #e9d49a38;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.title-hero > * {
+  position: relative;
+}
+.title-hero .title-eyebrow {
+  color: #e9d49a;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  margin: 0 0 16px;
+}
+.title-hero h2 {
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1.45;
+  margin: 0;
+}
+.title-intro {
+  margin: 12px 0 24px;
+}
+.title-screen .title-primary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  text-align: left;
+  padding: 12px 18px;
+  background: #e9d49a;
+  color: #1a3f31;
+}
+.title-screen .title-current {
+  background: transparent;
+  color: #f1f2ea;
+  text-decoration: underline;
+  margin-top: 12px;
+}
+.title-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.title-actions button {
+  background: #fbfaf4;
+  border: 1px solid #b9c2b3;
+  color: #22382f;
+  text-align: left;
+  padding: 16px;
+}
+.title-actions strong,
+.title-actions span {
+  display: block;
+}
+.title-actions span {
+  font-size: 13px;
+  font-weight: 400;
+  color: #526359;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+.title-screen .title-help {
+  display: block;
+  width: auto;
+  margin: 16px 0 0 auto;
+  background: transparent;
+  color: #22382f;
+  border: 1px solid #96a89a;
+  padding: 10px 16px;
+}
+.title-screen .title-back {
+  width: auto;
+  padding: 10px 0;
+  margin-bottom: 12px;
+  background: transparent;
+  color: #22382f;
+}
+.title-content {
+  background: #fbfaf4;
+  padding: 24px;
+  border: 1px solid #b9c2b3;
+  border-radius: 10px;
+}
+.title-content .panel {
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+.title-content label {
+  color: #22382f;
+  font-size: 14px;
+}
+.title-content input,
+.title-content select {
+  color: #22382f;
+  background: #fff;
+  min-height: 44px;
+  border-color: #96a89a;
+}
+.title-content .hint,
+.title-content .action-hint,
+.title-content .title-caption {
+  color: #526359;
+}
+.title-content button {
+  width: auto;
+  background: #1a3f31;
+  color: #f1f2ea;
+}
+.title-content .title-primary {
+  width: 100%;
+}
+.title-content .title-outline {
+  color: #22382f;
+  background: transparent;
+  border: 1px solid #96a89a;
+}
+.title-content .workflow-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.title-content .workflow-group {
+  margin: 12px 0;
+}
+.title-content .world-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.title-content .new-play-preview {
+  background: #f1f2e9;
+  color: #22382f;
+}
+.title-content .new-play-preview dt {
+  color: #526359;
+}
+.title-screen .title-error {
+  padding: 14px 16px;
+  border: 1px solid #a36c32;
+  border-left: 4px solid #a36c32;
+  background: #fff0de;
+  color: #5a3a0a;
+  overflow-wrap: anywhere;
+}
+.title-screen [role='status'] {
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+.title-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 0;
+  color: #526359;
+  font-size: 12px;
+}
+.title-footer button {
+  background: transparent;
+  color: #22382f;
+  width: auto;
+  text-decoration: underline;
+  font-size: 13px;
+}
+@media (max-width: 540px) {
+  .title-shell {
+    padding: 20px 16px;
+  }
+  .title-brand {
+    gap: 8px;
+    padding-bottom: 20px;
+  }
+  .title-brand span {
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .title-hero {
+    padding: 22px 20px;
+  }
+  .title-actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .title-content {
+    padding: 18px 14px;
+  }
+  .title-content .workflow-fields {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .title-content button {
+    width: 100%;
+  }
+}
+
+.title-content summary {
+  color: #22382f;
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.title-content .app-info {
+  padding: 0;
+}
+.title-content .app-info summary {
+  color: #22382f;
+}
+.title-content .app-info-content {
+  border-color: #b9c2b3;
+}
+.title-content p,
+.title-content label,
+.title-content button {
+  overflow-wrap: anywhere;
+}
+
+.title-save-preview {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #e9d49a45;
+  display: grid;
+  gap: 10px;
+}
+.title-save-preview div {
+  min-width: 0;
+}
+.title-save-preview dt {
+  font-size: 12px;
+  color: #c9d3c2;
+  margin-bottom: 3px;
+}
+.title-save-preview dd {
+  margin: 0;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.title-save-preview time {
+  font-variant-numeric: tabular-nums;
+}

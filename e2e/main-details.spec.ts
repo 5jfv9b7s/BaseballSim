@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1280, 390]) {
@@ -15,7 +16,7 @@ for (const width of [1280, 390]) {
         original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await openDevelopmentHome(page);
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
       timeout: 30000,
@@ -110,7 +111,7 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('button', { name: '手動保存を読み込む', exact: true })).toBeEnabled(
       { timeout: 30000 },
     );
-    await page.reload();
+    await reloadDevelopmentHome(page);
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
     await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-25', {
@@ -127,7 +128,7 @@ for (const width of [1280, 390]) {
 
 test('年間表示：未確定のグラフを月変更で補完せず、進行中の選手タブを保持する', async ({ page }) => {
   test.setTimeout(90000);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
     timeout: 30000,
@@ -229,7 +230,7 @@ test('貯金グラフ：同日の一部終了では更新せず、全試合終�
       }
     };
   });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
     timeout: 30000,
   });

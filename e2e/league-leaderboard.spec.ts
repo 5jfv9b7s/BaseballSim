@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 
@@ -35,7 +36,7 @@ async function observe(page: Page, legacy = false) {
       }
     };
   }, legacy);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
 }
 

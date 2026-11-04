@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { setProgressDate } from './period-controls.ts';
 import { expect, test } from '@playwright/test';
 
@@ -17,7 +18,7 @@ for (const width of [1280, 390, 320]) {
         original.call(this, message, options as StructuredSerializeOptions);
       };
     });
-    await page.goto('/');
+    await openDevelopmentHome(page);
     const date = page.getByTestId('main-date');
     await expect(date).toHaveAttribute('datetime', '2026-09-24');
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
@@ -88,7 +89,7 @@ for (const width of [1280, 390, 320]) {
     );
 
     // 再読込後もバックアップ欄を開かずに、明示的に保存したプレイへ戻れる。
-    await page.reload();
+    await reloadDevelopmentHome(page);
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
     await expect(save).toBeDisabled();
     await expect(save).toHaveAccessibleDescription(/以前の保存があります/);

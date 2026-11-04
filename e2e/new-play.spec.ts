@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 
 async function setup(page: Page) {
@@ -22,7 +23,7 @@ for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 960 });
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
-      await page.goto('/');
+      await openDevelopmentHome(page);
       const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
       const seed = page.getByRole('textbox', { name: '世界seed', exact: true });
       const create = page.getByRole('button', { name: '新しい日程を準備', exact: true });
@@ -68,7 +69,7 @@ for (const width of [1280, 390]) {
         panel.getByRole('button', { name: '手動保存を読み込む', exact: true }),
       ).toBeDisabled();
 
-      await page.reload();
+      await reloadDevelopmentHome(page);
       panel = await saves(page);
       await expect(plays.locator('option')).toHaveCount(3);
       for (const [id, slot, expectedSeed] of [
@@ -96,7 +97,7 @@ for (const width of [1280, 390]) {
 
 test('新規プレイ：未保存の途中経過は作成画面の手動保存を経て保持する', async ({ page }) => {
   test.setTimeout(90000);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '日程', exact: true }).click();
   await page.getByRole('button', { name: '今日の進行', exact: true }).click();
@@ -131,7 +132,7 @@ test('新規プレイ：未保存の途中経過は作成画面の手動保存�
     /進行中（[1-9][0-9]*球）/,
   );
 
-  await page.reload();
+  await reloadDevelopmentHome(page);
   await expect(page.getByRole('alert')).toContainText('以前の保存があります');
   const restarted = await saves(page);
   await expect(

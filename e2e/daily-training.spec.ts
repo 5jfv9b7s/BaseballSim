@@ -1,3 +1,4 @@
+import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 import { growthComparison } from '../src/world/growth-view.ts';
@@ -63,7 +64,7 @@ async function observe(page: Page, legacy: boolean | 'training' | 'experience' |
       }
     };
   }, legacy);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
     timeout: 30000,
   });
@@ -202,7 +203,7 @@ for (const width of [1280, 390, 320])
       await expect(
         page.getByRole('button', { name: '手動保存を読み込む', exact: true }),
       ).toBeEnabled({ timeout: 30000 });
-      await page.reload();
+      await reloadDevelopmentHome(page);
       await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
       await page.getByRole('button', { name: '手動保存を読み込む', exact: true }).click();
       await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-25', {

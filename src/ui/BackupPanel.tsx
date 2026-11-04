@@ -12,6 +12,7 @@ interface Props {
   plays: StoredPlay[];
   importedId: string;
   disabled: boolean;
+  showCurrent?: boolean;
   exportFile: (slot: WorldSlotKind) => void;
   importFile: (file: File) => void;
   openPlay: (localWorldId: string, slot: WorldSlotKind) => void;
@@ -24,6 +25,7 @@ export function SavedPlayPicker({
   disabled,
   openPlay,
   refresh,
+  showCurrent = true,
 }: Omit<Props, 'exportFile' | 'importFile'>) {
   const [chosen, setChosen] = useState('');
   const [openSlot, setOpenSlot] = useState<WorldSlotKind>('manual');
@@ -52,7 +54,7 @@ export function SavedPlayPicker({
   return (
     <section className="workflow-group" aria-labelledby="resume-heading">
       <h3 id="resume-heading">保存したプレイを再開</h3>
-      <p className="hint">現在のプレイ：{current?.label ?? '初期プレイ'}</p>
+      {showCurrent && <p className="hint">現在のプレイ：{current?.label ?? '初期プレイ'}</p>}
       <div className="workflow-fields">
         <label>
           1. 保存済みプレイ

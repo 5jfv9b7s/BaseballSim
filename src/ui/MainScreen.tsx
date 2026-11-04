@@ -135,7 +135,7 @@ export function MainScreen({
     update();
     return () => observer.disconnect();
   }, []);
-  const previousPage = useRef(page);
+  const previousPage = useRef<MainPage | null>(null);
 
   useEffect(() => {
     if (previousPage.current !== page) {

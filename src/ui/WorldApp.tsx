@@ -47,6 +47,7 @@ import type { WorldAction, WorldCommand, WorldView } from '../world/controller.t
 import type { WorldWorkerResponse } from '../world-worker.ts';
 import { SeasonLeaderboard } from './SeasonLeaderboard.tsx';
 import { WorldStats } from './WorldStats.tsx';
+import { TitleScreen } from './TitleScreen.tsx';
 import './world.css';
 
 export function WorldApp({
@@ -77,8 +78,12 @@ export function WorldApp({
   const formationDestination = useRef<MainPage | 'tools' | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [page, setPage] = useState<MainPage>('home');
+  const [showTitle, setShowTitle] = useState(!development);
+  const [hasOpenedPlay, setHasOpenedPlay] = useState(development);
+  const openingFromTitle = useRef(false);
   const [newPlayOptions, setNewPlayOptions] = useState<NewPlayOptions | null>(null);
   const [plays, setPlays] = useState<StoredPlay[]>([]);
+  const [playListError, setPlayListError] = useState(false);
   const [importedId, setImportedId] = useState('');
   const [view, setView] = useState<WorldView | null>(null);
   const [inspection, setInspection] = useState<StorageInspection | null>(null);
@@ -310,8 +315,10 @@ export function WorldApp({
 
   function openPlay(targetLocalWorldId: string, slot: WorldSlotKind) {
     const context = beginFileAction('openPlay');
-    if (context)
+    if (context) {
+      openingFromTitle.current = !development && showTitle;
       worker.current!.postMessage({ kind: 'openPlay', targetLocalWorldId, slot, ...context });
+    }
   }
 
   function refreshPlays() {
@@ -343,6 +350,7 @@ export function WorldApp({
       setNewPlayOptions(data.newPlayOptions);
       setPlays(data.plays ?? []);
       if (!data.ok) {
+        openingFromTitle.current = false;
         trainingDestination.current = null;
         formationDestination.current = null;
         progressTarget.current = null;
@@ -351,6 +359,7 @@ export function WorldApp({
         setError(data.error);
         return;
       }
+      setPlayListError(Boolean(data.playListError));
       if (data.playListError) setError(data.playListError);
       if (data.backup) {
         try {
@@ -442,6 +451,10 @@ export function WorldApp({
       }
       if (completedAction === 'save') setMessage('世界全体を手動保存しました。');
       if (completedAction === 'load' || completedAction === 'openPlay') {
+        setHasOpenedPlay(true);
+        setShowTitle(false);
+        if (openingFromTitle.current) setPage('home');
+        openingFromTitle.current = false;
         progressTarget.current = null;
         setSelectedPlayer('');
         setTraining(null);
@@ -464,6 +477,8 @@ export function WorldApp({
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
       if (completedAction === 'new') {
+        setHasOpenedPlay(true);
+        setShowTitle(false);
         progressTarget.current = null;
         auto.current = false;
         setRunning(false);
@@ -496,6 +511,7 @@ export function WorldApp({
       if (auto.current) continueDay();
     };
     instance.onerror = () => {
+      openingFromTitle.current = false;
       trainingDestination.current = null;
       formationDestination.current = null;
       progressTarget.current = null;
@@ -1210,6 +1226,11 @@ export function WorldApp({
       <>
         <section className="panel" aria-label="世界の保存">
           <h2>世界の保存</h2>
+          {!development && (
+            <button className="secondary" disabled={disabled} onClick={() => setShowTitle(true)}>
+              タイトル画面へ
+            </button>
+          )}
           {development && storageAction && notification}
           <section
             className="workflow-group workflow-primary"
@@ -1311,7 +1332,7 @@ export function WorldApp({
     ),
     setup: (
       <>
-        <details className="panel">
+        <details className="panel" open={!development && showTitle ? true : undefined}>
           <summary>新規日程・担当球団と試作の範囲</summary>
           <label>
             新規プレイの日程
@@ -1381,16 +1402,49 @@ export function WorldApp({
           <p>
             既存の保存を保持し、独立したプレイを作成します。初回保存に成功するとホームを開きます。
           </p>
-          <p>
-            短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日。一軍144試合、二軍72試合（9月15日まで）の暫定構成です。日程構成は暫定仕様です。
-          </p>
-          <p>
-            係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。通常練習・キャンプ・実戦経験・年齢変化・ルーキー覚醒による育成は未校正の試作です。能力・状態評価による自動昇降格、試合中の代打/交代・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復、試合開始時の状態による能力補正、投手の休養方針を使用します。
-          </p>
+          <details>
+            <summary>試作モデルの対応範囲</summary>
+            <p>
+              短期確認と年間リーグを選べます。年間は架空4球団・3月27日〜9月30日。一軍144試合、二軍72試合（9月15日まで）の暫定構成です。日程構成は暫定仕様です。
+            </p>
+            <p>
+              係数は未校正で、選手・球団は検証用の架空データです。新規プレイでは一軍登録・抹消と当日のベンチ指定を利用できます。二軍は同じエンジンで自動進行します。通常練習・キャンプ・実戦経験・年齢変化・ルーキー覚醒による育成は未校正の試作です。能力・状態評価による自動昇降格、試合中の代打/交代・怪我・契約・翌年度更新は未対応です。新規プレイでは体力・疲労の日次回復、試合開始時の状態による能力補正、投手の休養方針を使用します。
+            </p>
+          </details>
         </details>
       </>
     ),
   };
+
+  if (!development && showTitle)
+    return (
+      <TitleScreen
+        plays={plays}
+        playListUnavailable={playListError}
+        loading={!view}
+        disabled={disabled}
+        error={[error, view?.storageError].filter(Boolean).join(' ')}
+        notice={notification}
+        importedId={importedId}
+        picker={
+          view && (
+            <SavedPlayPicker
+              view={view}
+              plays={plays}
+              importedId={importedId}
+              disabled={disabled}
+              showCurrent={hasOpenedPlay}
+              openPlay={openPlay}
+              refresh={refreshPlays}
+            />
+          )
+        }
+        setup={panels.setup}
+        onImport={importFile}
+        onRefresh={refreshPlays}
+        onReturnToGame={hasOpenedPlay ? () => setShowTitle(false) : undefined}
+      />
+    );
 
   if (!development)
     return (

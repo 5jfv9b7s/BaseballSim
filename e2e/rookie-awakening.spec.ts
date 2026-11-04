@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 import { rookieSaveFixture } from './support/rookie-save.ts';
@@ -36,7 +37,7 @@ for (const width of [1280, 390, 320])
         }
       };
     });
-    await page.goto('/');
+    await openDevelopmentHome(page);
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
       timeout: 60000,
     });

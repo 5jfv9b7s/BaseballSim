@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { expect, test } from '@playwright/test';
 
 for (const width of [1280, 390, 320]) {
@@ -6,7 +7,7 @@ for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 960 });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await openDevelopmentHome(page);
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     await expect(nav.locator('.menu-icon[aria-hidden="true"]')).toHaveCount(6);
@@ -75,7 +76,7 @@ for (const width of [1280, 390, 320]) {
 
 test('投手の選ぶ・置く：役割の移動と取消をドラッグなしで操作する', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 960 });
-  await page.goto('/');
+  await openDevelopmentHome(page);
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
   await page
     .getByRole('navigation', { name: 'メインメニュー', exact: true })

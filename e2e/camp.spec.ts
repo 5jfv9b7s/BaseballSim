@@ -1,3 +1,4 @@
+import { openDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
 import { campSaveFixture } from './support/camp-save.ts';
@@ -44,7 +45,7 @@ async function observe(page: Page, mode: 'current' | 'failOnce' = 'current') {
       }
     };
   }, mode);
-  await page.goto('/');
+  await openDevelopmentHome(page);
   // Worker/保存領域の初期化完了を待つ。機能操作の検査とは待機境界を分ける。
   await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
     timeout: 30000,

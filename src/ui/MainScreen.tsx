@@ -1,3 +1,5 @@
+import { TradePanel } from './trade/TradePanel.tsx';
+import { emptyTradeDraft, type TradeDraft } from './trade/trade-preview.ts';
 import { MenuIcon, type MenuIconName } from './MenuIcon.tsx';
 import { PlayerDetails } from './PlayerDetails.tsx';
 import { PlayerDirectory } from './PlayerDirectory.tsx';
@@ -13,6 +15,7 @@ export type MainPage =
   | 'today'
   | 'formation'
   | 'team'
+  | 'trade'
   | 'training'
   | 'standings'
   | 'stats'
@@ -51,6 +54,7 @@ const TITLES: Record<MainPage, string> = {
   today: '今日の試合',
   formation: 'チーム編成',
   team: 'チーム',
+  trade: 'トレード',
   training: '育成・練習',
   standings: 'チーム成績',
   stats: '個人成績',
@@ -63,7 +67,7 @@ const TITLES: Record<MainPage, string> = {
 };
 
 function sectionOf(page: MainPage): Section {
-  if (page === 'training') return 'team';
+  if (page === 'training' || page === 'trade') return 'team';
   if (['schedule', 'today', 'results'].includes(page)) return 'schedule';
   if (['standings', 'stats', 'memorial', 'summary'].includes(page)) return 'records';
   if (['save', 'new', 'help'].includes(page)) return 'system';
@@ -118,6 +122,12 @@ export function MainScreen({
   onOpenTools: () => void;
 }) {
   const [card, setCard] = useState(0);
+  const [tradeDraft, setTradeDraft] = useState<TradeDraft>(emptyTradeDraft);
+  // プレイの切替時はUIの提案だけを破棄する。日付の閲覧やページ移動では保持する。
+  useEffect(() => {
+    setTradeDraft(emptyTradeDraft());
+  }, [view?.localWorldId, view?.worldId, view?.management?.controlledSquadId]);
+
   const headingRef = useRef<HTMLHeadingElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const navigationRef = useRef<HTMLElement>(null);
@@ -302,9 +312,20 @@ export function MainScreen({
             {submenu([
               { page: 'team', label: '選手一覧' },
               { page: 'training', label: '育成・練習' },
+              { page: 'trade', label: 'トレード' },
             ])}
             {page === 'training' ? (
               panels.training
+            ) : page === 'trade' ? (
+              view && (
+                <TradePanel
+                  key={view.localWorldId + view.worldId + view.management?.controlledSquadId}
+                  view={view}
+                  draft={tradeDraft}
+                  onChange={setTradeDraft}
+                  onSelectPlayer={onSelectPlayer}
+                />
+              )
             ) : (
               <>
                 {view && (
@@ -315,7 +336,7 @@ export function MainScreen({
                   />
                 )}
                 <div className="feature-grid">
-                  <Construction title="トレード" />
+                  <button onClick={() => onNavigate('trade')}>トレードの提案を作る</button>
                   <Construction title="自由契約・退団" />
                   <Construction title="自由契約選手の獲得" />
                   <Construction title="外国人選手の獲得" />

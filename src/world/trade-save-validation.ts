@@ -21,12 +21,19 @@ import type { TradeGameReceipt } from './trade-game-commands.ts';
 import { validateTradeGameJournal } from './trade-game-journal.ts';
 import type { TradeDayReceipt } from './trade-day-commands.ts';
 import { validateTradeDayJournal } from './trade-day-journal.ts';
+import type { TradeRosterReceipt } from './trade-roster-commands.ts';
+import {
+  validateTradeRosterJournal,
+  validateCurrentTradeRosterPolicies,
+} from './trade-roster-journal.ts';
 
 export type TradeSavedState = TradeCommitSnapshot<TradeApplicationWorld> & {
   /** v2以降の候補保存の試合指示履歴。v1には項目自体を持たない。 */
   gameReceipts?: TradeGameReceipt[];
   /** v3候補保存の日次発生元。v1/v2には持たせない。 */
   dayReceipts?: TradeDayReceipt[];
+  /** v4候補の登録・固定希望の発生元。旧形式には追加しない。 */
+  rosterReceipts?: TradeRosterReceipt[];
 };
 
 export const TRADE_WORLD_KEYS = [
@@ -111,6 +118,7 @@ export function validateTradeSavedState(value: unknown): asserts value is TradeS
       'tradeReceipts',
       ...(Object.hasOwn(value, 'gameReceipts') ? ['gameReceipts'] : []),
       ...(Object.hasOwn(value, 'dayReceipts') ? ['dayReceipts'] : []),
+      ...(Object.hasOwn(value, 'rosterReceipts') ? ['rosterReceipts'] : []),
     ],
     '候補保存',
   );
@@ -469,5 +477,7 @@ export function validateTradeSavedState(value: unknown): asserts value is TradeS
   }
   validateTradeGameJournal(saved);
   validateTradeDayJournal(saved);
+  validateTradeRosterJournal(saved);
+  validateCurrentTradeRosterPolicies(saved);
   validateRngTree(world);
 }

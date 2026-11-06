@@ -2,6 +2,7 @@ import { ensure, integer } from '../engine/validation.ts';
 import type { TradeCommitContext } from '../recruitment/trade-commit.ts';
 import type { TradeApplicationStorage } from './trade-application-port.ts';
 import { validateTradeSavedState, type TradeSavedState } from './trade-save-validation.ts';
+import { applyTradeRosterCommand, type TradeRosterCommand } from './trade-roster-commands.ts';
 import { applyTradeDayCommand, type TradeDayCommand } from './trade-day-commands.ts';
 import {
   applyTradeGameCommand,
@@ -79,6 +80,29 @@ export class TradeGameSession {
       return 'saved';
     } catch (error) {
       // 書込後の通信失敗もあり得る。推測して後続指示や二度目の書込を続けない。
+      this.uncertain = true;
+      throw error;
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** 登録・固定希望と監査をactionAutoへ確定。保留理由つきの希望も保存できる。 */
+  async changeRoster(command: TradeRosterCommand) {
+    ensure(!this.busy && !this.uncertain, '保存中・成否不明です。再読込まで編成指示を停止します');
+    const result = applyTradeRosterCommand(this.working, command);
+    if (result.status !== 'applied') return result;
+    ensure(this.pending === 0, '未保存の試合指示があります。編成変更の前に手動保存してください');
+    integer(this.persisted.storageRevision, 1, Number.MAX_SAFE_INTEGER - 1, '編成保存版');
+    const candidate = structuredClone(result.snapshot);
+    candidate.storageRevision = this.persisted.storageRevision + 1;
+    this.busy = true;
+    try {
+      await this.storage.commit(structuredClone(this.persisted), structuredClone(candidate));
+      this.working = candidate;
+      this.persisted = this.context(candidate);
+      return { status: 'committed' as const, receipt: structuredClone(result.receipt) };
+    } catch (error) {
       this.uncertain = true;
       throw error;
     } finally {

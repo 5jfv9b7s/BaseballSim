@@ -6,6 +6,7 @@ import { MAX_BYTES, MAX_ANNUAL_RAW_BYTES, type Snapshot } from './save-format.ts
 export const TRADE_SAVE_FORMAT = 'trade-application-snapshot-v1' as const;
 export const TRADE_GAME_SAVE_FORMAT = 'trade-application-snapshot-v2' as const;
 export const TRADE_DAY_SAVE_FORMAT = 'trade-application-snapshot-v3' as const;
+export const TRADE_ROSTER_SAVE_FORMAT = 'trade-application-snapshot-v4' as const;
 export const TRADE_STORAGE_PROFILE = 'trade-application-v1' as const;
 export const MAX_TRADE_BLOCKS = 640;
 export const MAX_TRADE_BLOCK_BYTES = 16 * 1024 * 1024;
@@ -14,7 +15,10 @@ export const MAX_TRADE_BLOCK_BYTES = 16 * 1024 * 1024;
 export type TradeStoredSnapshot = Omit<Snapshot, 'versions'> & {
   versions: {
     saveFormatVersion:
-      typeof TRADE_SAVE_FORMAT | typeof TRADE_GAME_SAVE_FORMAT | typeof TRADE_DAY_SAVE_FORMAT;
+      | typeof TRADE_SAVE_FORMAT
+      | typeof TRADE_GAME_SAVE_FORMAT
+      | typeof TRADE_DAY_SAVE_FORMAT
+      | typeof TRADE_ROSTER_SAVE_FORMAT;
     simulationVersion: 'trade-application-world-v1';
   };
 };
@@ -78,15 +82,22 @@ export function validateTradeManifest(value: unknown): asserts value is TradeSto
     s.saveKind === 'actionAuto' ||
       (s.saveKind === 'manual' &&
         (s.versions?.saveFormatVersion === TRADE_GAME_SAVE_FORMAT ||
-          s.versions?.saveFormatVersion === TRADE_DAY_SAVE_FORMAT)) ||
-      (s.saveKind === 'dailyAuto' && s.versions?.saveFormatVersion === TRADE_DAY_SAVE_FORMAT),
+          s.versions?.saveFormatVersion === TRADE_DAY_SAVE_FORMAT ||
+          s.versions?.saveFormatVersion === TRADE_ROSTER_SAVE_FORMAT)) ||
+      (s.saveKind === 'dailyAuto' &&
+        (s.versions?.saveFormatVersion === TRADE_DAY_SAVE_FORMAT ||
+          s.versions?.saveFormatVersion === TRADE_ROSTER_SAVE_FORMAT)),
     '候補保存の種別が不正です',
   );
   exactKeys(s.versions, ['saveFormatVersion', 'simulationVersion'], '候補保存の版');
   ensure(
-    [TRADE_SAVE_FORMAT, TRADE_GAME_SAVE_FORMAT, TRADE_DAY_SAVE_FORMAT].includes(
-      s.versions.saveFormatVersion,
-    ) && s.versions.simulationVersion === 'trade-application-world-v1',
+    [
+      TRADE_SAVE_FORMAT,
+      TRADE_GAME_SAVE_FORMAT,
+      TRADE_DAY_SAVE_FORMAT,
+      TRADE_ROSTER_SAVE_FORMAT,
+    ].includes(s.versions.saveFormatVersion) &&
+      s.versions.simulationVersion === 'trade-application-world-v1',
     '未対応の候補保存形式です',
   );
   ensure(

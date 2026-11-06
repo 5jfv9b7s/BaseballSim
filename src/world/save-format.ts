@@ -25,7 +25,8 @@ export type SaveFormat =
   | 'v022-world-snapshot-v21'
   | 'trade-application-snapshot-v1'
   | 'trade-application-snapshot-v2'
-  | 'trade-application-snapshot-v3';
+  | 'trade-application-snapshot-v3'
+  | 'trade-application-snapshot-v4';
 export const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'

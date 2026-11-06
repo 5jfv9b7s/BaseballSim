@@ -87,6 +87,10 @@ export function applyTradeGameCommand(input: TradeSavedState, value: TradeGameCo
     command.localWorldId === input.localWorldId && command.worldId === input.worldId,
     '別プレイ・別世界への試合指示です',
   );
+  ensure(
+    !input.rosterReceipts?.some((r) => r.commandId === command.commandId),
+    '編成指示と同じIDは使えません',
+  );
   const fingerprint = canonicalJson(command);
   const prior = input.gameReceipts?.find((r) => r.commandId === command.commandId);
   ensure(

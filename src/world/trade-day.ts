@@ -10,6 +10,7 @@ import { summarizeSeason } from './season.ts';
 import { allWorldSquads } from './squads.ts';
 import { tradeSquadRoster } from './trade-squad-roster.ts';
 import { validateTradeMatchState } from './trade-match-state.ts';
+import { reconcileTradeRosterPolicies } from './trade-roster-policy.ts';
 import type { TradeApplicationWorld } from './trade-application-types.ts';
 
 /** 自動入替を未対応のまま成功扱いにしない。待機中の再登録日は解除しない。 */
@@ -46,9 +47,10 @@ function requireResolvedAutoPreferences(world: TradeApplicationWorld, date: stri
  * 当日の全試合確定後だけ、既存v6の日次計算を一度適用する純粋処理。
  * 契約期限・新資格・故障・補強行事など未実装モデルを空値で処理済みにはしない。
  */
-export function completeTradeWorldDay(
+function advanceTradeWorldDay(
   world: TradeApplicationWorld,
   expectedDate: string,
+  requireResolvedPreferences: boolean,
 ): TradeApplicationWorld {
   const defs = world.initialDefinitions;
   const end = defs.farm && defs.farm.endDate > defs.endDate ? defs.farm.endDate : defs.endDate;
@@ -96,7 +98,7 @@ export function completeTradeWorldDay(
   for (const squad of allWorldSquads(defs))
     validateTradeMatchState(world, tradeSquadRoster(world, squad.squadId));
   const date = nextDate(expectedDate);
-  requireResolvedAutoPreferences(world, date);
+  if (requireResolvedPreferences) requireResolvedAutoPreferences(world, date);
   // 別の可変な旧世界は作らず、純粋計算に必要な入力だけを渡す。
   const inputs = {
     version: world.version,
@@ -141,4 +143,20 @@ export function completeTradeWorldDay(
   if (next.seasonSummary === null && date > defs.endDate)
     next.seasonSummary = summarizeSeason(summaryInput);
   return next;
+}
+
+/** 0.60の指示系列の意味を保持。固定希望の差分があれば旧境界では停止する。 */
+export function completeTradeWorldDay(
+  world: TradeApplicationWorld,
+  expectedDate: string,
+): TradeApplicationWorld {
+  return advanceTradeWorldDay(world, expectedDate, true);
+}
+
+/** 0.61の日次入口。翌日order0に固定希望を再評価し、既知の制約だけ保留する。 */
+export function completeTradeWorldDayWithRoster(
+  world: TradeApplicationWorld,
+  expectedDate: string,
+) {
+  return reconcileTradeRosterPolicies(advanceTradeWorldDay(world, expectedDate, false));
 }

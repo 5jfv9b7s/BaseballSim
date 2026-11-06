@@ -1,4 +1,47 @@
-# トレード実装と会計基盤（開発版0.60.0）
+# トレード実装と会計基盤（開発版0.61.0）
+
+## 0.61.0：候補世界の登録・編成・固定希望
+
+[TradeGameSession.changeRoster](src/world/trade-game-session.ts)へ、[登録／固定希望の指示](src/world/trade-roster-commands.ts)を渡す入口を追加しました。現在所属から一二軍を組み立て、[登録と編成の純粋審査](src/world/trade-registration.ts)・[固定希望](src/world/trade-roster-policy.ts)・[登録監査](src/world/trade-roster-journal.ts)を保存境界へ接続します。**通常Worker／UIへの登録ではありません。**
+
+### 指示と制約
+
+共通入力は`commandId / localWorldId / worldId / expectedStateRevision / expectedDate / clubId`です。
+
+- `setTradeRegistrations`：`changes: { playerId, category }[]`と`squadReplacements: TradeSquadPlan[]`。直接登録は手動モードだけ。各一二軍の打順・先発／救援・個別休養・条件別救援を明示した案で同時更新できます。登録を変えない編成だけの編集も可能です。
+- `setTradeRosterPolicy`：`changeMode`と現在所属全員の`preferences: { playerId, preference }[]`。移籍前の名簿や旧球団の固定希望を使い回しません。手動は設定だけ、autoは設定後に差分を一度評価します。
+
+担当球団・当日の全試合開始前に限定します。開始済みの試合は試合別指定の有無によらず実記録から判定。一軍人数・外国人枠・再登録待ちと、有効な一二軍の9打順／守備・投手運用を検査し、不足する編成を勝手に補充しません。登録期間は[開始,終了)で閉じ、新しい期間とsourceIdを作ります。同じ順序の空期間を作らず、抹消日+開始時規則の待ち日数を再登録日とします。移籍では待ち日を解除しません。
+
+当日以降の未開始試合で、登録外になる打順／先発／ベンチ指定だけを解除して監査へ残します。有効な指定・開始時名簿・過去試合・球団別成績・所属／会計・能力／持ち球／調子／体力・個人RNGは保持。関係する編成版と変更された個別休養／救援の版を進めます。
+
+### 固定希望と翌日
+
+`completeTradeDayWithRoster / trade-day-commands-v2`は既存v6の日次計算後、翌日order0で全球団のautoを評価します。固定希望の差分を球団単位で一括反映し、おまかせ選手の実登録は維持。再登録待ち・人数／外国人枠・明示編成の不足など既知の制約なら、その球団の全差分を保留して希望・対象選手・理由を日次receiptへ残します。他球団や日付進行は止めません。
+
+候補の編成検査は理想打順・投手配置の有効性も必要とします。新配置が必要な昇降格は、明示編成を伴う手動登録で整えるまで保留します。戦力CPU、架空の適性評価、代役の自動選出、枠を空ける無関係な抹消を追加した意味ではありません。これは`trade-roster-commands-v1`の試作境界です。
+
+旧`completeTradeDay / trade-day-commands-v1`は0.60の停止仕様を維持。指示名と日次モデル版を分け、保存された旧指示の意味を変更しません。新しい日次receiptには球団別の適用／保留／変更なしと登録監査を含めます。実装不具合や未知の例外を正常な保留へ変換しません。
+
+### 保存・再送・互換
+
+登録／固定希望と監査をactionAutoへ一括保存し、成功後だけ作業状態を置換します。既知の登録条件でblockedならDBへ書きません。autoで保留された希望は設定と理由を保存します。元の状態・選択枠・目録と両revisionをCASで照合し、4ストアを原子的に更新。旧autoはpreviousAutoへ移し、手動枠は保持します。保存失敗・競合・成否不明は元の表示／RNGを保ち、明示reloadまで後続を止めます。
+
+保存前は永続正本から編成指示1件を再計算し、候補全体と比較。未保存の試合／日次指示とは混在させません。指示IDを種類を跨いで一意にし、同一入力の再送は永続receiptを返します。手動指示と翌日自動は登録のsourceIdを別の名前空間にし、異なる種類の発生元が衝突しない形にしました。
+
+`trade-application-snapshot-v4`は文脈へ`rosterReceipts`を追加し、gameReceipts／dayReceiptsと一緒に保持します。候補v1〜v3の厳密な読取形を保ち、新指示の保存時だけv4へ進みます。旧枠を残し、通常世界21を自動変換しません。全過去計算の再実行検査ではなく、発生元・登録期間・監査・版と新しい指示の再計算による検査です。
+
+### 残作業と今回の確認（2026-11-06）
+
+通常Worker／UI、初期会計data・実交渉／内部承認の生成、契約／経済期日・資格／傷病・必須行事、PS／正式表彰／正式12球団、候補の複数手動枠／ファイル入出力は残ります。正式な世界v22／ゲームv1.0や、画面からの移籍後年間完走は未完成です。通常世界21／定義26／成長6／保存022／試合11、DB schema・初期data・係数を維持します。
+
+新Node24件（登録／日次17・DB7）は確認用コードの追加だけで未実行。再登録待ち・明示編成・移籍後の権限・球団単位保留・一二軍の指定解除・互換／再送・原子的取消／競合／成否不明／GCを対象とするコードです。以前164件と計Node188件・画面2件を保留し、Node／UI／check／build／ブラウザーQAは実施していません。最終の型検査・対象25ファイルの整形・差分確認は成功しました。
+
+後で実行する対象（今回は未実行）：
+
+```powershell
+node --test tests/trade-registration.test.ts tests/trade-registration-storage.test.ts tests/trade-day.test.ts tests/trade-day-storage.test.ts tests/trade-game-session.test.ts tests/trade-dexie-storage.test.ts tests/roster-policy.test.ts tests/registration.test.ts tests/storage-gc.test.ts
+```
 
 ## 0.60.0：候補世界の日次更新・翌日・自動保存
 

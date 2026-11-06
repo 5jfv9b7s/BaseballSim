@@ -136,6 +136,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
         initial.tradeReceipts.length === 0 &&
         (initial.gameReceipts?.length ?? 0) === 0 &&
         (initial.dayReceipts?.length ?? 0) === 0 &&
+        (initial.rosterReceipts?.length ?? 0) === 0 &&
         initial.state.transactions.length === 0,
       '初回候補は保存版1・未適用の状態が必要です',
     );

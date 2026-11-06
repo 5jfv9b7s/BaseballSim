@@ -4,6 +4,8 @@ import { canonicalJson } from '../storage/codec.ts';
 import { nextDate } from './engine.ts';
 import { activityKey } from './physical.ts';
 import { exactKeys } from './snapshot-codec.ts';
+import { tradeRosterAutoSource } from './trade-registration.ts';
+import { validateTradeRosterReport } from './trade-roster-journal.ts';
 import { parseTradeDayCommand } from './trade-day-commands.ts';
 import type { TradeSavedState } from './trade-save-validation.ts';
 
@@ -38,11 +40,12 @@ export function validateTradeDayJournal(saved: TradeSavedState): void {
         'completedDate',
         'nextDate',
         'committedStateRevision',
+        ...(receipt.modelVersion === 'trade-day-commands-v2' ? ['rosterResults'] : []),
       ],
       '日次指示記録',
     );
     ensure(
-      receipt.modelVersion === 'trade-day-commands-v1' &&
+      ['trade-day-commands-v1', 'trade-day-commands-v2'].includes(receipt.modelVersion) &&
         typeof receipt.fingerprint === 'string' &&
         receipt.fingerprint.length <= 16384,
       '日次指示記録の版・容量が不正です',
@@ -63,6 +66,28 @@ export function validateTradeDayJournal(saved: TradeSavedState): void {
         (previousDate === null || nextDate(previousDate) === receipt.completedDate),
       '日次指示の参照・版・日付が不一致です',
     );
+    ensure(
+      (command.kind === 'completeTradeDayWithRoster') ===
+        (receipt.modelVersion === 'trade-day-commands-v2'),
+      '日次指示と処理版が不一致です',
+    );
+    if (receipt.modelVersion === 'trade-day-commands-v2') {
+      ensure(
+        Array.isArray(saved.rosterReceipts) && Array.isArray(receipt.rosterResults),
+        '固定希望つき日次は候補v4が必要です',
+      );
+      uniqueFinanceIds(
+        receipt.rosterResults.map((r) => r.clubId),
+        '日次固定希望の球団',
+      );
+      for (const report of receipt.rosterResults)
+        validateTradeRosterReport(
+          report,
+          saved,
+          { date: receipt.nextDate, order: 0 },
+          tradeRosterAutoSource(receipt.nextDate, report.clubId),
+        );
+    }
     revisions.add(receipt.committedStateRevision);
     previousDate = receipt.completedDate;
     previousRevision = receipt.committedStateRevision;

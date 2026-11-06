@@ -1,4 +1,14 @@
-# トレードの確認・状態反映・候補保存・日次進行（0.60.0）
+# トレードの確認・状態反映・候補保存・登録変更（0.61.0）
+
+## 0.61.0：現在所属による登録変更と固定希望
+
+`TradeGameSession.changeRoster(command)`は、登録／明示編成の変更または固定希望の設定と監査を候補用actionAutoへ保存します。状態版・日付・プレイ／世界IDと担当球団を照合し、成功後だけ公開。既知の登録制約はblockedで変更せず、保存失敗・競合・成否不明は明示reloadまで止めます。通常Worker／UIへは未登録です。
+
+[trade-registration.ts](../world/trade-registration.ts)は登録期間・一二軍編成・将来の試合別指定の純粋審査、[trade-roster-policy.ts](../world/trade-roster-policy.ts)は現在所属全員の希望設定と球団単位の一括適用、[trade-roster-commands.ts](../world/trade-roster-commands.ts)は入力／権限・再送の検査、[trade-roster-journal.ts](../world/trade-roster-journal.ts)は登録発生元・監査・版の検査です。
+
+直接登録するには手動モードが必要です。登録を変えずに一二軍の明示編成だけを編集することもできます。新しい日次指示`completeTradeDayWithRoster`は翌日order0で固定希望を再評価し、再登録待ち・人数／外国人枠・編成不足は一式保留して理由を保持します。自動の代役選びや他の選手の抹消はしません。旧`completeTradeDay`の意味は変更しません。
+
+新receiptは候補保存v4に保持。v1〜v3読取と旧枠／通常セーブを維持し、新指示は正本から再計算した全候補との一致を保存前に確認します。通常画面、初期会計data・実交渉／承認生成、資格／傷病・必須行事等は残ります。[入力と試作範囲](../../TRADE-IMPLEMENTATION.md)。新Node24件は未実行。以前164件と計Node188件・画面2件を保留しています。最終の型検査・対象25ファイルの整形・差分確認は成功しました。
 
 ## 0.60.0：候補の日次確定と翌日
 

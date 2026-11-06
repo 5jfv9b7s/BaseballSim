@@ -1,3 +1,4 @@
+import type { DailyContext } from './daily-context.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { COMMON_ABILITIES } from '../players/abilities.ts';
 import { playerAge, isDateOnly } from './player-profiles.ts';
@@ -225,7 +226,7 @@ export function initialAgeDevelopment(
   };
 }
 export function calculateAgeDevelopmentDay(
-  world: AgeWorld,
+  world: DailyContext<AgeWorld>,
   override?: import('./camp-types.ts').CampTrainingOverride,
 ) {
   const {

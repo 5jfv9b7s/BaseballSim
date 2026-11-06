@@ -1,3 +1,4 @@
+import type { DailyContext } from './daily-context.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
@@ -214,18 +215,7 @@ export function trainingBudget(
 
 /** 全試合後の一回だけ。成長用乱数は各選手で独立し、試合の乱数を消費しない。 */
 export function calculateTrainingDay(
-  world: Extract<
-    WorldRecord,
-    {
-      version:
-        | 'world-prototype-v16'
-        | 'world-prototype-v17'
-        | 'world-prototype-v18'
-        | 'world-prototype-v19'
-        | 'world-prototype-v20'
-        | 'world-prototype-v21';
-    }
-  >,
+  world: DailyContext,
   override?: import('./camp-types.ts').CampTrainingOverride,
 ) {
   const date = world.currentDate;

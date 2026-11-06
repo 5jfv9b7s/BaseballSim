@@ -1,3 +1,4 @@
+import type { DailyContext } from './daily-context.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { applyCampDevelopmentDay, initialCampDevelopment } from './camp.ts';
 import { trainingBudget, freezeGrowthData } from './growth.ts';
@@ -53,7 +54,9 @@ export function initialPitchLearning(d: WorldDefinitions, seed: number): PitchLe
   };
 }
 /** 全試合終了後の一回。通常練習・キャンプの指定対象予算を習得進度へ振り替える。 */
-export function applyPitchLearningDay(world: LearningWorld) {
+export function applyPitchLearningDay(
+  world: DailyContext<LearningWorld> & Pick<LearningWorld, 'camp'>,
+) {
   const base = applyCampDevelopmentDay(world);
   const source = base.growth.state.days[world.currentDate]!;
   const day: PitchLearningDay = { ...source, pitchLearning: [] };

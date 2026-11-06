@@ -3,6 +3,7 @@ import { canonicalJson } from '../storage/codec.ts';
 import { commitAcceptedTrade } from '../recruitment/trade-commit.ts';
 import { createTradeApplicationPort } from './trade-application-port.ts';
 import { receiptCommand, type TradeSavedState } from './trade-save-validation.ts';
+import { applyTradeDayCommand, parseTradeDayCommand } from './trade-day-commands.ts';
 import {
   applyTradeGameCommand,
   MAX_GAME_COMMANDS_PER_SAVE,
@@ -16,12 +17,19 @@ import {
 export async function validateTradeSaveTransition(
   previous: TradeSavedState,
   candidate: TradeSavedState,
-): Promise<'trade' | 'gameManual'> {
+): Promise<'trade' | 'gameManual' | 'dayAuto'> {
+  const dayDelta = (candidate.dayReceipts?.length ?? 0) - (previous.dayReceipts?.length ?? 0);
+  ensure(dayDelta >= 0 && dayDelta <= 1, '一回の保存で確定する日次指示が不正です');
   const gameDelta = (candidate.gameReceipts?.length ?? 0) - (previous.gameReceipts?.length ?? 0);
-  if (gameDelta > 0) {
-    ensure(gameDelta <= MAX_GAME_COMMANDS_PER_SAVE, '一回の手動保存の試合指示数を超えました');
+  if (gameDelta > 0 || dayDelta === 1) {
+    ensure(
+      gameDelta >= 0 && gameDelta <= MAX_GAME_COMMANDS_PER_SAVE,
+      '一回の保存の試合指示数を超えました',
+    );
     let replay = structuredClone(previous);
-    for (const receipt of candidate.gameReceipts!.slice(previous.gameReceipts?.length ?? 0)) {
+    for (const receipt of (candidate.gameReceipts ?? []).slice(
+      previous.gameReceipts?.length ?? 0,
+    )) {
       const result = applyTradeGameCommand(
         replay,
         parseTradeGameCommand(JSON.parse(receipt.fingerprint)),
@@ -29,12 +37,21 @@ export async function validateTradeSaveTransition(
       ensure(result.status === 'applied', '試合指示が保存済み履歴と重複しています');
       replay = result.snapshot;
     }
+    if (dayDelta === 1) {
+      const receipt = candidate.dayReceipts!.at(-1)!;
+      const result = applyTradeDayCommand(
+        replay,
+        parseTradeDayCommand(JSON.parse(receipt.fingerprint)),
+      );
+      ensure(result.status === 'applied', '日次指示が保存済み履歴と重複しています');
+      replay = result.snapshot;
+    }
     replay.storageRevision = previous.storageRevision + 1;
     ensure(
       canonicalJson(replay) === canonicalJson(candidate),
-      '試合の手動保存が指示の再計算と一致しません',
+      '試合・日次の保存が指示の再計算と一致しません',
     );
-    return 'gameManual';
+    return dayDelta === 1 ? 'dayAuto' : 'gameManual';
   }
   ensure(
     candidate.tradeReceipts.length === previous.tradeReceipts.length + 1,

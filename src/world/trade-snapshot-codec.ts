@@ -7,6 +7,7 @@ import type { WorldDefinitions } from './types.ts';
 import {
   TRADE_SAVE_FORMAT,
   TRADE_GAME_SAVE_FORMAT,
+  TRADE_DAY_SAVE_FORMAT,
   TRADE_STORED_LIMIT,
   MAX_TRADE_BLOCK_BYTES,
   MAX_TRADE_BLOCKS,
@@ -37,11 +38,15 @@ const coreKeys = TRADE_WORLD_KEYS.filter((key) => !separated.includes(key));
 export async function encodeTradeSnapshot(
   input: TradeSavedState,
   parentSnapshotId: string | null,
-  saveKind: 'actionAuto' | 'manual' = 'actionAuto',
+  saveKind: 'actionAuto' | 'manual' | 'dailyAuto' = 'actionAuto',
 ): Promise<{ snapshot: TradeStoredSnapshot; blocks: Block[] }> {
   const saved = structuredClone(input);
   validateTradeSavedState(saved);
-  const format = Object.hasOwn(saved, 'gameReceipts') ? TRADE_GAME_SAVE_FORMAT : TRADE_SAVE_FORMAT;
+  const format = Object.hasOwn(saved, 'dayReceipts')
+    ? TRADE_DAY_SAVE_FORMAT
+    : Object.hasOwn(saved, 'gameReceipts')
+      ? TRADE_GAME_SAVE_FORMAT
+      : TRADE_SAVE_FORMAT;
   const { state, tradeReceipts, ...context } = saved;
   const {
     initialDefinitions,
@@ -183,7 +188,8 @@ export async function decodeTradeSnapshot(
       'storageRevision',
       'currentDate',
       'seasonId',
-      ...(snapshot.versions.saveFormatVersion === TRADE_GAME_SAVE_FORMAT ? ['gameReceipts'] : []),
+      ...(snapshot.versions.saveFormatVersion !== TRADE_SAVE_FORMAT ? ['gameReceipts'] : []),
+      ...(snapshot.versions.saveFormatVersion === TRADE_DAY_SAVE_FORMAT ? ['dayReceipts'] : []),
     ],
     '候補保存の文脈',
   );

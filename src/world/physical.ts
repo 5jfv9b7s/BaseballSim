@@ -201,7 +201,7 @@ export function applyPhysicalGame(
 
 /** 全試合の終了後、暦日につき一度。休養日は実績ゼロで判断し、登録区分は使わない。 */
 export function recoverPhysicalDay(
-  world: PhysicalWorld,
+  world: Pick<PhysicalWorld, 'definitions' | 'physical' | 'currentDate'> & { growth?: GrowthState },
   nextDate: string,
   trainingActive?: ReadonlySet<string>,
 ): PhysicalWorldState {

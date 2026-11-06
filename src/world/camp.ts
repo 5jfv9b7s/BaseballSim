@@ -1,3 +1,4 @@
+import type { DailyContext } from './daily-context.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
@@ -169,7 +170,7 @@ export function initialCampDevelopment(
     },
   };
 }
-export function activeCamp(world: CampWorld) {
+export function activeCamp(world: Pick<CampWorld, 'definitions' | 'currentDate'>) {
   return world.definitions.campConfig!.enabled
     ? (world.definitions.campInputs!.periods.find(
         (p) => p.from <= world.currentDate && world.currentDate <= p.through,
@@ -230,7 +231,7 @@ export function campBurstBudget(c: CampConfig, talent: number) {
   return Math.round(c.burst.baseMilli + (c.burst.talentMilli * talent) / 120000);
 }
 /** 通常設定は保持。期間中だけ専用設定に置換し、指定分野へ補正する。 */
-export function applyCampDevelopmentDay(world: CampWorld) {
+export function applyCampDevelopmentDay(world: DailyContext<CampWorld> & Pick<CampWorld, 'camp'>) {
   const period = activeCamp(world),
     c = world.definitions.campConfig!;
   const override: CampTrainingOverride | undefined = period

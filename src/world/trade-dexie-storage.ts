@@ -79,7 +79,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
             snapshot.gameDate === slot.gameDate &&
             (slot.slotKind === 'manual'
               ? snapshot.saveKind === 'manual'
-              : snapshot.saveKind === 'actionAuto') &&
+              : snapshot.saveKind === 'actionAuto' || snapshot.saveKind === 'dailyAuto') &&
             (kind !== 'selected' || local.selectedSnapshotId === slot.snapshotId),
           '候補保存の管理参照が一致しません',
         );
@@ -135,6 +135,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
         initial.storageRevision === 1 &&
         initial.tradeReceipts.length === 0 &&
         (initial.gameReceipts?.length ?? 0) === 0 &&
+        (initial.dayReceipts?.length ?? 0) === 0 &&
         initial.state.transactions.length === 0,
       '初回候補は保存版1・未適用の状態が必要です',
     );
@@ -200,7 +201,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
     const encoded = await encodeTradeSnapshot(
       candidate,
       anchor.snapshot.snapshotId,
-      manual ? 'manual' : 'actionAuto',
+      manual ? 'manual' : transition === 'dayAuto' ? 'dailyAuto' : 'actionAuto',
     );
     const verified = await verifySharedBlocks(this.database, encoded.blocks);
     const db = this.database;

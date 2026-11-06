@@ -4,6 +4,8 @@ import { commonTrainingRef } from './training.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import { PITCH_TYPES } from '../data/pitch-types/index.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
+import type { GrowthState } from './growth-types.ts';
+import { ensure } from '../engine/validation.ts';
 import type { TrainingAbilityRef } from './training-types.ts';
 import type { GrowthAbility } from './growth-types.ts';
 
@@ -79,12 +81,21 @@ export function currentCommonAbilities(
 }
 
 /** 新球種が使用可能になる翌日から、既存の能力成長へ含める。 */
-export function activeGrowthBasis(world: WorldRecord, playerId: string) {
+export function activeGrowthBasis(
+  world: Pick<WorldRecord, 'definitions'> & {
+    version: WorldRecord['version'] | 'trade-application-world-v1';
+    growth?: GrowthState;
+  },
+  playerId: string,
+) {
   const basis = growthBasis(world.definitions, playerId);
-  if (world.version !== 'world-prototype-v21') return basis;
+  if (world.version !== 'world-prototype-v21' && world.version !== 'trade-application-world-v1')
+    return basis;
+  const growth = world.growth;
+  ensure(growth?.version === 'daily-development-v6', '習得進度に対応する成長状態が必要です');
   return basis.filter(
     (a) =>
       a.abilityRef.scope !== 'pitch' ||
-      (world.growth.state.acquisition[a.abilityRef.pitchId]?.progressMilli ?? 100000) === 100000,
+      (growth.state.acquisition[a.abilityRef.pitchId]?.progressMilli ?? 100000) === 100000,
   );
 }

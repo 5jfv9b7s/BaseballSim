@@ -2,6 +2,7 @@ import { ensure, integer } from '../engine/validation.ts';
 import type { TradeCommitContext } from '../recruitment/trade-commit.ts';
 import type { TradeApplicationStorage } from './trade-application-port.ts';
 import { validateTradeSavedState, type TradeSavedState } from './trade-save-validation.ts';
+import { applyTradeDayCommand, type TradeDayCommand } from './trade-day-commands.ts';
 import {
   applyTradeGameCommand,
   MAX_GAME_COMMANDS_PER_SAVE,
@@ -10,7 +11,7 @@ import {
 
 /**
  * 候補の作業状態を一つだけ所有する内部コーディネーター。通常Worker/UIへの登録は別工程。
- * executeは保存しない。明示したsaveManualだけが手動1枠を確定する。
+ * executeは保存しない。saveManualは手動枠、completeDayは翌日と日次autoを一緒に確定する。
  */
 export class TradeGameSession {
   private readonly storage: TradeApplicationStorage;
@@ -78,6 +79,31 @@ export class TradeGameSession {
       return 'saved';
     } catch (error) {
       // 書込後の通信失敗もあり得る。推測して後続指示や二度目の書込を続けない。
+      this.uncertain = true;
+      throw error;
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** 全試合後の日次更新を、未保存試合指示と一緒にautoへ確定してから公開する。 */
+  async completeDay(command: TradeDayCommand) {
+    ensure(!this.busy && !this.uncertain, '保存中・成否不明です。再読込まで日次指示を停止します');
+    const result = applyTradeDayCommand(this.working, command);
+    if (result.status === 'replayed')
+      return { status: 'replayed' as const, receipt: structuredClone(result.receipt) };
+    integer(this.persisted.storageRevision, 1, Number.MAX_SAFE_INTEGER - 1, '日次保存版');
+    const candidate = structuredClone(result.snapshot);
+    candidate.storageRevision = this.persisted.storageRevision + 1;
+    this.busy = true;
+    try {
+      await this.storage.commit(structuredClone(this.persisted), structuredClone(candidate));
+      this.working = candidate;
+      this.persisted = this.context(candidate);
+      this.pending = 0;
+      return { status: 'committed' as const, receipt: structuredClone(result.receipt) };
+    } catch (error) {
+      // 翌日候補はまだ公開しない。永続側で確定済みかは明示reloadで照合する。
       this.uncertain = true;
       throw error;
     } finally {

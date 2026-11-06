@@ -6,7 +6,10 @@ import type { SeasonSummary, WorldRecord } from './types.ts';
 
 /** 表彰・決勝・翌年度更新とは分離した、試作日程の終了確定。 */
 export function summarizeSeason(
-  world: WorldRecord,
+  world: Pick<
+    WorldRecord,
+    'definitions' | 'currentDate' | 'completedDates' | 'stats' | 'games' | 'statApplicationMarkers'
+  >,
   scope: SeasonSummary['statScope'] = 'firstRegular',
 ): SeasonSummary {
   const competition = scope === 'farmRegular' ? world.definitions.farm! : world.definitions;

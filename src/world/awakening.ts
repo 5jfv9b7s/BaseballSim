@@ -1,3 +1,4 @@
+import type { DailyContext } from './daily-context.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
@@ -111,7 +112,7 @@ export function initialRookieDevelopment(
 }
 /** 全試合後、練習→経験→年齢変化→覚醒。保存成功前の候補だけを更新する。 */
 export function calculateRookieDevelopmentDay(
-  world: RookieWorld,
+  world: DailyContext<RookieWorld>,
   override?: import('./camp-types.ts').CampTrainingOverride,
 ) {
   const aged = calculateAgeDevelopmentDay(world, override);

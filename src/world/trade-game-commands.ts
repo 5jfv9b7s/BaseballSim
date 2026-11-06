@@ -90,6 +90,10 @@ export function applyTradeGameCommand(input: TradeSavedState, value: TradeGameCo
   const fingerprint = canonicalJson(command);
   const prior = input.gameReceipts?.find((r) => r.commandId === command.commandId);
   ensure(
+    !input.dayReceipts?.some((r) => r.commandId === command.commandId),
+    '日次指示と同じIDは使えません',
+  );
+  ensure(
     !input.tradeReceipts.some((r) => r.commandId === command.commandId),
     '移籍指示と同じIDは使えません',
   );

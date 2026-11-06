@@ -1,3 +1,4 @@
+import type { DailyContext } from './daily-context.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { fnv1a32 } from './identity.ts';
@@ -112,7 +113,9 @@ export function initialDevelopment(
 }
 
 /** 結果の成功/失敗によらない実出場。球種・位置の追加で分野全体の予算は増やさない。 */
-export function experienceActivities(world: DevelopmentWorld): ExperienceActivity[] {
+export function experienceActivities(
+  world: Pick<DevelopmentWorld, 'dayPlan' | 'games'>,
+): ExperienceActivity[] {
   type Aggregate = {
     playerId: string;
     domain: ExperienceDomain;
@@ -261,7 +264,7 @@ export function experienceBudget(
 
 /** 通常練習→実戦経験→既存の日次回復。出場済みの負荷を二重に加えない。 */
 export function calculateDevelopmentDay(
-  world: DevelopmentWorld,
+  world: DailyContext<DevelopmentWorld>,
   override?: import('./camp-types.ts').CampTrainingOverride,
 ) {
   const { players, day: trainingDay, physical } = calculateTrainingDay(world, override);

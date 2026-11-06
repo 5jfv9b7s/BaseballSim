@@ -135,7 +135,10 @@ export function advanceConditionState(
   return next;
 }
 
-export function advanceConditionDay(world: ConditionWorld, date: string): ConditionWorldState {
+export function advanceConditionDay(
+  world: Pick<ConditionWorld, 'condition' | 'definitions'>,
+  date: string,
+): ConditionWorldState {
   return {
     ...world.condition,
     players: Object.fromEntries(

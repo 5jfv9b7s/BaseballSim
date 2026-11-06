@@ -19,10 +19,14 @@ import type { RngState } from '../engine/types.ts';
 
 import type { TradeGameReceipt } from './trade-game-commands.ts';
 import { validateTradeGameJournal } from './trade-game-journal.ts';
+import type { TradeDayReceipt } from './trade-day-commands.ts';
+import { validateTradeDayJournal } from './trade-day-journal.ts';
 
 export type TradeSavedState = TradeCommitSnapshot<TradeApplicationWorld> & {
-  /** v2候補保存だけの指示履歴。v1では項目自体を持たない。 */
+  /** v2以降の候補保存の試合指示履歴。v1には項目自体を持たない。 */
   gameReceipts?: TradeGameReceipt[];
+  /** v3候補保存の日次発生元。v1/v2には持たせない。 */
+  dayReceipts?: TradeDayReceipt[];
 };
 
 export const TRADE_WORLD_KEYS = [
@@ -106,6 +110,7 @@ export function validateTradeSavedState(value: unknown): asserts value is TradeS
       'state',
       'tradeReceipts',
       ...(Object.hasOwn(value, 'gameReceipts') ? ['gameReceipts'] : []),
+      ...(Object.hasOwn(value, 'dayReceipts') ? ['dayReceipts'] : []),
     ],
     '候補保存',
   );
@@ -463,5 +468,6 @@ export function validateTradeSavedState(value: unknown): asserts value is TradeS
       );
   }
   validateTradeGameJournal(saved);
+  validateTradeDayJournal(saved);
   validateRngTree(world);
 }

@@ -9,7 +9,7 @@ import type { TradeApplicationWorld } from './trade-application-types.ts';
 import { applyWorldTrade, tradeApplicationInput } from './trade-application.ts';
 import { sameTradeValue } from './trade-application-state.ts';
 
-/** 新保存の実装が必要。現行v21のWorldStorageAdapterでは代用しない。 */
+/** 候補専用の保存境界。現行v21のWorldStorageAdapterでは代用しない。 */
 export interface TradeApplicationStorage {
   read(): Promise<TradeCommitSnapshot<TradeApplicationWorld>>;
   commit(
@@ -20,7 +20,7 @@ export interface TradeApplicationStorage {
 
 /**
  * 0.55の確定境界を、実際の名簿・方針・個人状態を持つ候補へ接続する。
- * 保存portの実装、承認の生成と通常Workerへの公開は別工程。
+ * 候補保存は専用adapterを使う。承認の生成と通常Workerへの公開は別工程。
  */
 export function createTradeApplicationPort(
   storage: TradeApplicationStorage,

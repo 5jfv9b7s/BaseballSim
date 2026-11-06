@@ -104,7 +104,7 @@ export function applyRestPolicy(world: RestWorld, action: RestPolicyAction): Res
 
 /** 投球した日の実績を記録。途中保存・検証済み終了試合も未適用分だけ処理する。 */
 export function recordPitchingAppearances(
-  world: RestWorld,
+  world: Pick<RestWorld, 'definitions' | 'restControl'>,
   gameId: string,
   game: GameRecord,
 ): RestControl {

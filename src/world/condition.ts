@@ -4,6 +4,7 @@ import { fnv1a32 } from './identity.ts';
 import { registeredIds, registrationEligibleOn } from './registration.ts';
 import { worldSquad } from './squads.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
+import type { PlayerRegistration } from './registration-types.ts';
 import type {
   ConditionConfig,
   ConditionState,
@@ -150,29 +151,49 @@ export function advanceConditionDay(world: ConditionWorld, date: string): Condit
 export function sampleConditions(world: ConditionWorld, gameId: string): ConditionWorldState {
   if (world.condition.samples[gameId]) return world.condition;
   const game = world.definitions.schedule.find((g) => g.gameId === gameId)!;
+  return sampleRegisteredConditions(
+    world.condition,
+    world.definitions,
+    gameId,
+    [game.awaySquadId, game.homeSquadId].map((squadId) => ({
+      squadId,
+      clubId: worldSquad(world.definitions, squadId)!.team.clubId,
+      registrations: registeredIds(world, squadId).map((playerId) =>
+        world.registration.registrations.find((r) => r.playerId === playerId && r.until === null)!,
+      ),
+    })),
+  );
+}
+
+/** 現在の登録を解決した呼出元から受け、初期球団名簿を所属の正本にしない。 */
+export function sampleRegisteredConditions(
+  condition: ConditionWorldState,
+  definitions: WorldDefinitions,
+  gameId: string,
+  squads: { squadId: string; clubId: string; registrations: PlayerRegistration[] }[],
+): ConditionWorldState {
+  if (condition.samples[gameId]) return condition;
+  const game = definitions.schedule.find((g) => g.gameId === gameId)!;
   const samples: ConditionSample[] = [];
-  for (const squadId of [game.awaySquadId, game.homeSquadId]) {
-    const squad = worldSquad(world.definitions, squadId)!;
-    const gameOrder = world.definitions.schedule.filter(
+  for (const { squadId, clubId, registrations } of squads) {
+    const gameOrder = definitions.schedule.filter(
       (g) => g.date <= game.date && [g.awaySquadId, g.homeSquadId].includes(squadId),
     ).length;
-    for (const playerId of registeredIds(world, squadId)) {
-      const registration = world.registration.registrations.find(
-        (r) => r.playerId === playerId && r.until === null,
-      )!;
+    for (const registration of registrations) {
+      const playerId = registration.playerId;
       samples.push({
         playerId,
         gameId,
-        clubId: squad.team.clubId,
+        clubId,
         squadId,
         registrationId: registration.registrationId,
         date: game.date,
         gameOrder,
-        conditionMilli: world.condition.players[playerId]!.conditionMilli,
+        conditionMilli: condition.players[playerId]!.conditionMilli,
       });
     }
   }
-  return { ...world.condition, samples: { ...world.condition.samples, [gameId]: samples } };
+  return { ...condition, samples: { ...condition.samples, [gameId]: samples } };
 }
 
 export function conditionStage(value: number, config: ConditionConfig): string {

@@ -17,7 +17,13 @@ import { allWorldSquads } from './squads.ts';
 import type { TradeApplicationWorld } from './trade-application-types.ts';
 import type { RngState } from '../engine/types.ts';
 
-export type TradeSavedState = TradeCommitSnapshot<TradeApplicationWorld>;
+import type { TradeGameReceipt } from './trade-game-commands.ts';
+import { validateTradeGameJournal } from './trade-game-journal.ts';
+
+export type TradeSavedState = TradeCommitSnapshot<TradeApplicationWorld> & {
+  /** v2候補保存だけの指示履歴。v1では項目自体を持たない。 */
+  gameReceipts?: TradeGameReceipt[];
+};
 
 export const TRADE_WORLD_KEYS = [
   'worldId',
@@ -99,6 +105,7 @@ export function validateTradeSavedState(value: unknown): asserts value is TradeS
       'seasonId',
       'state',
       'tradeReceipts',
+      ...(Object.hasOwn(value, 'gameReceipts') ? ['gameReceipts'] : []),
     ],
     '候補保存',
   );
@@ -455,5 +462,6 @@ export function validateTradeSavedState(value: unknown): asserts value is TradeS
         '適用済み承認の確定記録がありません',
       );
   }
+  validateTradeGameJournal(saved);
   validateRngTree(world);
 }

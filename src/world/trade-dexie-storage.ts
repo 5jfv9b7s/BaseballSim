@@ -13,7 +13,8 @@ import {
 import { validateTradeSavedState, type TradeSavedState } from './trade-save-validation.ts';
 import { validateTradeSaveTransition } from './trade-save-transition.ts';
 
-type CandidateSlot = 'auto' | 'previousAuto';
+type CandidateSlot = 'auto' | 'previousAuto' | 'manual';
+type CandidateRead = CandidateSlot | 'selected';
 
 /**
  * 移籍候補の全状態と確定記録を、既存の4ストアへ原子的に保存する。
@@ -40,7 +41,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
     return [this.localWorldId, kind, 1];
   }
 
-  private async capture(kind: CandidateSlot) {
+  private async capture(kind: CandidateRead) {
     const db = this.database;
     return db.transaction(
       'r',
@@ -54,14 +55,32 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
           local?.storageProfile === TRADE_STORAGE_PROFILE,
           'このローカルIDには移籍候補保存がありません',
         );
-        const slot = await db.save_slots.get(this.key(kind));
+        const selected =
+          kind === 'selected'
+            ? (
+                await db.save_slots.where('localWorldId').equals(this.localWorldId).toArray()
+              ).filter((s) => s.snapshotId === local.selectedSnapshotId)
+            : null;
+        if (selected) ensure(selected.length === 1, '現在保存の枠を一意に解決できません');
+        const slot = selected
+          ? selected[0]
+          : await db.save_slots.get(this.key(kind as CandidateSlot));
         ensure(slot, 'この枠には候補保存がありません');
+        ensure(
+          slot.slotNo === 1 &&
+            ['auto', 'previousAuto', 'manual'].includes(slot.slotKind) &&
+            (kind !== 'selected' || slot.slotKind !== 'previousAuto'),
+          '候補の保存枠参照が不正です',
+        );
         const snapshot = await this.snapshots.get(slot.snapshotId);
         validateTradeManifest(snapshot);
         ensure(
           snapshot.worldId === local.worldId &&
             snapshot.gameDate === slot.gameDate &&
-            (kind !== 'auto' || local.selectedSnapshotId === slot.snapshotId),
+            (slot.slotKind === 'manual'
+              ? snapshot.saveKind === 'manual'
+              : snapshot.saveKind === 'actionAuto') &&
+            (kind !== 'selected' || local.selectedSnapshotId === slot.snapshotId),
           '候補保存の管理参照が一致しません',
         );
         const blocks = await db.save_blocks.bulkGet(snapshot.blockRefs.map((r) => r.blockId));
@@ -71,23 +90,25 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
   }
 
   /** 過去枠は読取だけ。過去の保存版を現在版へ付け替えたり自動復旧したりしない。 */
-  private async loadCaptured(kind: CandidateSlot) {
-    ensure(kind === 'auto' || kind === 'previousAuto', '候補の保存枠が不正です');
+  private async loadCaptured(kind: CandidateRead) {
+    ensure(['auto', 'previousAuto', 'manual', 'selected'].includes(kind), '候補の保存枠が不正です');
     const captured = await this.capture(kind);
     const saved = await decodeTradeSnapshot(captured.snapshot, captured.blocks);
     ensure(
       saved.localWorldId === this.localWorldId &&
         saved.worldId === captured.local.worldId &&
         saved.storageRevision <= captured.local.storageRevision &&
-        (kind !== 'auto' || saved.storageRevision === captured.local.storageRevision),
+        (captured.slot.snapshotId !== captured.local.selectedSnapshotId ||
+          saved.storageRevision === captured.local.storageRevision),
       '候補保存のローカルID・保存版が不一致です',
     );
     const db = this.database;
     await db.transaction('r', db.local_worlds, db.save_slots, async () => {
       const current = await db.local_worlds.get(this.localWorldId);
-      const slot = await db.save_slots.get(this.key(kind));
+      const slot = await db.save_slots.get([this.localWorldId, captured.slot.slotKind, 1]);
       ensure(
         current?.storageProfile === TRADE_STORAGE_PROFILE &&
+          current.worldId === captured.local.worldId &&
           current.storageRevision === captured.local.storageRevision &&
           current.selectedSnapshotId === captured.local.selectedSnapshotId &&
           slot?.snapshotId === captured.slot.snapshotId,
@@ -102,7 +123,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
   }
 
   async read(): Promise<TradeSavedState> {
-    return this.load('auto');
+    return (await this.loadCaptured('selected')).saved;
   }
 
   /** 初期契約等を明示して準備した、未適用の候補だけを新しいローカルIDへ保存する。 */
@@ -113,6 +134,7 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
       initial.localWorldId === this.localWorldId &&
         initial.storageRevision === 1 &&
         initial.tradeReceipts.length === 0 &&
+        (initial.gameReceipts?.length ?? 0) === 0 &&
         initial.state.transactions.length === 0,
       '初回候補は保存版1・未適用の状態が必要です',
     );
@@ -162,19 +184,24 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
       expected.localWorldId === this.localWorldId &&
         candidate.localWorldId === this.localWorldId &&
         candidate.worldId === expected.worldId &&
-        candidate.stateRevision === expected.stateRevision + 1 &&
+        candidate.stateRevision > expected.stateRevision &&
         candidate.storageRevision === expected.storageRevision + 1,
       '候補保存の指示と版の進め方が不正です',
     );
-    const { saved: previous, captured: anchor } = await this.loadCaptured('auto');
+    const { saved: previous, captured: anchor } = await this.loadCaptured('selected');
     ensure(
       previous.worldId === expected.worldId &&
         previous.stateRevision === expected.stateRevision &&
         previous.storageRevision === expected.storageRevision,
       '古い状態・別タブの候補保存への指示です',
     );
-    await validateTradeSaveTransition(previous, candidate);
-    const encoded = await encodeTradeSnapshot(candidate, anchor.snapshot.snapshotId);
+    const transition = await validateTradeSaveTransition(previous, candidate);
+    const manual = transition === 'gameManual';
+    const encoded = await encodeTradeSnapshot(
+      candidate,
+      anchor.snapshot.snapshotId,
+      manual ? 'manual' : 'actionAuto',
+    );
     const verified = await verifySharedBlocks(this.database, encoded.blocks);
     const db = this.database;
     await db.transaction(
@@ -186,12 +213,14 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
       async () => {
         const local = await db.local_worlds.get(this.localWorldId);
         const oldAuto = await db.save_slots.get(this.key('auto'));
+        const selected = await db.save_slots.get([this.localWorldId, anchor.slot.slotKind, 1]);
         ensure(
           local?.storageProfile === TRADE_STORAGE_PROFILE &&
             local.worldId === expected.worldId &&
             local.storageRevision === expected.storageRevision &&
             local.selectedSnapshotId === anchor.snapshot.snapshotId &&
-            oldAuto?.snapshotId === anchor.snapshot.snapshotId,
+            oldAuto &&
+            selected?.snapshotId === anchor.snapshot.snapshotId,
           '別タブで候補保存が更新されました',
         );
         const current = await this.snapshots.get(local.selectedSnapshotId);
@@ -203,10 +232,10 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
         );
         await putSharedBlocks(db, encoded.blocks, verified);
         await this.snapshots.add(encoded.snapshot);
-        await db.save_slots.put({ ...oldAuto, slotKind: 'previousAuto' });
+        if (!manual) await db.save_slots.put({ ...oldAuto, slotKind: 'previousAuto' });
         await db.save_slots.put({
           localWorldId: this.localWorldId,
-          slotKind: 'auto',
+          slotKind: manual ? 'manual' : 'auto',
           slotNo: 1,
           snapshotId: encoded.snapshot.snapshotId,
           gameDate: candidate.currentDate,

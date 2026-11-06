@@ -6,6 +6,7 @@ import { MAX_ANNUAL_RAW_BYTES, type Block } from './save-format.ts';
 import type { WorldDefinitions } from './types.ts';
 import {
   TRADE_SAVE_FORMAT,
+  TRADE_GAME_SAVE_FORMAT,
   TRADE_STORED_LIMIT,
   MAX_TRADE_BLOCK_BYTES,
   MAX_TRADE_BLOCKS,
@@ -36,9 +37,11 @@ const coreKeys = TRADE_WORLD_KEYS.filter((key) => !separated.includes(key));
 export async function encodeTradeSnapshot(
   input: TradeSavedState,
   parentSnapshotId: string | null,
+  saveKind: 'actionAuto' | 'manual' = 'actionAuto',
 ): Promise<{ snapshot: TradeStoredSnapshot; blocks: Block[] }> {
   const saved = structuredClone(input);
   validateTradeSavedState(saved);
+  const format = Object.hasOwn(saved, 'gameReceipts') ? TRADE_GAME_SAVE_FORMAT : TRADE_SAVE_FORMAT;
   const { state, tradeReceipts, ...context } = saved;
   const {
     initialDefinitions,
@@ -88,11 +91,11 @@ export async function encodeTradeSnapshot(
     const payloadBytes = await compress(raw);
     stored += payloadBytes.length;
     ensure(stored <= TRADE_STORED_LIMIT, '候補保存の圧縮容量を超えました');
-    const contentHash = await sha256(kind + ':' + TRADE_SAVE_FORMAT + ':' + text);
+    const contentHash = await sha256(kind + ':' + format + ':' + text);
     blocks.push({
       logicalKey,
       kind,
-      schemaVersion: TRADE_SAVE_FORMAT,
+      schemaVersion: format,
       blockId: 'block-' + contentHash,
       contentHash,
       rawBytes: raw.length,
@@ -107,8 +110,8 @@ export async function encodeTradeSnapshot(
     createdAt: new Date().toISOString(),
     gameDate: saved.currentDate,
     stateRevision: saved.stateRevision,
-    saveKind: 'actionAuto',
-    versions: { saveFormatVersion: TRADE_SAVE_FORMAT, simulationVersion: state.version },
+    saveKind,
+    versions: { saveFormatVersion: format, simulationVersion: state.version },
     blockRefs: blocks.map(({ payloadBytes: _bytes, codec: _codec, ...ref }) => ref),
   };
   const snapshot = { ...manifest, manifestHash: await sha256(canonicalJson(manifest)) };
@@ -154,7 +157,8 @@ export async function decodeTradeSnapshot(
     ensure(raw.length === ref.rawBytes, '候補保存の展開容量が一致しません');
     const text = new TextDecoder('utf-8', { fatal: true }).decode(raw);
     ensure(
-      (await sha256(ref.kind + ':' + TRADE_SAVE_FORMAT + ':' + text)) === ref.contentHash,
+      (await sha256(ref.kind + ':' + snapshot.versions.saveFormatVersion + ':' + text)) ===
+        ref.contentHash,
       '候補保存のブロックハッシュが一致しません',
     );
     values.set(ref.logicalKey, JSON.parse(text));
@@ -172,7 +176,15 @@ export async function decodeTradeSnapshot(
   };
   exactKeys(
     context,
-    ['localWorldId', 'worldId', 'stateRevision', 'storageRevision', 'currentDate', 'seasonId'],
+    [
+      'localWorldId',
+      'worldId',
+      'stateRevision',
+      'storageRevision',
+      'currentDate',
+      'seasonId',
+      ...(snapshot.versions.saveFormatVersion === TRADE_GAME_SAVE_FORMAT ? ['gameReceipts'] : []),
+    ],
     '候補保存の文脈',
   );
   exactKeys(core, coreKeys, '候補保存の世界本体');

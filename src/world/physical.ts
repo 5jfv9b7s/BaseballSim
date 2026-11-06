@@ -2,6 +2,7 @@ import { currentCommonAbilities } from './growth-basis.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import type { GameRecord } from '../game/types.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
+import type { GrowthState } from './growth-types.ts';
 import type { ActivityKind, ActivityLoad, PhysicalWorldState } from './physical-types.ts';
 
 export type PhysicalWorld = Extract<WorldRecord, { physical: PhysicalWorldState }>;
@@ -91,7 +92,7 @@ export function initialPhysical(definitions: WorldDefinitions): PhysicalWorldSta
 
 /** 完了試合の検証キャッシュ経由でも、未反映のイベントだけを同じ順で処理する。 */
 export function applyPhysicalGame(
-  world: PhysicalWorld,
+  world: Pick<PhysicalWorld, 'definitions' | 'currentDate' | 'physical'> & { growth?: GrowthState },
   gameId: string,
   game: GameRecord,
 ): PhysicalWorldState {

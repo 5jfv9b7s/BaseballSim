@@ -128,7 +128,10 @@ function addRows<T extends object>(target: T[], delta: T[]): void {
 }
 
 /** 同じ試合の再適用は無操作。結果改訂は未実装なので異なる寄与を拒否する。 */
-export function applyContribution(world: WorldRecord, contribution: GameContribution): void {
+export function applyContribution(
+  world: Pick<WorldRecord, 'stats' | 'contributions' | 'statApplicationMarkers'>,
+  contribution: GameContribution,
+): void {
   const fingerprint = canonicalJson(contribution);
   const previous = world.contributions[contribution.gameId];
   if (previous) {

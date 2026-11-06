@@ -1,4 +1,14 @@
-# トレードの確認・状態反映・候補保存・登録変更（0.61.0）
+# トレードの確認・候補保存・Worker接続（0.62.0）
+
+## 0.62.0：候補専用Workerと表示用データ
+
+[trade-world-worker.ts](../trade-world-worker.ts)は、[TradeWorkerWorkspace](../world/trade-worker-workspace.ts)を一つだけ持つ候補専用のWorker入口です。[createTradeWorkerClient](../world/trade-worker-client.ts)で接続できる構成にしました。**通常WorldApp／タイトルはまだ呼びません。** 初期契約や資金を自動補完する新規作成・旧世界の変換は行いません。
+
+通信は[trade-worker-v1](../world/trade-worker-protocol.ts)。一覧・queryは読取のみ。openは専用profileの選択中保存を全復元し、表示も構成できた後だけ所有者を切り替えます。試合／登録／日次指示は既存の型検査を使い、内部承認済みトレードは`TradeGameSession.commitTrade`へ接続。手動保存・明示reload・終了も同じ直列キューを使います。
+
+[tradePlayView](../world/trade-play-view.ts)は現在所属・現在能力・球種習得／身体状態・一二軍編成・試合状況・操作可否の射影です。正本・完全RNG・契約台帳・内部承認の詳細・指示指紋を返信へ含めません。[候補一覧](../world/trade-candidate-index.ts)は目録参照だけ確認し、全ブロックの合格とは区別します。旧通常プレイ一覧は候補を除外したままです。
+
+切替版／sessionIdとプレイ／世界／状態版を照合し、未保存・成否不明の切替は拒否。通信clientは一度に一要求、通信失敗では停止し自動再送しません。新Node26件は未実行。以前188件と計Node214件・画面2件を保留しています。最終の型検査・対象19ファイルの整形・差分確認は成功しました。通常画面・新規候補の初期会計data・実交渉／承認生成等は残ります。[入力例と限界](../../TRADE-IMPLEMENTATION.md)。
 
 ## 0.61.0：現在所属による登録変更と固定希望
 

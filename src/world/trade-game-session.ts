@@ -1,7 +1,19 @@
 import { ensure, integer } from '../engine/validation.ts';
-import type { TradeCommitContext } from '../recruitment/trade-commit.ts';
-import type { TradeApplicationStorage } from './trade-application-port.ts';
-import { validateTradeSavedState, type TradeSavedState } from './trade-save-validation.ts';
+import { canonicalJson } from '../storage/codec.ts';
+import {
+  commitAcceptedTrade,
+  type TradeCommitContext,
+  type TradeCommitCommand,
+} from '../recruitment/trade-commit.ts';
+import {
+  createTradeApplicationPort,
+  type TradeApplicationStorage,
+} from './trade-application-port.ts';
+import {
+  receiptCommand,
+  validateTradeSavedState,
+  type TradeSavedState,
+} from './trade-save-validation.ts';
 import { applyTradeRosterCommand, type TradeRosterCommand } from './trade-roster-commands.ts';
 import { applyTradeDayCommand, type TradeDayCommand } from './trade-day-commands.ts';
 import {
@@ -11,7 +23,7 @@ import {
 } from './trade-game-commands.ts';
 
 /**
- * 候補の作業状態を一つだけ所有する内部コーディネーター。通常Worker/UIへの登録は別工程。
+ * 候補専用Workerが使う、作業状態を一つだけ所有するコーディネーター。通常UIへの登録は別工程。
  * executeは保存しない。saveManualは手動枠、completeDayは翌日と日次autoを一緒に確定する。
  */
 export class TradeGameSession {
@@ -104,6 +116,50 @@ export class TradeGameSession {
       return { status: 'committed' as const, receipt: structuredClone(result.receipt) };
     } catch (error) {
       this.uncertain = true;
+      throw error;
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** 保存内の内部承認だけを使う。交渉成立フラグや会計入力を画面から受け取らない。 */
+  async commitTrade(value: TradeCommitCommand) {
+    ensure(!this.busy && !this.uncertain, '保存中・成否不明です。再読込まで移籍指示を停止します');
+    const command = receiptCommand(canonicalJson(structuredClone(value)));
+    ensure(
+      ![
+        ...(this.working.gameReceipts ?? []),
+        ...(this.working.dayReceipts ?? []),
+        ...(this.working.rosterReceipts ?? []),
+      ].some((r) => r.commandId === command.commandId),
+      '別の種類の指示IDは再使用できません',
+    );
+    ensure(
+      this.pending === 0 ||
+        this.working.tradeReceipts.some((r) => r.commandId === command.commandId),
+      '未保存の試合指示があります。移籍確定の前に手動保存してください',
+    );
+    let attempted = false;
+    this.busy = true;
+    try {
+      const result = await commitAcceptedTrade(
+        command,
+        createTradeApplicationPort({
+          read: async () => structuredClone(this.working),
+          commit: async (expected, candidate) => {
+            attempted = true;
+            await this.storage.commit(expected, candidate);
+          },
+        }),
+      );
+      if (result.status === 'committed') {
+        this.working = structuredClone(result.snapshot);
+        this.persisted = this.context(result.snapshot);
+      }
+      return result;
+    } catch (error) {
+      // 入力・承認の不成立と、保存を試みた後の成否不明を区別する。
+      if (attempted) this.uncertain = true;
       throw error;
     } finally {
       this.busy = false;

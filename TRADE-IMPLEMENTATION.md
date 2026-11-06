@@ -1,4 +1,77 @@
-# トレード実装と会計基盤（開発版0.61.0）
+# トレード実装と会計基盤（開発版0.62.0）
+
+## 0.62.0：候補専用Worker・表示射影・内部承認済み移籍
+
+[Worker入口](src/trade-world-worker.ts)・[直列Workspace](src/world/trade-worker-workspace.ts)・[通信client](src/world/trade-worker-client.ts)を追加しました。候補は一つだけ所有し、通常の`WorldWorkspace / WorldController`へ別の可変な旧世界を内包しません。**通常WorldApp／タイトルはまだこのWorkerを起動しません。** この版は既存候補の再開APIまでで、新規候補の会計dataや作成導線を完成した意味ではありません。
+
+### 通信と対象の照合
+
+通信の定数・型は[trade-worker-v1](src/world/trade-worker-protocol.ts)、実行時検査は[Worker側の検査](src/world/trade-worker-validation.ts)へ分離し、画面側から計算エンジンの検査実装を読み込まない構成にしました。共通入力は`protocol / requestId / expectedWorkspaceRevision / kind`。以下を扱います。
+
+| kind                | 入力・役割                                                   |
+| ------------------- | ------------------------------------------------------------ |
+| listCandidates      | 専用profileの保存一覧を読取。目録参照の確認まで              |
+| queryCandidate      | 現在の表示射影を読取。DB・日付・乱数・状態版を更新しない     |
+| openCandidate       | localWorldIdで選択中保存を全復元。古いautoへ自動切替しない   |
+| candidateCommand    | sessionIdと既存の試合／登録／日次／内部承認済み移籍のcommand |
+| saveCandidateManual | sessionIdと期待状態版。手動枠だけを更新                      |
+| reloadCandidate     | sessionIdと期待状態版。未保存作業を破棄する明示再読込        |
+| closeCandidate      | sessionIdと期待状態版。保存済み・正常な候補だけ終了          |
+
+open／reload／closeで切替版を進め、open／reloadは新しいsessionIdを割り当てます。これらは通信メタデータで、ゲームのRNG・seedへ混ぜません。閉じて同じ世界を再開しても古い要求を受けず、各command内のプレイ／世界／状態版も照合します。同じ経済／試合指示の再送判定は、requestIdではなく既存のcommandId・永続receiptが担当します。
+
+通信の試作上限は要求の正規化JSONで32,768文字、通信識別子とopen対象localWorldIdは200文字です。保存形式やゲーム内ID全般の最終上限ではありません。
+
+入力は受信時に複製し、失敗した要求も応答して後続キューを継続します。未保存試合・保存中・成否不明では別候補への切替／終了を拒否。新候補の復元と表示構成が成功してから所有者を置換し、失敗時は現行候補を保持します。候補の表示構成が失敗した場合も、保存を取り消したと推測せず再読込まで停止します。
+
+clientは一件ずつ要求し、通信ID・形式・切替版と表示／対象の一致を照合します。状態を変える要求には指示を作った画面のsessionIdを必須とし、古い下書きへ最新sessionIdを付け直しません。送信前の失敗は要求を解放し、送信後の通信失敗や照合不能では停止。自動再送・日送り・別保存への自動切替はしません。`connectionState`と応答の`saveState.reloadRequired`で通信停止と作業状態を区別できます。
+
+### 画面へ返すデータ
+
+[trade-play-view-v1](src/world/trade-play-view.ts)は現在の所属／登録から担当球団の選手と一二軍編成を作り、成長後能力・習得進度・体力／疲労／調子を返します。初期球団別名簿を現在所属として表示しません。球種の球速は`initialTypicalCentiKph`と明示して初期資料と区別し、成長／身体補正を含む試合中の実投球値として表示しません。過去試合の表示名・球団名は保存された試合時点の情報を使います。
+
+表示と入力に必要な情報へ限定し、世界全体・完全RNG・契約台帳・内部承認の詳細・指示指紋を送信しません。内部承認はID／取引IDと期間／状態版の参照だけを返し、成立判定の最終審査はCommandで行います。操作可否も表示用の案内で、Commandの資格検査を置き換えません。
+
+固定希望の最終評価には実際の時点と状態版を添えます。読取で適用候補を作り直したり、過去の保留理由を現在の判定済み理由として表示したりしません。一覧の`indexed`は目録参照の確認で、全ブロックが復元できる証明ではありません。openでは従来の全参照・ハッシュ・容量・候補状態検査と読込後の世代照合を行います。
+
+### 保存内の内部承認を使う移籍確定
+
+`TradeGameSession.commitTrade(command)`は、既存`commitAcceptedTrade / createTradeApplicationPort`を所有者の現在状態へ接続します。画面からacceptedフラグ・現在会計・資格を受けず、保存内の承認の担当球団・期間・状態版・条件を再照合。全移籍・登録・編成・給与／金銭・適用済み参照とreceiptを4ストアへ保存した後だけ公開します。
+
+保存前の入力／承認不成立では状態・RNG・保存を変えません。保存を試みた後の失敗・競合・成否不明は元の表示と作業状態を保持し、明示reloadまで停止。別種類の指示IDを拒否し、永続receiptがある同一再送は既存結果を返します。交渉の成功率・返答日・内部承認の生成は未実装です。
+
+### 接続例と残作業
+
+将来の画面からの利用例です。今回は実ブラウザーで実行していません。初期データを捏造して候補を作る例ではありません。
+
+```typescript
+const client = createTradeWorkerClient();
+const list = await client.request({ kind: 'listCandidates' });
+// 選択された既存候補のIDを使う。indexedだけで復元成功とはみなさない。
+const opened = await client.request({ kind: 'openCandidate', localWorldId });
+// opened.ok / active / view と connectionState を確認して表示する。
+// 指示は表示時の対象・状態版を付けた既存Commandを渡す。
+if (!opened.ok || !opened.active || !opened.view) throw new Error('候補を開けません');
+const result = await client.request({
+  kind: 'candidateCommand',
+  sessionId: opened.active.sessionId,
+  command,
+});
+```
+
+通常画面／タイトル、新規候補の初期会計dataと作成、実交渉／承認生成、経済期日・資格／傷病・必須行事、PS／正式表彰／正式12球団、候補の複数手動枠／ファイル入出力は残ります。保存の全過去計算を再実行する検査でもありません。通常世界21／定義26／成長6／保存022／試合11・候補v1〜v4・DB schema／data／係数は維持。正式v1.0は未完成です。
+
+### 今回の確認（2026-11-07）
+
+新Node26件（Workspace14・DB6・client6）は確認用コードの追加だけで未実行。状態の一元管理・現所属表示・指示照合／切替・直列化・入力複製・保存再開／取消／競合／成否不明・client停止を対象とするコードです。DBはfake-indexeddb、通信は模擬Portで、実ブラウザーのWorker起動／往復が確認済みという意味ではありません。
+
+以前188件と計Node214件・画面2件を保留し、Node／UI／check／build／ブラウザーQAは実施していません。最終の型検査・対象19ファイルの整形・差分確認は成功しました。
+
+後で実行する対象（今回は未実行）：
+
+```powershell
+node --test tests/trade-worker.test.ts tests/trade-worker-storage.test.ts tests/trade-worker-client.test.ts tests/trade-registration.test.ts tests/trade-day.test.ts tests/trade-game-session.test.ts tests/trade-application-port.test.ts tests/trade-dexie-storage.test.ts
+```
 
 ## 0.61.0：候補世界の登録・編成・固定希望
 

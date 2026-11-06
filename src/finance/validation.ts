@@ -85,6 +85,28 @@ export function validateObligations(obligations: readonly PaymentObligation[]): 
       '債務の種類が不正です',
     );
     requireFinance(typeof obligation.guaranteed === 'boolean', '債務の保証区分が未記録です');
+    const hasCoverage =
+      obligation.contractYearRef !== undefined ||
+      obligation.coverageFrom !== undefined ||
+      obligation.coverageUntil !== undefined;
+    if (hasCoverage) {
+      requireFinance(
+        obligation.kind === 'salary' &&
+          obligation.contractYearRef !== undefined &&
+          obligation.coverageFrom !== undefined &&
+          obligation.coverageUntil !== undefined,
+        '給与の契約年度・負担期間をまとめて記録してください',
+      );
+      financeId(obligation.contractYearRef.contractId);
+      requireFinance(
+        obligation.contractYearRef.seasonId === obligation.seasonId,
+        '給与の契約年度と支払年度が一致しません',
+      );
+      requireFinance(
+        dateDays(obligation.coverageFrom) < dateDays(obligation.coverageUntil),
+        '給与の負担期間が空、または逆順です',
+      );
+    }
     dateDays(obligation.dueDate);
     yen(obligation.amountYen, '債務額');
     yen(obligation.settledYen, '支払済み額');

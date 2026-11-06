@@ -42,6 +42,10 @@ export interface SalaryAllocation extends SalaryPayerPeriod {
 }
 
 export interface PaymentObligation {
+  /** 給与負担の組替えに使う。3項目をまとめて記録し、未記録を推測しない。 */
+  contractYearRef?: { contractId: string; seasonId: string };
+  coverageFrom?: string;
+  coverageUntil?: string;
   obligationId: string;
   seasonId: string;
   payerClubId: string;

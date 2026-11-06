@@ -145,7 +145,11 @@ export function recordPitchingAppearances(
 }
 
 /** 今日の投球は次戦の判定材料。試合前の身体状態と過去の実登板日を使う。 */
-export function evaluateRest(world: RestWorld, squadId: string, playerId: string): RestDecision {
+export function evaluateRest(
+  world: Pick<RestWorld, 'currentDate' | 'restControl' | 'physical'>,
+  squadId: string,
+  playerId: string,
+): RestDecision {
   const individual = world.restControl.pitcherUsagePlans[squadId]!.individualRest.find(
     (row) => row.playerId === playerId,
   );

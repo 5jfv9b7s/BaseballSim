@@ -53,7 +53,14 @@ export function applyReliefPolicy(world: ReliefWorld, action: ReliefPolicyAction
   };
 }
 /** ベンチ・当日先発・休養を解決した後の候補に絞り、試合前の規則を固定する。 */
-export function attachReliefPolicy(world: ReliefWorld, gameId: string, fixture: GameFixture): void {
+export function attachReliefPolicy(
+  world: Pick<
+    ReliefWorld,
+    'definitions' | 'currentDate' | 'restControl' | 'physical' | 'reliefControl'
+  >,
+  gameId: string,
+  fixture: GameFixture,
+): void {
   const scheduled = world.definitions.schedule.find((g) => g.gameId === gameId)!;
   const team = (side: 'away' | 'home') => {
     const squadId = side === 'away' ? scheduled.awaySquadId : scheduled.homeSquadId;

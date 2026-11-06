@@ -23,7 +23,7 @@ export type PerformanceWorld = Extract<
 >;
 
 export function performanceSnapshot(
-  world: PerformanceWorld,
+  world: Pick<PerformanceWorld, 'currentDate' | 'definitions' | 'condition' | 'physical'>,
   gameId: string,
   fixture: GameFixture,
 ): PerformanceSnapshot {

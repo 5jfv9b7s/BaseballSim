@@ -39,7 +39,11 @@ export function validateBullpenDefinitions(defs: WorldDefinitions): void {
     );
 }
 
-export function attachBullpen(world: BullpenWorld, gameId: string, fixture: GameFixture): void {
+export function attachBullpen(
+  world: Pick<BullpenWorld, 'definitions'>,
+  gameId: string,
+  fixture: GameFixture,
+): void {
   const scheduled = world.definitions.schedule.find((g) => g.gameId === gameId)!;
   const team = (id: string) => ({
     enabled: world.definitions.bullpenInputs!.find((i) => i.squadId === id)!.enabled,

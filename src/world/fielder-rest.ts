@@ -1,6 +1,7 @@
 import { ensure, integer } from '../engine/validation.ts';
 import { allWorldSquads, worldSquad } from './squads.ts';
 import type { IdealLineup, WorldDefinitions, WorldRecord } from './types.ts';
+import type { GamePlayer } from '../game/types.ts';
 import type {
   FielderRestRules,
   FielderRestControl,
@@ -85,11 +86,23 @@ export function resolveFielderRest(
   explicitLineup: boolean,
 ): { lineup: IdealLineup; snapshot: FielderRestSnapshot } {
   const squad = worldSquad(world.definitions, squadId)!;
-  const policy = world.fielderRest.teamPolicies[squadId]!;
-  const rules = policy.rules;
   const players = squad.players.filter(
     (p) => registered.includes(p.playerId) && !squad.team.pitcherIds.includes(p.playerId),
   );
+  return resolveFielderRestForPlayers(world, squadId, players, bench, lineup, explicitLineup);
+}
+
+/** 現在の所属・役割を解決した候補にも、既存と同じ休養規則を適用する。 */
+export function resolveFielderRestForPlayers(
+  world: Pick<FielderRestWorld, 'currentDate' | 'fielderRest' | 'physical'>,
+  squadId: string,
+  players: readonly GamePlayer[],
+  bench: string[],
+  lineup: IdealLineup,
+  explicitLineup: boolean,
+): { lineup: IdealLineup; snapshot: FielderRestSnapshot } {
+  const policy = world.fielderRest.teamPolicies[squadId]!;
+  const rules = policy.rules;
   const decisions: FielderRestDecision[] = players.map((p) => {
     const { energyMilli, fatigueMilli } = world.physical.players[p.playerId]!;
     const reasons: string[] = [];

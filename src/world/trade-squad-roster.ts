@@ -1,5 +1,6 @@
 import { compareMoments, requireFinance, uniqueFinanceIds } from '../finance/validation.ts';
-import { checkTradeSquad } from '../recruitment/trade-roster-lineups.ts';
+import { checkTradeSquad, checkTradeLineup } from '../recruitment/trade-roster-lineups.ts';
+import type { TradeLineup } from '../recruitment/trade-roster-types.ts';
 import { tradeApplicationRosterState } from './trade-application-state.ts';
 import type { TradeApplicationWorld, TradeSquadRoster } from './trade-application-types.ts';
 
@@ -86,10 +87,30 @@ export function tradeSquadRoster(world: TradeApplicationWorld, squadId: string):
 /** ベンチは呼出元の明示選択を検査。登録全員や空き枠を勝手にベンチへ入れない。 */
 export function tradeGameRoster(
   world: TradeApplicationWorld,
-  selection: { squadId: string; benchIds: string[]; startingPitcherId: string },
+  selection: {
+    squadId: string;
+    benchIds: string[];
+    startingPitcherId: string;
+    lineup?: TradeLineup;
+  },
 ) {
   const roster = tradeSquadRoster(world, selection.squadId);
   const { benchIds, startingPitcherId } = selection;
+  let lineup = roster.lineup;
+  if (selection.lineup) {
+    const squad = tradeApplicationRosterState(world).squads.find(
+      (s) => s.squadId === selection.squadId,
+    )!;
+    const issues = checkTradeLineup(squad, selection.lineup, new Set(roster.registeredPlayerIds), {
+      players: world.playerFacts,
+      rules: world.initialDefinitions.registrationRules!,
+    });
+    requireFinance(!issues.length, issues[0]?.message ?? '当日の打順を解決できません');
+    lineup = selection.lineup.battingOrder.map((b) => ({
+      playerId: b.playerId!,
+      position: b.battingRole,
+    }));
+  }
   uniqueFinanceIds(benchIds, '試合ベンチの選手ID');
   requireFinance(
     benchIds.length <= roster.benchLimit &&
@@ -105,7 +126,7 @@ export function tradeGameRoster(
     '外国人ベンチ枠を超えています',
   );
   requireFinance(
-    roster.lineup.every((b) => benchIds.includes(b.playerId)) &&
+    lineup.every((b) => benchIds.includes(b.playerId)) &&
       benchIds.includes(startingPitcherId) &&
       world.playerFacts.some((p) => p.playerId === startingPitcherId && p.canPitch),
     '先発打順と先発投手をベンチに含めてください',
@@ -120,7 +141,7 @@ export function tradeGameRoster(
     clubId: roster.clubId,
     benchIds,
     startingPitcherId,
-    lineup: roster.lineup,
+    lineup,
     reliefPitcherIds,
     basePlayers: roster.basePlayers.filter((p) => benchIds.includes(p.playerId)),
     basePitches: roster.basePitches.filter((p) => benchIds.includes(p.playerId)),

@@ -293,6 +293,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       async () => {
         const current = await this.readSlots();
         const existing = await db.local_worlds.get(this.localWorldId);
+        ensure(!existing?.storageProfile, 'この保存は通常の世界保存では上書きできません');
 
         if (creationFingerprint !== undefined) {
           ensure(

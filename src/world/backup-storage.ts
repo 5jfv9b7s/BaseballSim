@@ -17,31 +17,36 @@ export async function listStoredPlays(db: WorldDatabase): Promise<StoredPlay[]> 
         .filter((snapshot) => snapshot !== undefined)
         .map((snapshot) => [snapshot.snapshotId, snapshot]),
     );
-    return locals.map((local) => {
-      const ownSlots = slots.filter(
-        (slot) => slot.localWorldId === local.localWorldId && slot.slotNo === 1,
-      );
-      const slotDetails: StoredPlay['slotDetails'] = {};
-      for (const slot of ownSlots) {
-        const snapshot = snapshots.get(slot.snapshotId);
-        slotDetails[slot.slotKind] = {
-          snapshotId: slot.snapshotId,
-          gameDate: slot.gameDate,
-          updatedAt: slot.updatedAt,
-          createdAt: snapshot?.createdAt ?? null,
-          saveFormatVersion: snapshot?.versions?.saveFormatVersion ?? null,
-          simulationVersion: snapshot?.versions?.simulationVersion ?? null,
+    // 内部候補は通常Workerが再開できるまで、プレイ一覧へ出さない。
+    return locals
+      .filter((local) => !local.storageProfile)
+      .map((local) => {
+        const ownSlots = slots.filter(
+          (slot) => slot.localWorldId === local.localWorldId && slot.slotNo === 1,
+        );
+        const slotDetails: StoredPlay['slotDetails'] = {};
+        for (const slot of ownSlots) {
+          const snapshot = snapshots.get(slot.snapshotId);
+          slotDetails[slot.slotKind] = {
+            snapshotId: slot.snapshotId,
+            gameDate: slot.gameDate,
+            updatedAt: slot.updatedAt,
+            createdAt: snapshot?.createdAt ?? null,
+            saveFormatVersion: snapshot?.versions?.saveFormatVersion ?? null,
+            simulationVersion: snapshot?.versions?.simulationVersion ?? null,
+          };
+        }
+        return {
+          localWorldId: local.localWorldId,
+          label: local.displayName ?? '初期プレイ',
+          slots: (['auto', 'manual', 'previousAuto'] as const).filter(
+            (kind) => !!slotDetails[kind],
+          ),
+          gameDate:
+            ownSlots.find((slot) => slot.snapshotId === local.selectedSnapshotId)?.gameDate ?? null,
+          slotDetails,
         };
-      }
-      return {
-        localWorldId: local.localWorldId,
-        label: local.displayName ?? '初期プレイ',
-        slots: (['auto', 'manual', 'previousAuto'] as const).filter((kind) => !!slotDetails[kind]),
-        gameDate:
-          ownSlots.find((slot) => slot.snapshotId === local.selectedSnapshotId)?.gameDate ?? null,
-        slotDetails,
-      };
-    });
+      });
   });
 }
 

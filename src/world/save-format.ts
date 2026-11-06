@@ -22,7 +22,8 @@ export type SaveFormat =
   | 'v019-world-snapshot-v18'
   | 'v020-world-snapshot-v19'
   | 'v021-world-snapshot-v20'
-  | 'v022-world-snapshot-v21';
+  | 'v022-world-snapshot-v21'
+  | 'trade-application-snapshot-v1';
 export const formatFor = (version: WorldRecord['version']): SaveFormat =>
   version === 'world-prototype-v1'
     ? 'v02-world-snapshot-v1'
@@ -69,6 +70,8 @@ export const MAX_BYTES = 64 * 1024 * 1024;
 export const MAX_ANNUAL_RAW_BYTES = 512 * 1024 * 1024;
 
 export interface LocalWorld {
+  /** 通常再開には未対応の内部候補を、同じ4ストア内で識別する。 */
+  storageProfile?: 'trade-application-v1';
   displayName?: string;
   importPackageHash?: string;
   /** 新規作成の再送確認用。端末内のメタデータで、バックアップには含めない。 */

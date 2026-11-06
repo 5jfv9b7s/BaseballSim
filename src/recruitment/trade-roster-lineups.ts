@@ -57,7 +57,7 @@ export function checkTradeLineup(
   squad: TradeSquadPlan,
   lineup: TradeLineup,
   eligible: ReadonlySet<string>,
-  input: TradeRosterInput,
+  input: Pick<TradeRosterInput, 'players' | 'rules'>,
 ): TradeRosterIssue[] {
   const issues: TradeRosterIssue[] = [];
   const context = { clubId: squad.clubId, squadId: squad.squadId };
@@ -133,7 +133,7 @@ export function checkTradeStartingBench(
   squad: TradeSquadPlan,
   lineup: TradeLineup,
   starterId: string | null,
-  input: TradeRosterInput,
+  input: Pick<TradeRosterInput, 'players' | 'rules'>,
 ): TradeRosterIssue[] {
   const mandatory = new Set([
     ...lineup.battingOrder.flatMap((slot) => (slot.playerId === null ? [] : [slot.playerId])),
@@ -158,7 +158,7 @@ export function checkTradeStartingBench(
 export function checkTradeSquad(
   squad: TradeSquadPlan,
   rows: readonly PlayerRegistration[],
-  input: TradeRosterInput,
+  input: Pick<TradeRosterInput, 'players' | 'rules'>,
 ): TradeRosterIssue[] {
   const eligible = squadEligibleIds(squad, rows);
   const issues = checkTradeLineup(squad, squad.lineup, eligible, input);

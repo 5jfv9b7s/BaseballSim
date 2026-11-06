@@ -106,7 +106,7 @@ function sameYear(obligation: PaymentObligation, year: ContractYear): boolean {
 }
 
 /** 旧reallocated行の既払も残し、「実際の既払＋現在の未払＝契約年額」を検査する。 */
-function checkAnnualLiability(
+export function checkAnnualLiability(
   obligations: readonly PaymentObligation[],
   year: ContractYear,
   playerId: string,

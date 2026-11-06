@@ -223,3 +223,55 @@ test('トレード提案：別プレイへの切替で下書きを破棄し、�
   expect(after[0] as unknown[]).toEqual(expect.arrayContaining(before[0] as unknown[]));
   expect(after[1] as unknown[]).toEqual(expect.arrayContaining(before[1] as unknown[]));
 });
+
+for (const width of [1280, 320]) {
+  test(`成立条件のWorker確認：不足・編成影響・下書き変更後の再確認・保存不変 (${width}px)`, async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'はじめから', exact: true }).click({ timeout: 30000 });
+    await page.getByRole('button', { name: '新しい日程を準備', exact: true }).click();
+    await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24', {
+      timeout: 30000,
+    });
+    const before = await storedState(page);
+    const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
+    await nav.getByRole('button', { name: 'チーム', exact: true }).click();
+    await page.getByRole('button', { name: 'トレードの提案を作る', exact: true }).click();
+    const proposal = page.getByRole('region', { name: 'トレード提案の作成', exact: true });
+    const inspect = proposal.getByRole('button', { name: '成立条件を確認', exact: true });
+    await expect(inspect).toBeDisabled();
+    await proposal
+      .getByRole('combobox', { name: '相手球団', exact: true })
+      .selectOption({ index: 1 });
+    for (const side of ['出す選手', '獲得する選手']) {
+      await proposal.getByRole('button', { name: `＋ ${side}を追加`, exact: true }).click();
+      const picker = page.getByRole('dialog', { name: `${side}を選択`, exact: true });
+      await picker.locator('tbody tr button').first().click();
+      await picker.getByRole('button', { name: 'この選手を選ぶ', exact: true }).click();
+    }
+    await expect(inspect).toBeEnabled();
+    await inspect.click();
+    const result = proposal.getByRole('region', { name: '成立条件の確認結果', exact: true });
+    await expect(result).toContainText('確定には準備が必要です');
+    await expect(result).toContainText('資金・予算の記録がなく');
+    await expect(result).toContainText('選手ごとの登録と編成への影響');
+    await expect(
+      proposal.getByRole('button', { name: '交渉する（工事中）', exact: true }),
+    ).toBeDisabled();
+    expect(await storedState(page)).toEqual(before);
+    await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', '2026-09-24');
+    await proposal.getByLabel('提示金銭（円）').fill('100');
+    await expect(result).toHaveCount(0);
+    await inspect.click();
+    await expect(result).toBeVisible();
+    await proposal
+      .getByRole('combobox', { name: '相手球団', exact: true })
+      .selectOption({ index: 2 });
+    await expect(result).toHaveCount(0);
+    await expect(inspect).toBeDisabled();
+    expect(await storedState(page)).toEqual(before);
+  });
+}

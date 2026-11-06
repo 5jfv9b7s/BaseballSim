@@ -1,4 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type {
+  InspectTrade,
+  TradeInspectionReport,
+} from '../../recruitment/trade-inspection-types.ts';
+import { TradeInspectionResult } from './TradeInspectionResult.tsx';
 import type { WorldView } from '../../world/controller.ts';
 import {
   COMMON_ABILITIES,
@@ -27,17 +32,21 @@ const groups = {
   pitching: '投手',
 };
 
-/** 提案の編集はUI内だけに保持。交渉・移籍・保存のコマンドは送らない。 */
+/** 下書きはUI内だけ。確認はWorker正本の読取で、交渉・移籍・保存は行わない。 */
 export function TradePanel({
   view,
   draft,
-  onChange,
+  onChange: updateDraft,
   onSelectPlayer,
+  disabled,
+  onInspect,
 }: {
   view: WorldView;
   draft: TradeDraft;
   onChange: (draft: TradeDraft) => void;
   onSelectPlayer: (id: string) => void;
+  disabled: boolean;
+  onInspect: InspectTrade;
 }) {
   const [picker, setPicker] = useState<{ side: Side; index: number | null } | null>(null);
   const [group, setGroup] = useState('batting');
@@ -45,6 +54,68 @@ export function TradePanel({
   const heading = useRef<HTMLHeadingElement>(null);
   const partnerSelect = useRef<HTMLSelectElement>(null);
   const preview = previewTrade(view, draft);
+  const [checking, setChecking] = useState(false);
+  const [inspection, setInspection] = useState<{
+    key: string;
+    report: TradeInspectionReport;
+  } | null>(null);
+  const [inspectionError, setInspectionError] = useState<{ key: string; message: string } | null>(
+    null,
+  );
+  const inspectionKey = JSON.stringify([
+    view.localWorldId,
+    view.worldId,
+    view.revision,
+    draft.partnerId,
+    draft.outgoingIds,
+    draft.incomingIds,
+    draft.moneyText,
+  ]);
+  const currentKey = useRef(inspectionKey);
+  currentKey.current = inspectionKey;
+  const inspectionSequence = useRef(0);
+  useEffect(
+    () => () => {
+      inspectionSequence.current += 1;
+    },
+    [],
+  );
+
+  function onChange(next: TradeDraft) {
+    // 条件を戻した場合も、途中で変更した下書きへの遅れた応答は採用しない。
+    inspectionSequence.current += 1;
+    setInspection(null);
+    setInspectionError(null);
+    setChecking(false);
+    updateDraft(next);
+  }
+
+  async function inspect() {
+    if (disabled || checking || preview.errors.length || preview.money === null) return;
+    const key = inspectionKey;
+    const sequence = ++inspectionSequence.current;
+    setChecking(true);
+    setInspection(null);
+    setInspectionError(null);
+    try {
+      const report = await onInspect({
+        partnerSquadId: draft.partnerId,
+        outgoingIds: [...draft.outgoingIds],
+        incomingIds: [...draft.incomingIds],
+        cashYen: preview.money,
+      });
+      if (sequence === inspectionSequence.current && key === currentKey.current)
+        setInspection({ key, report });
+    } catch (error) {
+      if (sequence === inspectionSequence.current && key === currentKey.current)
+        setInspectionError({
+          key,
+          message: error instanceof Error ? error.message : '確認に失敗しました。',
+        });
+    } finally {
+      if (sequence === inspectionSequence.current) setChecking(false);
+    }
+  }
   const selected = [...draft.outgoingIds, ...draft.incomingIds];
   const columns = selected.map((id) => ({ id, values: tradeAbilities(view, id) }));
   const closePicker = () => {
@@ -328,7 +399,7 @@ export function TradePanel({
               </div>
               <div>
                 <dt>使用可能予算・成立後予算</dt>
-                <dd>記録なし・計算未実装</dd>
+                <dd>このプレイには記録なし</dd>
               </div>
               <div>
                 <dt>獲得後の年俸負担</dt>
@@ -339,8 +410,26 @@ export function TradePanel({
                 <dd>算定未実装</dd>
               </div>
             </dl>
+            <button
+              disabled={disabled || checking || preview.errors.length > 0}
+              onClick={() => void inspect()}
+              aria-describedby="trade-inspection-hint"
+            >
+              {checking ? '成立条件を確認中…' : '成立条件を確認'}
+            </button>
+            <p id="trade-inspection-hint">
+              現在の所属・登録・編成を確認します。提案の提出や移籍は行いません。
+            </p>
+            <div aria-live="polite" aria-busy={checking}>
+              {inspectionError?.key === inspectionKey && (
+                <p role="alert">{inspectionError.message}</p>
+              )}
+              {inspection?.key === inspectionKey && (
+                <TradeInspectionResult view={view} report={inspection.report} />
+              )}
+            </div>
             <p id="trade-negotiation-hint">
-              交渉・移籍の確定は工事中です。契約・予算・名簿の同時確定と成立判定の基盤が必要なため、まだ提出できません。
+              交渉・移籍の確定は工事中です。契約・予算の初期データ、交渉承認と保存への接続が必要です。
             </p>
             <button disabled aria-describedby="trade-negotiation-hint">
               交渉する（工事中）

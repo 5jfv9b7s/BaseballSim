@@ -1,3 +1,7 @@
+import type {
+  TradeInspectionRequest,
+  TradeInspectionReport,
+} from '../recruitment/trade-inspection-types.ts';
 import { createPitchLearningDefinitions } from '../data/world/pitch-learning.ts';
 import { createNewPlayOptions } from '../data/world/new-play-options.ts';
 import type { NewPlayOptions } from './league-structure-types.ts';
@@ -17,6 +21,7 @@ export type WorkspaceRequest =
   | WorldCommand
   | { kind: 'query' }
   | { kind: 'inspectStorage' }
+  | (TradeInspectionRequest & { kind: 'inspectTrade' })
   | (Context & { kind: 'exportSnapshot'; slot: WorldSlotKind })
   | (Context & { kind: 'importSnapshot'; bytes: Uint8Array; requestId: string })
   | (Context & { kind: 'openPlay'; targetLocalWorldId: string; slot: WorldSlotKind });
@@ -26,6 +31,7 @@ export type WorkspaceResponse = ({ ok: true } | { ok: false; error: string }) & 
   plays: StoredPlay[];
   playListError?: string;
   inspection?: StorageInspection;
+  tradeInspection?: TradeInspectionReport;
   backup?: { bytes: Uint8Array; name: string };
   importedLocalWorldId?: string;
   createdLocalWorldId?: string;
@@ -123,6 +129,7 @@ export class WorldWorkspace {
       const before = this.controller.query();
       let dispatched: WorldView | undefined;
       let inspection: StorageInspection | undefined;
+      let tradeInspection: TradeInspectionReport | undefined;
       let backup: WorkspaceResponse['backup'];
       let importedLocalWorldId: string | undefined;
       let createdLocalWorldId: string | undefined;
@@ -141,6 +148,8 @@ export class WorldWorkspace {
         await this.refreshPlays();
       } else if (request.kind === 'query') await this.refreshPlays();
       else if (request.kind === 'inspectStorage') inspection = await this.storage.inspectStorage();
+      else if (request.kind === 'inspectTrade')
+        tradeInspection = this.controller.inspectTrade(request);
       else if (request.kind === 'exportSnapshot') {
         const bytes = await this.storage.exportSnapshot(request.slot);
         backup = { bytes, name: 'BaseballSim-' + request.slot + '.bssave' };
@@ -191,6 +200,7 @@ export class WorldWorkspace {
         newPlayOptions: structuredClone(this.newPlayOptions),
         ...(this.playListError ? { playListError: this.playListError } : {}),
         ...(inspection ? { inspection } : {}),
+        ...(tradeInspection ? { tradeInspection } : {}),
         ...(backup ? { backup } : {}),
         ...(importedLocalWorldId ? { importedLocalWorldId } : {}),
         ...(createdLocalWorldId ? { createdLocalWorldId } : {}),

@@ -1,3 +1,5 @@
+import { inspectWorldTrade } from './trade-inspection.ts';
+import type { TradeInspectionRequest } from '../recruitment/trade-inspection-types.ts';
 import { campView } from './camp.ts';
 import { seasonGrowthReport } from './season-growth.ts';
 import { growthView } from './growth-view.ts';
@@ -174,6 +176,27 @@ export class WorldController {
       this.storageError = '保存先を開けません。日次完了には自動保存の成功が必要です。';
     }
     return this.query();
+  }
+
+  /** 読取でもプレイ・世界・状態版を照合し、切替前の提案を混ぜない。 */
+  inspectTrade(request: TradeInspectionRequest) {
+    id(request.requestId);
+    integer(request.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER - 2, '状態版');
+    ensure(
+      request.localWorldId === this.localWorldId &&
+        request.worldId === this.world.worldId &&
+        request.expectedStateRevision === this.revision,
+      '古いプレイ状態への確認要求です',
+    );
+    return inspectWorldTrade(
+      this.world,
+      {
+        requestId: request.requestId,
+        localWorldId: this.localWorldId,
+        stateRevision: this.revision,
+      },
+      request.proposal,
+    );
   }
 
   query(): WorldView {

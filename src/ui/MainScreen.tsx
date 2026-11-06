@@ -1,3 +1,4 @@
+import type { InspectTrade } from '../recruitment/trade-inspection-types.ts';
 import { TradePanel } from './trade/TradePanel.tsx';
 import { emptyTradeDraft, type TradeDraft } from './trade/trade-preview.ts';
 import { MenuIcon, type MenuIconName } from './MenuIcon.tsx';
@@ -103,6 +104,7 @@ export function MainScreen({
   onPause,
   onToday,
   onOpenTools,
+  onInspectTrade,
 }: {
   view: WorldView | null;
   selectedPlayer: string;
@@ -120,6 +122,7 @@ export function MainScreen({
   onPause: () => void;
   onToday: () => void;
   onOpenTools: () => void;
+  onInspectTrade: InspectTrade;
 }) {
   const [card, setCard] = useState(0);
   const [tradeDraft, setTradeDraft] = useState<TradeDraft>(emptyTradeDraft);
@@ -322,6 +325,8 @@ export function MainScreen({
                   key={view.localWorldId + view.worldId + view.management?.controlledSquadId}
                   view={view}
                   draft={tradeDraft}
+                  disabled={busy || running}
+                  onInspect={onInspectTrade}
                   onChange={setTradeDraft}
                   onSelectPlayer={onSelectPlayer}
                 />

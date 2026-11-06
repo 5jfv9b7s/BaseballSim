@@ -1,3 +1,8 @@
+import type {
+  TradeInspectionProposal,
+  TradeInspectionReport,
+} from '../recruitment/trade-inspection-types.ts';
+import type { WorkspaceRequest } from '../world/workspace.ts';
 import type { CampDraft } from '../world/camp-types.ts';
 import { TrainingEditor } from './TrainingEditor.tsx';
 import { createTrainingDraft, trainingChanges } from '../world/training.ts';
@@ -108,12 +113,50 @@ export function WorldApp({
   const lastAction = useRef<
     | WorldAction['kind']
     | 'inspectStorage'
+    | 'inspectTrade'
     | 'exportSnapshot'
     | 'importSnapshot'
     | 'openPlay'
     | 'query'
     | null
   >(null);
+
+  const pendingInspection = useRef<{
+    requestId: string;
+    resolve: (report: TradeInspectionReport) => void;
+    reject: (error: Error) => void;
+  } | null>(null);
+
+  function inspectTrade(proposal: TradeInspectionProposal): Promise<TradeInspectionReport> {
+    const current = latest.current;
+    if (!worker.current || !current || pending.current || auto.current)
+      return Promise.reject(new Error('進行・保存の完了後に確認してください。'));
+    const requestId = crypto.randomUUID();
+    pending.current = true;
+    lastAction.current = 'inspectTrade';
+    setBusy(true);
+    setError('');
+    setMessage('');
+    return new Promise((resolve, reject) => {
+      pendingInspection.current = { requestId, resolve, reject };
+      try {
+        worker.current!.postMessage({
+          kind: 'inspectTrade',
+          requestId,
+          localWorldId: current.localWorldId,
+          worldId: current.worldId,
+          expectedStateRevision: current.revision,
+          proposal,
+        } satisfies WorkspaceRequest);
+      } catch {
+        pendingInspection.current = null;
+        pending.current = false;
+        lastAction.current = null;
+        setBusy(false);
+        reject(new Error('確認要求を送信できませんでした。'));
+      }
+    });
+  }
 
   function send(action: WorldAction) {
     if (!worker.current || !latest.current || pending.current) return;
@@ -349,6 +392,23 @@ export function WorldApp({
       setView(data.view);
       setNewPlayOptions(data.newPlayOptions);
       setPlays(data.plays ?? []);
+      if (completedAction === 'inspectTrade') {
+        const waiting = pendingInspection.current;
+        pendingInspection.current = null;
+        lastAction.current = null;
+        const report = data.tradeInspection;
+        if (!data.ok) waiting?.reject(new Error(data.error));
+        else if (
+          report &&
+          report.requestId === waiting?.requestId &&
+          report.localWorldId === data.view.localWorldId &&
+          report.worldId === data.view.worldId &&
+          report.stateRevision === data.view.revision
+        )
+          waiting?.resolve(report);
+        else
+          waiting?.reject(new Error('確認結果と現在のプレイが一致しません。再確認してください。'));
+      }
       if (!data.ok) {
         openingFromTitle.current = false;
         trainingDestination.current = null;
@@ -511,6 +571,8 @@ export function WorldApp({
       if (auto.current) continueDay();
     };
     instance.onerror = () => {
+      pendingInspection.current?.reject(new Error('Workerで確認を完了できませんでした。'));
+      pendingInspection.current = null;
       openingFromTitle.current = false;
       trainingDestination.current = null;
       formationDestination.current = null;
@@ -526,6 +588,8 @@ export function WorldApp({
     instance.postMessage({ kind: 'query' });
     return () => {
       auto.current = false;
+      pendingInspection.current?.reject(new Error('画面を閉じたため確認を終了しました。'));
+      pendingInspection.current = null;
       instance.terminate();
       worker.current = null;
     };
@@ -1449,6 +1513,7 @@ export function WorldApp({
   if (!development)
     return (
       <MainScreen
+        onInspectTrade={inspectTrade}
         view={view}
         selectedPlayer={selectedPlayer}
         onSelectPlayer={setSelectedPlayer}

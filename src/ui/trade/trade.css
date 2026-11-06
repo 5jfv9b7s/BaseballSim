@@ -257,3 +257,18 @@
     margin: 8px 0;
   }
 }
+
+.trade-inspection {
+  margin-top: 16px;
+  border-top: 2px solid #96a89a;
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.trade-impact-list > li {
+  margin-block: 12px;
+  padding-block: 8px;
+  border-bottom: 1px solid #ccd5cd;
+}
+.trade-impact-list p {
+  margin-block: 4px;
+}

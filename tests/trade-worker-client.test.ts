@@ -1,3 +1,4 @@
+import { creationWorkspaceFixture } from './helpers/trade-creation-fixture.ts';
 import {
   createTradeRosterDraft,
   swapDraftPositions,
@@ -292,4 +293,74 @@ test('編成検査結果の欠落・別ID・別版・不正形式で待ち続け
     assert.equal(client.connectionState, 'stopped');
     assert.equal(f.writes(), 0);
   }
+});
+
+test('新規候補は元保存・作成IDを照合し、検査と初回保存の結果を分ける', async () => {
+  const f = creationWorkspaceFixture(),
+    port = new Port(),
+    client = new TradeWorkerClient(port);
+  async function exchange(action: Parameters<TradeWorkerClient['request']>[0]) {
+    const pending = client.request(action);
+    port.reply(await f.workspace.handle(port.sent.at(-1)));
+    return pending;
+  }
+  const template = await exchange({ kind: 'getCandidateInitialTemplate', source: f.ref });
+  assert.equal(template.initialTemplate?.source.snapshotId, f.ref.snapshotId);
+  const checked = await exchange({
+    kind: 'inspectCandidateCreation',
+    source: f.ref,
+    inputText: f.text(),
+    creationId: f.creationId,
+  });
+  assert.equal(checked.creation?.state, 'ready');
+  assert.equal(f.counts().writes, 0);
+  const created = await exchange({ kind: 'createCandidate', creationId: f.creationId });
+  assert.equal(created.creation?.state, 'created');
+  assert.equal(f.counts().writes, 1);
+  client.dispose();
+});
+
+test('別の元保存・作成ID・不正な初期予算応答は停止し、成功とみなさない', async () => {
+  const mutations: ((value: TradeWorkerResponse) => unknown)[] = [
+    (r) => ({ ...r, creationInspection: null }),
+    (r) => ({ ...r, creationInspection: { ...r.creationInspection, creationId: 'other' } }),
+    (r) => ({ ...r, creation: { ...r.creation, localWorldId: 'other-play' } }),
+    (r) => ({
+      ...r,
+      creation: { ...r.creation, source: { ...r.creation!.source, snapshotId: 'other-snapshot' } },
+    }),
+    (r) => ({
+      ...r,
+      creation: {
+        ...r.creation,
+        summary: { ...r.creation!.summary, budgets: [{ name: 'bad', cashYen: 'invalid' }] },
+      },
+    }),
+  ];
+  for (const change of mutations) {
+    const f = creationWorkspaceFixture(),
+      port = new Port(),
+      client = new TradeWorkerClient(port);
+    const pending = client.request({
+      kind: 'inspectCandidateCreation',
+      source: f.ref,
+      inputText: f.text(),
+      creationId: f.creationId,
+    });
+    const rejected = assert.rejects(pending, /応答を照合/);
+    port.reply(change(await f.workspace.handle(port.sent.at(-1))));
+    await rejected;
+    assert.equal(client.connectionState, 'stopped');
+    assert.equal(f.counts().writes, 0);
+  }
+  const f = creationWorkspaceFixture(),
+    port = new Port(),
+    client = new TradeWorkerClient(port);
+  const pending = client.request({ kind: 'getCandidateInitialTemplate', source: f.ref });
+  const rejected = assert.rejects(pending, /応答を照合/);
+  const result = await f.workspace.handle(port.sent.at(-1));
+  result.initialTemplate!.source.snapshotId = 'other-snapshot';
+  port.reply(result);
+  await rejected;
+  assert.equal(client.connectionState, 'stopped');
 });

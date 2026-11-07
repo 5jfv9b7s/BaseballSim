@@ -1,3 +1,6 @@
+import { tradeCreationTemplate, inspectTradeCreationInput } from './trade-creation-input.ts';
+import type { TradeCreationAccess, TradeCreationStatus } from './trade-creation-types.ts';
+import type { TradeSavedState } from './trade-save-validation.ts';
 import { previewTradeRoster } from './trade-roster-preview.ts';
 import { parseTradeWorkerRequest } from './trade-worker-validation.ts';
 import { ensure, integer } from '../engine/validation.ts';
@@ -16,6 +19,7 @@ import type { TradeCandidateIndexEntry } from './trade-candidate-index.ts';
 export interface TradeWorkerAccess {
   open(localWorldId: string): Promise<TradeGameSession>;
   list(): Promise<TradeCandidateIndexEntry[]>;
+  creation?: TradeCreationAccess;
 }
 
 /** 一つの候補だけを所有する。通常WorldWorkspaceとは状態・通信形式を分離する。 */
@@ -26,6 +30,11 @@ export class TradeWorkerWorkspace {
   private viewFailed = false;
   private queue: Promise<void> = Promise.resolve();
   private readonly access: TradeWorkerAccess;
+  private creation: {
+    status: TradeCreationStatus;
+    saved: TradeSavedState;
+    fingerprint: string;
+  } | null = null;
   constructor(access: TradeWorkerAccess) {
     this.access = access;
   }
@@ -82,6 +91,7 @@ export class TradeWorkerWorkspace {
       workspaceRevision: this.workspaceRevision,
       active,
       view,
+      creation: structuredClone(this.creation?.status ?? null),
       ...(error === undefined ? { ok: true as const } : { ok: false as const, error }),
       ...(result && error === undefined ? { result } : {}),
       ...(candidates ? { candidates } : {}),
@@ -103,6 +113,7 @@ export class TradeWorkerWorkspace {
     return this.session;
   }
   private requireSwitchable() {
+    ensure(!this.creation, '新規候補の作成準備があります。保存結果を確認して準備を閉じてください');
     if (!this.session) return;
     const read = this.session.read();
     ensure(
@@ -139,6 +150,101 @@ export class TradeWorkerWorkspace {
       if (request.kind === 'listCandidates')
         return this.response(requestId, undefined, undefined, await this.access.list());
       if (request.kind === 'queryCandidate') return this.response(requestId);
+      if (request.kind === 'listCandidateSources') {
+        ensure(this.access.creation, '新規候補の作成窓口がありません');
+        return {
+          ...this.response(requestId),
+          creationSources: await this.access.creation.listSources(),
+        };
+      }
+      if (
+        request.kind === 'getCandidateInitialTemplate' ||
+        request.kind === 'inspectCandidateCreation' ||
+        request.kind === 'createCandidate' ||
+        request.kind === 'clearCandidateCreation'
+      ) {
+        ensure(!this.session, '新規候補の準備前に、現在の候補を保存して閉じてください');
+        ensure(this.access.creation, '新規候補の作成窓口がありません');
+        if (request.kind === 'clearCandidateCreation') {
+          ensure(
+            this.creation?.status.creationId === request.creationId,
+            '破棄対象の作成準備が異なります',
+          );
+          this.creation = null;
+          return this.response(requestId);
+        }
+        if (request.kind === 'createCandidate') {
+          const prepared = this.creation;
+          ensure(
+            prepared?.status.creationId === request.creationId,
+            '先に同じ初期入力を検査してください',
+          );
+          if (prepared.status.state !== 'created') {
+            prepared.status.state = 'uncertain'; // 保存を呼んだ後の失敗は成功と推測しない。
+            await this.access.creation.create(prepared.saved, {
+              source: prepared.status.source,
+              fingerprint: prepared.fingerprint,
+              displayName:
+                prepared.status.summary.controlledClub +
+                ' / ' +
+                prepared.status.summary.date +
+                ' 移籍候補',
+            });
+            prepared.status.state = 'created';
+          }
+          return this.response(requestId);
+        }
+        ensure(
+          !this.creation || this.creation.status.state === 'ready',
+          '作成結果を一覧で確認してから、準備を閉じてください',
+        );
+        this.creation = null;
+        if (request.kind === 'getCandidateInitialTemplate') {
+          const source = await this.access.creation.loadSource(request.source);
+          return {
+            ...this.response(requestId),
+            initialTemplate: {
+              source: request.source,
+              text: tradeCreationTemplate(source, request.source),
+            },
+          };
+        }
+        if (request.kind === 'inspectCandidateCreation') {
+          const source = await this.access.creation.loadSource(request.source);
+          const checked = await inspectTradeCreationInput(
+            source,
+            request.source,
+            request.inputText,
+            request.creationId,
+          );
+          if (checked.status === 'blocked')
+            return {
+              ...this.response(requestId),
+              creationInspection: { creationId: request.creationId, ...checked },
+            };
+          this.creation = {
+            status: {
+              creationId: request.creationId,
+              localWorldId: checked.saved.localWorldId,
+              source: request.source,
+              state: 'ready',
+              summary: checked.summary,
+            },
+            saved: checked.saved,
+            fingerprint: checked.fingerprint,
+          };
+          return {
+            ...this.response(requestId),
+            creationInspection: {
+              creationId: request.creationId,
+              status: 'ready',
+              issues: [],
+              issueCount: 0,
+            },
+          };
+        }
+        throw new Error('未対応の候補作成要求です');
+      }
       let result: TradeWorkerResult;
       if (request.kind === 'openCandidate') {
         this.requireSwitchable();

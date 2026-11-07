@@ -32,9 +32,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('空の候補を捏造せず、タブを戻っても候補Workerを作り直さない', async ({ page }) => {
-  await expect(page.getByRole('button', { name: '新しい候補を作成（工事中）' })).not.toBeVisible();
-  await page.getByText('新規作成などの未対応機能', { exact: true }).click();
-  await expect(page.getByRole('button', { name: '新しい候補を作成（工事中）' })).toBeDisabled();
+  await expect(
+    page.getByRole('heading', { name: '初期入力から新しい候補を作成', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '初期データを検査（保存しない）', exact: true }),
+  ).toBeDisabled();
   await page.getByRole('button', { name: '1試合シミュレーション', exact: true }).click();
   await page.getByRole('button', { name: '候補プレイ', exact: true }).click();
   const state = await page.evaluate(() => ({
@@ -64,4 +67,20 @@ test('待機中の通信停止を表示し、再接続は明示確認後だけ�
   expect(
     await page.evaluate(() => (Reflect.get(window, 'candidateWorkers') as Worker[]).length),
   ).toBe(2);
+});
+
+test('新規候補の元保存が空なら初期値を捏造せず、検査・作成を有効にしない', async ({ page }) => {
+  await page.getByRole('button', { name: '元保存の一覧を取得', exact: true }).click();
+  await expect(page.getByText('元にできる通常保存がありません。', { exact: false })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '未入力のJSONひな型をダウンロード', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '初期データを検査（保存しない）', exact: true }),
+  ).toBeDisabled();
+  expect(
+    await page.evaluate(() =>
+      (Reflect.get(window, 'candidateCommands') as { kind: string }[]).map((r) => r.kind),
+    ),
+  ).toEqual(['listCandidates', 'listCandidateSources']);
 });

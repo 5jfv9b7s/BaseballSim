@@ -7,6 +7,7 @@ import {
 import type { TradeWorkerResponse } from '../../world/trade-worker-protocol.ts';
 import type { TradeCandidateIndexEntry } from '../../world/trade-candidate-index.ts';
 import { TradePlayPanel } from './TradePlayPanel.tsx';
+import { TradeCandidateCreation } from './TradeCandidateCreation.tsx';
 import './trade-play.css';
 
 function connectionStopped(client: TradeWorkerClient) {
@@ -31,6 +32,9 @@ export default function TradeCandidatesApp({
   const [busy, setBusy] = useState(false);
   const [stopped, setStopped] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [creationDirty, setCreationDirty] = useState(false);
+  const [connectionEpoch, setConnectionEpoch] = useState(0);
+  const [lastCreationId, setLastCreationId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -47,6 +51,7 @@ export default function TradeCandidatesApp({
       const response = await instance.request(action);
       if (client.current !== instance) return;
       setReply(response);
+      if (response.creation) setLastCreationId(response.creation.localWorldId);
       if (response.candidates) setCandidates(response.candidates);
       if (!response.ok) setError(response.error);
       else if (response.result?.status !== 'blocked') setMessage(success);
@@ -69,6 +74,8 @@ export default function TradeCandidatesApp({
     client.current = null;
     pending.current = false;
     setReply(null);
+    setConnectionEpoch((value) => value + 1);
+    setCreationDirty(false);
     setCandidates(null);
     setDirty(false);
     setConfirmation(null);
@@ -112,6 +119,8 @@ export default function TradeCandidatesApp({
   const attention =
     busy ||
     dirty ||
+    creationDirty ||
+    (!!reply?.creation && reply.creation.state !== 'created') ||
     !!view?.saveState.pendingCommands ||
     !!active?.reloadRequired ||
     (stopped && !!active);
@@ -127,16 +136,16 @@ export default function TradeCandidatesApp({
   }, [attention, onAttention]);
 
   function withDraftCheck(action: TradeWorkerAction, success: string) {
-    if (dirty)
+    if (dirty || creationDirty)
       setConfirmation({
         kind: 'request',
         action,
         success,
-        message: '未送信の登録・編成・固定希望を破棄して、この操作を行いますか？',
+        message: '未送信の登録・編成・固定希望・初期入力を破棄して、この操作を行いますか？',
       });
     else void send(action, success);
   }
-  const canSwitch = !active || !!view?.capabilities.canSwitch;
+  const canSwitch = !reply?.creation && (!active || !!view?.capabilities.canSwitch);
   const blocked = reply?.result?.status === 'blocked' ? reply.result : null;
 
   return (
@@ -290,18 +299,22 @@ export default function TradeCandidatesApp({
           </div>
         )}
         {!canSwitch && (
-          <p>別の候補へ切り替えるには、試合進行を保存するか、保存から再読込してください。</p>
+          <p>別の候補へ切り替えるには、未保存の進行を解消し、新規作成の準備も閉じてください。</p>
         )}
         <details>
-          <summary>新規作成などの未対応機能</summary>
-          <p>
-            初期契約・資金データに基づく新規作成、交渉・承認の生成、複数手動枠・保存ファイルの入出力は工事中です。
-          </p>
-          <button className="secondary" disabled>
-            新しい候補を作成（工事中）
-          </button>
+          <summary>未対応の補強・保存機能</summary>
+          <p>交渉・承認の生成、複数手動枠・保存ファイルの入出力は工事中です。</p>
         </details>
       </section>
+      <TradeCandidateCreation
+        key={connectionEpoch}
+        reply={reply}
+        disabled={busy || stopped || !!confirmation}
+        hasActive={!!active}
+        previousId={lastCreationId}
+        onSend={send}
+        onDirty={setCreationDirty}
+      />
       {active && (
         <section className="trade-play-section" aria-label="候補の保存操作">
           <h2>保存と再読込</h2>

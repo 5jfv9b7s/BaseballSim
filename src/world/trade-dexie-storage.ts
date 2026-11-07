@@ -1,3 +1,4 @@
+import type { TradeCreationOptions } from './trade-creation-types.ts';
 import type { Table } from 'dexie';
 import { ensure } from '../engine/validation.ts';
 import type { TradeCommitContext } from '../recruitment/trade-commit.ts';
@@ -127,8 +128,20 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
   }
 
   /** 初期契約等を明示して準備した、未適用の候補だけを新しいローカルIDへ保存する。 */
-  async create(input: TradeSavedState): Promise<void> {
+  async create(
+    input: TradeSavedState,
+    optionsInput?: TradeCreationOptions,
+  ): Promise<'created' | 'replayed'> {
     const initial = structuredClone(input);
+    const options = optionsInput ? structuredClone(optionsInput) : undefined;
+    if (options)
+      ensure(
+        /^[a-f0-9]{64}$/.test(options.fingerprint) &&
+          options.source.localWorldId !== this.localWorldId &&
+          typeof options.displayName === 'string' &&
+          options.displayName.length <= 240,
+        '候補作成の参照が不正です',
+      );
     validateTradeSavedState(initial);
     ensure(
       initial.localWorldId === this.localWorldId &&
@@ -143,13 +156,39 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
     const encoded = await encodeTradeSnapshot(initial, null);
     const verified = await verifySharedBlocks(this.database, encoded.blocks);
     const db = this.database;
-    await db.transaction(
+    return db.transaction(
       'rw',
       db.local_worlds,
       db.save_slots,
       this.snapshots,
       db.save_blocks,
       async () => {
+        const prior = await db.local_worlds.get(this.localWorldId);
+        if (options && prior) {
+          ensure(
+            prior.storageProfile === TRADE_STORAGE_PROFILE &&
+              prior.worldId === initial.worldId &&
+              prior.creationFingerprint === options.fingerprint,
+            '同じ作成IDの内容が異なるか、既存プレイと衝突しています',
+          );
+          return 'replayed' as const; // 進行済みの保存枠・状態は巻き戻さない。
+        }
+        if (options) {
+          const source = await db.local_worlds.get(options.source.localWorldId);
+          const slot = await db.save_slots.get([
+            options.source.localWorldId,
+            options.source.slotKind,
+            1,
+          ]);
+          ensure(
+            source &&
+              !source.storageProfile &&
+              source.storageRevision === options.source.storageRevision &&
+              source.worldId === initial.worldId &&
+              slot?.snapshotId === options.source.snapshotId,
+            '元保存が更新されました。初期入力を最新の保存で確認し直してください',
+          );
+        }
         ensure(
           !(await db.local_worlds.get(this.localWorldId)) &&
             !(await db.save_slots.where('localWorldId').equals(this.localWorldId).count()),
@@ -169,11 +208,13 @@ export class DexieTradeApplicationStorage implements TradeApplicationStorage {
           localWorldId: this.localWorldId,
           worldId: initial.worldId,
           storageProfile: TRADE_STORAGE_PROFILE,
-          displayName: '移籍の内部候補',
+          displayName: options?.displayName ?? '移籍の内部候補',
+          ...(options ? { creationFingerprint: options.fingerprint } : {}),
           storageRevision: 1,
           selectedSnapshotId: encoded.snapshot.snapshotId,
           updatedAt: encoded.snapshot.createdAt,
         });
+        return 'created' as const;
       },
     );
   }

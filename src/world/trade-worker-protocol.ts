@@ -1,3 +1,9 @@
+import type {
+  TradeCreationSourceRef,
+  TradeCreationSource,
+  TradeCreationInspection,
+  TradeCreationStatus,
+} from './trade-creation-types.ts';
 import type { TradeRegistrationCommand, TradeRosterPreview } from './trade-roster-preview.ts';
 import type { TradeGameCommand, TradeGameReceipt } from './trade-game-commands.ts';
 import type { TradeDayCommand, TradeDayReceipt } from './trade-day-commands.ts';
@@ -25,6 +31,16 @@ export type TradeWorkerRequest = Header &
   (
     | { kind: 'listCandidates' }
     | { kind: 'queryCandidate' }
+    | { kind: 'listCandidateSources' }
+    | { kind: 'getCandidateInitialTemplate'; source: TradeCreationSourceRef }
+    | {
+        kind: 'inspectCandidateCreation';
+        source: TradeCreationSourceRef;
+        inputText: string;
+        creationId: string;
+      }
+    | { kind: 'createCandidate'; creationId: string }
+    | { kind: 'clearCandidateCreation'; creationId: string }
     | { kind: 'openCandidate'; localWorldId: string }
     | (SessionScope & { kind: 'candidateCommand'; command: TradeWorkerCommand })
     | (SessionScope & { kind: 'previewCandidateRoster'; command: TradeRegistrationCommand })
@@ -70,4 +86,8 @@ export type TradeWorkerResponse = {
   result?: TradeWorkerResult;
   candidates?: TradeCandidateIndexEntry[];
   rosterPreview?: TradeRosterPreview;
+  creationSources?: TradeCreationSource[];
+  initialTemplate?: { source: TradeCreationSourceRef; text: string };
+  creationInspection?: TradeCreationInspection;
+  creation?: TradeCreationStatus | null;
 } & ({ ok: true } | { ok: false; error: string });

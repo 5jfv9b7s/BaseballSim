@@ -15,6 +15,140 @@ export interface TradeWorkerPort {
   terminate(): void;
 }
 
+function copiedCreationAction(request: TradeWorkerRequest) {
+  return {
+    kind: request.kind,
+    ...('creationId' in request ? { creationId: request.creationId } : {}),
+    ...('source' in request ? { source: structuredClone(request.source) } : {}),
+  };
+}
+function validCreationRef(source: unknown) {
+  if (!source || typeof source !== 'object') return false;
+  const s = source as {
+    localWorldId: unknown;
+    snapshotId: unknown;
+    storageRevision: unknown;
+    slotKind: unknown;
+  };
+  return (
+    typeof s.localWorldId === 'string' &&
+    s.localWorldId.length > 0 &&
+    typeof s.snapshotId === 'string' &&
+    s.snapshotId.length > 0 &&
+    Number.isSafeInteger(s.storageRevision) &&
+    (s.storageRevision as number) > 0 &&
+    ['auto', 'manual', 'previousAuto'].includes(s.slotKind as string)
+  );
+}
+function validCreationSummary(value: unknown) {
+  if (!value || typeof value !== 'object') return false;
+  const s = value as Record<string, unknown>;
+  return (
+    typeof s.date === 'string' &&
+    typeof s.seasonId === 'string' &&
+    typeof s.controlledClub === 'string' &&
+    ['playerCount', 'clubCount', 'contractCount'].every(
+      (key) => Number.isSafeInteger(s[key]) && (s[key] as number) >= 0,
+    ) &&
+    Array.isArray(s.budgets) &&
+    s.budgets.length === s.clubCount &&
+    s.budgets.every((b: unknown) => {
+      if (!b || typeof b !== 'object') return false;
+      const row = b as Record<string, unknown>;
+      return (
+        typeof row.clubId === 'string' &&
+        typeof row.name === 'string' &&
+        Number.isSafeInteger(row.cashYen) &&
+        Number.isSafeInteger(row.availableYen)
+      );
+    })
+  );
+}
+function validCreationResponse(
+  response: TradeWorkerResponse,
+  action: ReturnType<typeof copiedCreationAction>,
+) {
+  const status = response?.creation;
+  if (
+    status !== undefined &&
+    status !== null &&
+    (!status ||
+      typeof status !== 'object' ||
+      typeof status.creationId !== 'string' ||
+      status.localWorldId !== 'trade-create-' + status.creationId ||
+      !['ready', 'uncertain', 'created'].includes(status?.state) ||
+      response.active !== null ||
+      !validCreationSummary(status.summary) ||
+      !validCreationRef(status.source))
+  )
+    return false;
+  if (!response?.ok) return true;
+  if (
+    action.kind === 'createCandidate' &&
+    (status?.creationId !== action.creationId || status?.state !== 'created')
+  )
+    return false;
+  if (action.kind === 'clearCandidateCreation' && status !== null) return false;
+  if (action.kind === 'inspectCandidateCreation') {
+    const result = response.creationInspection;
+    if (
+      !result ||
+      result.creationId !== action.creationId ||
+      !['ready', 'blocked'].includes(result.status) ||
+      !Array.isArray(result.issues) ||
+      !Number.isSafeInteger(result.issueCount) ||
+      result.issueCount < 0 ||
+      !result.issues.every((i) => i && typeof i.path === 'string' && typeof i.message === 'string')
+    )
+      return false;
+    if (
+      result.status === 'ready' &&
+      (status?.creationId !== action.creationId || status?.state !== 'ready')
+    )
+      return false;
+    if (
+      result.status === 'ready' &&
+      (!action.source ||
+        !status?.source ||
+        Object.entries(action.source).some(
+          ([key, value]) => Reflect.get(status.source, key) !== value,
+        ))
+    )
+      return false;
+    if (result.status === 'blocked' && status !== null) return false;
+  }
+  if (action.kind === 'getCandidateInitialTemplate') {
+    const template = response.initialTemplate;
+    if (
+      !template ||
+      typeof template.text !== 'string' ||
+      !template.source ||
+      !action.source ||
+      Object.entries(action.source).some(
+        ([key, value]) => Reflect.get(template.source, key) !== value,
+      )
+    )
+      return false;
+  }
+  if (
+    action.kind === 'listCandidateSources' &&
+    (!Array.isArray(response.creationSources) ||
+      response.creationSources.some(
+        (s) =>
+          !s ||
+          typeof s.localWorldId !== 'string' ||
+          typeof s.snapshotId !== 'string' ||
+          typeof s.label !== 'string' ||
+          typeof s.gameDate !== 'string' ||
+          typeof s.supported !== 'boolean' ||
+          !Number.isSafeInteger(s.storageRevision) ||
+          !['auto', 'manual', 'previousAuto'].includes(s.slotKind),
+      ))
+  )
+    return false;
+  return true;
+}
+
 /** 表示用応答だけ保持。送信は一度に一つ、自動再送・自動保存・独自の世界変更をしない。 */
 export class TradeWorkerClient {
   private readonly worker: TradeWorkerPort;
@@ -22,6 +156,7 @@ export class TradeWorkerClient {
   private pending: {
     requestId: string;
     preview: { commandId: string; stateRevision: number } | null;
+    creationRequest: ReturnType<typeof copiedCreationAction>;
     resolve: (response: TradeWorkerResponse) => void;
     reject: (error: Error) => void;
   } | null = null;
@@ -92,6 +227,7 @@ export class TradeWorkerClient {
     return new Promise((resolve, reject) => {
       this.pending = {
         requestId: request.requestId,
+        creationRequest: copiedCreationAction(request),
         preview:
           request.kind === 'previewCandidateRoster'
             ? {
@@ -149,6 +285,7 @@ export class TradeWorkerClient {
               ));
     if (
       !response ||
+      !validCreationResponse(response, this.pending.creationRequest) ||
       !previewValid ||
       response.protocol !== TRADE_WORKER_PROTOCOL ||
       response.requestId !== this.pending.requestId ||

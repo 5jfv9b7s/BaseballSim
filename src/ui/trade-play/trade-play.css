@@ -152,3 +152,14 @@
 .trade-play .ability-rating meter {
   width: 100%;
 }
+
+.trade-play .trade-creation-ack {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+.trade-play code {
+  overflow-wrap: anywhere;
+}

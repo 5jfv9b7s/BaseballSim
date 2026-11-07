@@ -3,11 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/ui/loading.css" />
     <meta name="theme-color" content="#f3f5f9" />
-    <title>野球シミュレーション | ゲームv0.66.0</title>
+    <title>野球シミュレーション | ゲームv0.67.0</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="loading-screen" data-full-page="true" role="status">
+        <div class="loading-content">
+          <span class="loading-brand" aria-hidden="true">BS</span>
+          <p class="loading-title">ゲームを読み込んでいます</p>
+          <progress aria-label="読み込み中"></progress>
+          <p class="loading-detail">起動の準備をしています。</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

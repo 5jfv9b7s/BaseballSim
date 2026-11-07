@@ -1,0 +1,111 @@
+/* 起動直後のHTMLにも使う。画面本体や巨大なデータの読込を待たずに表示する。 */
+.loading-screen {
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+  color: #19283e;
+  background: #f3f5f9;
+  font-family: 'Segoe UI', 'Yu Gothic UI', Meiryo, sans-serif;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.loading-screen[data-full-page='true'] {
+  min-height: 100svh;
+}
+
+.loading-content {
+  width: min(100%, 360px);
+}
+
+.loading-brand {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  color: #8de9d0;
+  background: #15283f;
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -1px;
+}
+
+.loading-screen .loading-title {
+  margin: 0 0 20px;
+  color: #19283e;
+  font-size: 17px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.loading-screen progress {
+  display: block;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6px;
+  background: #d7dfe9;
+  accent-color: #087e78;
+}
+
+.loading-screen .loading-detail {
+  margin: 18px 0 0;
+  color: #58677b;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.loading-dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid #d7dfe9;
+  border-radius: 14px;
+  color: #19283e;
+  background: #f3f5f9;
+  box-shadow: 0 16px 64px #19283e26;
+  color-scheme: light;
+}
+
+.loading-dialog::backdrop {
+  background: #15283f66;
+}
+
+.loading-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-screen progress {
+    appearance: none;
+    border: 1px solid #a6b4c6;
+  }
+
+  .loading-screen progress::-webkit-progress-bar {
+    background: #d7dfe9;
+    animation: none;
+  }
+}
+
+.loading-reload {
+  min-height: 44px;
+  margin-top: 24px;
+  padding: 12px 18px;
+  border: 1px solid #087e78;
+  border-radius: 7px;
+  color: #fff;
+  background: #087e78;
+}
+
+.loading-reload:focus-visible {
+  outline: 3px solid #146bd1;
+  outline-offset: 3px;
+}

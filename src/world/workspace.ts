@@ -9,7 +9,12 @@ import { ensure, integer } from '../engine/validation.ts';
 import { canonicalJson } from '../storage/codec.ts';
 import { createPitchLearningWorld } from './engine.ts';
 import { DexieWorldStorage, WorldDatabase } from './dexie-storage.ts';
-import { WorldController, type WorldCommand, type WorldView } from './controller.ts';
+import {
+  WorldController,
+  type WorldCommand,
+  type WorldContext,
+  type WorldView,
+} from './controller.ts';
 import type { StorageInspection } from './storage-inspection.ts';
 import type { StoredPlay, WorldSlotKind, WorldSlots } from './storage.ts';
 
@@ -54,7 +59,7 @@ export class WorldWorkspace {
     }
   }
 
-  private async createPlay(request: Extract<WorldCommand, { kind: 'new' }>, before: WorldView) {
+  private async createPlay(request: Extract<WorldCommand, { kind: 'new' }>, before: WorldContext) {
     ensure(
       typeof request.commandId === 'string' &&
         /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(request.commandId),
@@ -121,12 +126,12 @@ export class WorldWorkspace {
   }
 
   async initialize() {
-    await this.controller.initialize();
+    await this.controller.initializeStorage();
   }
 
   async handle(request: WorkspaceRequest): Promise<WorkspaceResponse> {
     try {
-      const before = this.controller.query();
+      const before = this.controller.context();
       let dispatched: WorldView | undefined;
       let inspection: StorageInspection | undefined;
       let tradeInspection: TradeInspectionReport | undefined;
@@ -165,19 +170,12 @@ export class WorldWorkspace {
           this.storage.database,
           request.targetLocalWorldId,
         );
-        const next = new WorldController(
+        const next = await WorldController.openSaved(
           nextStorage,
           request.targetLocalWorldId,
           before.revision + 1,
+          request.slot,
         );
-        await next.initialize();
-        await next.dispatch({
-          kind: 'load',
-          slot: request.slot,
-          commandId: crypto.randomUUID(),
-          localWorldId: request.targetLocalWorldId,
-          expectedStateRevision: before.revision + 1,
-        });
         this.storage = nextStorage;
         this.controller = next;
         await this.refreshPlays();

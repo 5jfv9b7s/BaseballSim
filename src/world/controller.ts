@@ -1,3 +1,4 @@
+import { CompletedProjectionCache } from './completed-projection-cache.ts';
 import { inspectWorldTrade } from './trade-inspection.ts';
 import type { TradeInspectionRequest } from '../recruitment/trade-inspection-types.ts';
 import { campView } from './camp.ts';
@@ -36,7 +37,7 @@ import {
   type WorldSlotKind,
   type WorldStorageAdapter,
 } from './storage.ts';
-import type { GameResult } from '../game/types.ts';
+import type { GameRecord, GameResult } from '../game/types.ts';
 import type { WorldRecord, WorldPhase, ManagementAction, ClubManagement } from './types.ts';
 
 export type WorldAction =
@@ -133,9 +134,14 @@ export interface WorldView {
   unsavedChanges: boolean;
 }
 
+export type WorldContext = Pick<
+  WorldView,
+  'localWorldId' | 'revision' | 'slots' | 'unsavedChanges'
+>;
+
 /** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
 export class WorldController {
-  private world: WorldRecord = createPitchLearningWorld();
+  private world: WorldRecord;
   private revision = 0;
   private slots = emptyWorldSlots();
   private storageError: string | null = null;
@@ -145,10 +151,39 @@ export class WorldController {
   private recentResponses = new Map<string, WorldView>();
   private storage: WorldStorageAdapter;
 
+  // 読取結果だけを共有する。query/dispatchの返却値から正本へ書き戻せない。
+  private projection?: {
+    world: WorldRecord;
+    revision: number;
+    slots: WorldSlots;
+    storageError: string | null;
+    unsavedChanges: boolean;
+    view: WorldView;
+  };
+  private readonly displays = new WeakMap<GameRecord, ReturnType<typeof gameDisplay>>();
+  private readonly completedRecords = new CompletedProjectionCache((world) => ({
+    first: singleGameHomeRunRecords(world),
+    farm: world.definitions.farm ? singleGameHomeRunRecords(world, 'farmRegular') : null,
+    hitlessStreaks: {
+      firstRegular: consecutiveHitlessAtBats(world),
+      farmRegular: world.definitions.farm ? consecutiveHitlessAtBats(world, 'farmRegular') : null,
+    },
+    hitStreaks: {
+      firstRegular: consecutiveGameHits(world),
+      farmRegular: world.definitions.farm ? consecutiveGameHits(world, 'farmRegular') : null,
+    },
+  }));
+
   private readonly localWorldId: string;
 
-  constructor(storage: WorldStorageAdapter, localWorldId = 'v02-local', initialRevision = 0) {
+  constructor(
+    storage: WorldStorageAdapter,
+    localWorldId = 'v02-local',
+    initialRevision = 0,
+    initialWorld?: WorldRecord,
+  ) {
     integer(initialRevision, 0, Number.MAX_SAFE_INTEGER - 2, '開始状態版');
+    this.world = initialWorld ?? createPitchLearningWorld();
     this.revision = initialRevision;
     this.storage = storage;
     this.localWorldId = localWorldId;
@@ -162,19 +197,44 @@ export class WorldController {
     world: WorldRecord,
     slots: WorldSlots,
   ): WorldController {
-    const controller = new WorldController(storage, localWorldId, revision);
-    controller.world = world;
+    const controller = new WorldController(storage, localWorldId, revision, world);
     controller.slots = slots;
     controller.unsavedChanges = false;
     return controller;
   }
 
-  async initialize(): Promise<WorldView> {
+  /** 読込結果だけで所有者を作る。仮の初期世界・破棄する表示・枠一覧の再読込を作らない。 */
+  static async openSaved(
+    storage: WorldStorageAdapter,
+    localWorldId: string,
+    initialRevision: number,
+    slot: WorldSlotKind,
+  ): Promise<WorldController> {
+    integer(initialRevision, 0, Number.MAX_SAFE_INTEGER - 2, '開始状態版');
+    ensure(['auto', 'previousAuto', 'manual'].includes(slot), '保存枠が不正です');
+    const loaded = await storage.load(slot);
+    const controller = WorldController.fromCommitted(
+      storage,
+      localWorldId,
+      initialRevision,
+      loaded.world,
+      loaded.slots,
+    );
+    // 従来のload指示と同じ状態版へ進める。検査/復元はstorage.loadが全て行う。
+    controller.revision++;
+    return controller;
+  }
+
+  async initializeStorage(): Promise<void> {
     try {
       this.slots = await this.storage.listSlots();
     } catch {
       this.storageError = '保存先を開けません。日次完了には自動保存の成功が必要です。';
     }
+  }
+
+  async initialize(): Promise<WorldView> {
+    await this.initializeStorage();
     return this.query();
   }
 
@@ -199,8 +259,39 @@ export class WorldController {
     );
   }
 
+  /** 切替・版の照合だけなら、世界全体の表示を生成・複製しない。 */
+  context(): WorldContext {
+    return {
+      localWorldId: this.localWorldId,
+      revision: this.revision,
+      slots: structuredClone(this.slots),
+      unsavedChanges: this.unsavedChanges,
+    };
+  }
+
   query(): WorldView {
+    return structuredClone(this.projectView());
+  }
+
+  private display(game: GameRecord) {
+    const cached = this.displays.get(game);
+    if (cached) return cached;
+    const display = gameDisplay(game);
+    this.displays.set(game, display);
+    return display;
+  }
+
+  private projectView(): WorldView {
     const world = this.world;
+    const previous = this.projection;
+    if (
+      previous?.world === world &&
+      previous.revision === this.revision &&
+      previous.slots === this.slots &&
+      previous.storageError === this.storageError &&
+      previous.unsavedChanges === this.unsavedChanges
+    )
+      return previous.view;
     const controlledClub =
       world.version !== 'world-prototype-v1'
         ? world.definitions.squads.find(
@@ -210,11 +301,10 @@ export class WorldController {
     const controlledFarm = world.definitions.farm?.squads.find(
       (squad) => squad.team.clubId === controlledClub,
     );
-    const firstRecords = singleGameHomeRunRecords(world);
-    const farmRecords = world.definitions.farm
-      ? singleGameHomeRunRecords(world, 'farmRegular')
-      : null;
-    return structuredClone({
+    const records = this.completedRecords.read(world);
+    const firstRecords = records.first;
+    const farmRecords = records.farm;
+    const view: WorldView = {
       growth: growthView(world),
       training: trainingView(world),
       camp: campView(world),
@@ -238,14 +328,8 @@ export class WorldController {
             ? selectSeasonHonors(world, world.farmSummary, AWARDS_RULES)
             : null,
       },
-      hitlessStreaks: {
-        firstRegular: consecutiveHitlessAtBats(world),
-        farmRegular: world.definitions.farm ? consecutiveHitlessAtBats(world, 'farmRegular') : null,
-      },
-      hitStreaks: {
-        firstRegular: consecutiveGameHits(world),
-        farmRegular: world.definitions.farm ? consecutiveGameHits(world, 'farmRegular') : null,
-      },
+      hitlessStreaks: records.hitlessStreaks,
+      hitStreaks: records.hitStreaks,
       bullpen:
         world.version === 'world-prototype-v14' ||
         world.version === 'world-prototype-v15' ||
@@ -332,7 +416,7 @@ export class WorldController {
           score: game?.state.score ?? null,
           totalPitches: game?.state.totalPitches ?? 0,
           result: game?.result ?? null,
-          display: game?.result ? gameDisplay(game) : null,
+          display: game?.result ? this.display(game) : null,
           lineups: game
             ? { away: game.fixture.teams.away.lineup, home: game.fixture.teams.home.lineup }
             : null,
@@ -349,7 +433,16 @@ export class WorldController {
       slots: this.slots,
       storageError: this.storageError,
       unsavedChanges: this.unsavedChanges,
-    });
+    };
+    this.projection = {
+      world,
+      revision: this.revision,
+      slots: this.slots,
+      storageError: this.storageError,
+      unsavedChanges: this.unsavedChanges,
+      view,
+    };
+    return view;
   }
 
   async dispatch(command: WorldCommand): Promise<WorldView> {
@@ -386,7 +479,8 @@ export class WorldController {
     const prior = this.processed.get(command.commandId);
     if (prior) {
       ensure(prior === fingerprint, '同じ指示IDの内容が異なります');
-      return structuredClone(this.recentResponses.get(command.commandId) ?? this.query());
+      const response = this.recentResponses.get(command.commandId);
+      return response ? structuredClone(response) : this.query();
     }
     ensure(command.expectedStateRevision === this.revision, '古い世界状態への指示です');
     ensure(this.processed.size < 10000, '指示上限です。手動保存して再読み込みしてください');
@@ -482,7 +576,7 @@ export class WorldController {
       this.storageError = null;
     }
     this.revision++;
-    const view = this.query();
+    const view = this.projectView();
     this.processed.set(command.commandId, fingerprint);
     this.recentResponses.set(command.commandId, view);
     if (this.recentResponses.size > 16)

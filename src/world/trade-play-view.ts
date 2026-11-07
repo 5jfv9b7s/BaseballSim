@@ -3,6 +3,9 @@ import { compareMoments } from '../finance/validation.ts';
 import { growthBasis } from './growth-basis.ts';
 import { gameDisplay } from './game-display.ts';
 import { tradeApplicationRosterState } from './trade-application-state.ts';
+import { tradeSquadRoster } from './trade-squad-roster.ts';
+import { allWorldSquads, worldSquad } from './squads.ts';
+import type { TeamSide } from '../game/types.ts';
 import { MAX_GAME_COMMANDS_PER_SAVE } from './trade-game-commands.ts';
 import type { TradeGameSession } from './trade-game-session.ts';
 import type { TradeRosterReconciliation } from './trade-roster-policy.ts';
@@ -135,6 +138,15 @@ export function tradePlayView(read: TradeSessionRead, viewFailed = false) {
       score: game ? game.state.score : null,
       totalPitches: game?.state.totalPitches ?? null,
       nextEventSeq: game?.state.nextEventSeq ?? null,
+      situation: game
+        ? {
+            inning: game.state.inning,
+            half: game.state.half,
+            outs: game.state.outs,
+            count: game.state.count,
+            occupiedBases: game.state.baseOccupants.map((runner) => runner !== null),
+          }
+        : null,
       result: game?.result ?? null,
       display: game ? gameDisplay(game) : null,
     };
@@ -152,6 +164,56 @@ export function tradePlayView(read: TradeSessionRead, viewFailed = false) {
           : nextGame
             ? ('playing' as const)
             : ('beforeGame' as const);
+  // 表示用の選択肢だけを作る。試合生成・自動ベンチ選出・RNG消費は行わない。
+  const scheduled = nextGameId ? defs.schedule.find((g) => g.gameId === nextGameId) : null;
+  const matchSide = (side: TeamSide) => {
+    ensure(scheduled, '次の試合の日程がありません');
+    const squadId = side === 'away' ? scheduled.awaySquadId : scheduled.homeSquadId;
+    const roster = tradeSquadRoster(world, squadId);
+    const squad = rosterState.squads.find((s) => s.squadId === squadId)!;
+    const controlled = squad.clubId === clubId;
+    const explicit = controlled ? world.gameLineups[scheduled.gameId] : undefined;
+    return {
+      squadId,
+      clubId: squad.clubId,
+      name: worldSquad(defs, squadId)!.team.name,
+      category: squad.category,
+      benchLimit: roster.benchLimit,
+      foreignBenchLimit:
+        squad.category === 'first' ? defs.registrationRules!.foreignBenchLimit : null,
+      savedBenchIds: controlled
+        ? (world.registration.benchOverrides[scheduled.gameId] ?? null)
+        : null,
+      lineup: (explicit ?? squad.lineup).battingOrder,
+      lineupSource: explicit ? ('gameOverride' as const) : ('ideal' as const),
+      pitchers: squad.pitchers,
+      explicitStarterId: controlled
+        ? (world.management.starterOverrides[scheduled.gameId] ?? null)
+        : null,
+      players: roster.registeredPlayerIds.map((playerId) => {
+        const base = roster.basePlayers.find((p) => p.playerId === playerId)!;
+        const facts = world.playerFacts.find((p) => p.playerId === playerId)!;
+        const physical = world.physical.players[playerId];
+        ensure(physical, '試合候補の身体状態がありません');
+        return {
+          playerId,
+          name: base.familyName + ' ' + base.givenName,
+          canBat: facts.canBat,
+          canPitch: facts.canPitch,
+          foreignBaseStatus: facts.foreignBaseStatus,
+          energyMilli: physical.energyMilli,
+          fatigueMilli: physical.fatigueMilli,
+        };
+      }),
+    };
+  };
+  const matchSetup =
+    phase === 'beforeGame' && scheduled
+      ? {
+          gameId: scheduled.gameId,
+          sides: { away: matchSide('away'), home: matchSide('home') },
+        }
+      : null;
   const stopped = read.reloadRequired || viewFailed;
   const available = !stopped && !read.saving;
   const canEditRoster =
@@ -188,9 +250,11 @@ export function tradePlayView(read: TradeSessionRead, viewFailed = false) {
     controlledSquadId: controlled.squadId,
     phase,
     nextGameId,
+    matchSetup,
     dayPlan: world.dayPlan,
     saveState: {
       pendingCommands: read.pendingCommands,
+      commandLimit: MAX_GAME_COMMANDS_PER_SAVE,
       saving: read.saving,
       reloadRequired: stopped,
     },
@@ -211,6 +275,7 @@ export function tradePlayView(read: TradeSessionRead, viewFailed = false) {
       canSwitch: available && read.pendingCommands === 0,
     },
     approvedTransactions,
+    teams: allWorldSquads(defs).map((s) => ({ squadId: s.squadId, name: s.team.name })),
     clubs: defs.squads.map((s) => ({
       clubId: s.team.clubId,
       name: s.team.name,

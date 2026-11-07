@@ -189,3 +189,36 @@ test('再読込後は新しいsessionId・切替版を使い、古い画面指�
   assert.equal((await run).result!.status, 'applied');
   client.dispose();
 });
+
+test('応答待ちでない時の通信停止も購読者へ一度通知し、解除後は呼ばない', () => {
+  const port = new Port(),
+    client = new TradeWorkerClient(port);
+  const states: string[] = [];
+  const unsubscribe = client.subscribe(() => states.push(client.connectionState));
+  port.dispatchEvent(new Event('error'));
+  assert.deepEqual(states, ['stopped']);
+  assert.equal(port.sent.length, 0);
+  unsubscribe();
+  client.dispose();
+  assert.deepEqual(states, ['stopped']);
+});
+
+test('表示通知の例外で送信済み要求を解放せず、他の購読者と応答を維持する', async () => {
+  const port = new Port(),
+    client = new TradeWorkerClient(port);
+  const unsubscribe = client.subscribe(() => {
+    throw new Error('表示通知だけの失敗');
+  });
+  const states: string[] = [];
+  const stop = client.subscribe(() => states.push(client.connectionState));
+  const pending = client.request({ kind: 'listCandidates' });
+  assert.equal(client.connectionState, 'waiting');
+  await assert.rejects(client.request({ kind: 'queryCandidate' }), /応答を待って/);
+  port.reply(emptyResponse(port));
+  assert.equal((await pending).ok, true);
+  assert.deepEqual(states, ['waiting', 'idle']);
+  assert.equal(port.sent.length, 1);
+  unsubscribe();
+  stop();
+  client.dispose();
+});

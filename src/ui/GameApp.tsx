@@ -57,6 +57,8 @@ type Action =
   | { kind: 'save' }
   | { kind: 'load'; previous: boolean };
 
+const TradeCandidates = lazy(() => import('./trade-play/TradeCandidatesApp.tsx'));
+
 function MatchGame() {
   const worker = useRef<Worker | null>(null);
   const serial = useRef(0);
@@ -587,9 +589,11 @@ export function GameApp() {
   const [toolsOpen, setToolsOpen] = useState(
     () => new URLSearchParams(location.search).get('tools') === '1',
   );
-  const [tab, setTab] = useState<'game' | 'lab' | 'world' | 'candidates'>('game');
+  const [tab, setTab] = useState<'game' | 'lab' | 'world' | 'candidates' | 'tradePlay'>('game');
   const [worldOpened, setWorldOpened] = useState(!toolsOpen);
   const [matchOpened, setMatchOpened] = useState(toolsOpen);
+  const [tradeOpened, setTradeOpened] = useState(false);
+  const [tradeAttention, setTradeAttention] = useState(false);
 
   function openTools() {
     setToolsOpen(true);
@@ -627,6 +631,15 @@ export function GameApp() {
             <button aria-pressed={tab === 'candidates'} onClick={() => setTab('candidates')}>
               初期データ候補
             </button>
+            <button
+              aria-pressed={tab === 'tradePlay'}
+              onClick={() => {
+                setTradeOpened(true);
+                setTab('tradePlay');
+              }}
+            >
+              候補プレイ{tradeAttention ? '（保存確認）' : ''}
+            </button>
           </nav>
           <AppInfo />
         </>
@@ -639,6 +652,13 @@ export function GameApp() {
       {worldOpened && (
         <div hidden={toolsOpen && tab !== 'world'}>
           <WorldApp development={toolsOpen} onOpenTools={openTools} />
+        </div>
+      )}
+      {tradeOpened && (
+        <div hidden={!toolsOpen || tab !== 'tradePlay'}>
+          <Suspense fallback={<p role="status">候補プレイ画面を読み込んでいます…</p>}>
+            <TradeCandidates onAttention={setTradeAttention} />
+          </Suspense>
         </div>
       )}
       {toolsOpen && tab === 'lab' && <PitchLab />}

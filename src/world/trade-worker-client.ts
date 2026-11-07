@@ -25,6 +25,23 @@ export class TradeWorkerClient {
     reject: (error: Error) => void;
   } | null = null;
   private closed = false;
+  private listeners = new Set<() => void>();
+  /** 応答待ちでない時の通信停止も画面へ通知する。 */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  private publish() {
+    for (const listener of this.listeners) {
+      try {
+        listener();
+      } catch {
+        /* 表示通知の失敗で、送信済み要求を未送信扱いにしない。 */
+      }
+    }
+  }
   private lastResponseId: string | null = null;
   constructor(worker: TradeWorkerPort) {
     this.worker = worker;
@@ -74,8 +91,10 @@ export class TradeWorkerClient {
       this.pending = { requestId: request.requestId, resolve, reject };
       try {
         this.worker.postMessage(request);
+        this.publish();
       } catch (error) {
         this.pending = null;
+        this.publish();
         reject(error instanceof Error ? error : new Error('要求を送信できませんでした'));
       }
     });
@@ -125,6 +144,7 @@ export class TradeWorkerClient {
     this.pending = null;
     this.lastResponseId = response.requestId;
     this.latest = structuredClone(response);
+    this.publish();
     pending.resolve(structuredClone(response));
   };
   private onFailure: EventListener = () => {
@@ -139,6 +159,7 @@ export class TradeWorkerClient {
     this.worker.terminate();
     const pending = this.pending;
     this.pending = null;
+    this.publish();
     pending?.reject(new Error(message));
   }
   dispose() {
@@ -146,7 +167,7 @@ export class TradeWorkerClient {
   }
 }
 
-/** 通常WorldAppはまだ呼ばない。将来の画面から使う候補専用の接続窓口。 */
+/** 開発メニューの候補プレイ画面専用。通常WorldAppの正本は共有しない。 */
 export function createTradeWorkerClient() {
   return new TradeWorkerClient(
     new Worker(new URL('../trade-world-worker.ts', import.meta.url), { type: 'module' }),

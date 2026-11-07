@@ -46,6 +46,7 @@ export type WorldAction =
   | FormationAction
   | { kind: 'new'; seed: number; controlledSquadId?: string; calendar?: 'short' | 'annual' }
   | { kind: 'advance'; count: number }
+  | { kind: 'advanceBatch'; count: number; batches: number }
   | { kind: 'completeDay'; date: string }
   | { kind: 'save' }
   | { kind: 'load'; slot: WorldSlotKind };
@@ -454,6 +455,7 @@ export class WorldController {
     ensure(
       [
         'advance',
+        'advanceBatch',
         'completeDay',
         'save',
         'load',
@@ -472,7 +474,9 @@ export class WorldController {
       ].includes(command.kind),
       '未対応の世界指示です',
     );
-    if (command.kind === 'advance') integer(command.count, 1, 25, '進行イベント数');
+    if (command.kind === 'advance' || command.kind === 'advanceBatch')
+      integer(command.count, 1, 25, '進行イベント数');
+    if (command.kind === 'advanceBatch') integer(command.batches, 1, 4, '進行まとめ数');
     if (command.kind === 'completeDay')
       ensure(typeof command.date === 'string', '完了日が不正です');
     if (command.kind === 'load')
@@ -532,8 +536,18 @@ export class WorldController {
         }
       }
     }
-    if (command.kind === 'advance') {
-      this.world = advanceWorld(this.world, command.count);
+    if (command.kind === 'advance' || command.kind === 'advanceBatch') {
+      const batches = command.kind === 'advanceBatch' ? command.batches : 1;
+      const cursor = this.world.dayPlan.cursor;
+      let next = this.world;
+      // 同じ25イベント単位を最大4回。負荷・登録等の反映順序も従来どおり。
+      // 試合の終了で必ず応答し、次の試合や日次保存まで続けて処理しない。
+      for (let batch = 0; batch < batches; batch++) {
+        next = advanceWorld(next, command.count);
+        if (next.dayPlan.cursor !== cursor || worldPhase(next) !== 'playing') break;
+      }
+      // 途中の計算失敗では、要求前の正本・状態版・処理済みIDを保持する。
+      this.world = next;
       this.unsavedChanges = true;
     }
     if (command.kind === 'completeDay') {

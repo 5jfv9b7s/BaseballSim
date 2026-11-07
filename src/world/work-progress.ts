@@ -6,8 +6,3 @@ export interface WorkProgress {
   total?: number;
 }
 export type ReportWorkProgress = (progress: WorkProgress) => void;
-export interface WorldWorkerProgress {
-  kind: 'workProgress';
-  operation: string;
-  progress: WorkProgress;
-}

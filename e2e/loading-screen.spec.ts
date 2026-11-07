@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { WorldWorkerMessage } from '../src/world-worker.ts';
 
 /** 本番の世界を進めず、独立したブラウザーの起動・読込だけを観測する。 */
 async function observeLoading(page: Page) {
@@ -11,10 +10,6 @@ async function observeLoading(page: Page) {
       constructor(url: string | URL, options?: WorkerOptions) {
         super(url, options);
         this.isWorld = String(url).includes('world-worker');
-        if (this.isWorld)
-          this.addEventListener('message', ({ data }: MessageEvent<WorldWorkerMessage>) => {
-            if ('kind' in data) Reflect.get(window, 'loadingChecks').push(data);
-          });
       }
       override postMessage(
         message: unknown,
@@ -46,7 +41,7 @@ async function ready(page: Page) {
   await expect(page.locator('.loading-dialog')).not.toBeVisible();
 }
 
-test('ローディング：起動と実保存の読込前に表示し、実工程の通知後に閉じる', async ({ page }) => {
+test('ローディング：起動と実保存の読込前に表示し、完了後に閉じる', async ({ page }) => {
   test.setTimeout(90000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -90,16 +85,6 @@ test('ローディング：起動と実保存の読込前に表示し、実工�
         open: true,
         fullScreen: true,
       }),
-      expect.objectContaining({
-        kind: 'workProgress',
-        operation: 'openPlay',
-        progress: expect.objectContaining({ stage: 'decode', completed: 0 }),
-      }),
-      expect.objectContaining({
-        kind: 'workProgress',
-        operation: 'openPlay',
-        progress: expect.objectContaining({ stage: 'validate' }),
-      }),
     ]),
   );
   expect(
@@ -131,6 +116,10 @@ test('ローディング：狭い画面でも全画面で回転表示し、起�
   await page.goto('/');
   const dialog = page.locator('.loading-dialog');
   await expect(dialog).toBeVisible({ timeout: 45000 });
+  await expect(dialog.locator('.loading-title')).toHaveText('Now Loading...');
+  await expect(dialog.locator('.loading-detail')).toContainText('長いシーズンも、まずは一球から。');
+  await expect(dialog).not.toContainText('ブロック');
+  await expect(dialog).not.toContainText('整合性');
   const state = await dialog.evaluate((element) => {
     const spinner = element.querySelector('.loading-spinner')!;
     const rect = element.getBoundingClientRect();

@@ -78,14 +78,14 @@ export function GameApp() {
       )}
       {matchOpened && (
         <div hidden={!toolsOpen || tab !== 'game'}>
-          <Suspense fallback={<LoadingScreen title="試合画面を読み込んでいます" />}>
+          <Suspense fallback={<LoadingScreen />}>
             <MatchGame />
           </Suspense>
         </div>
       )}
       {worldOpened && (
         <div hidden={toolsOpen && tab !== 'world'}>
-          <Suspense fallback={<LoadingScreen title="球団運営画面を読み込んでいます" />}>
+          <Suspense fallback={<LoadingScreen />}>
             <WorldApp
               development={toolsOpen}
               visible={!toolsOpen || tab === 'world'}
@@ -96,18 +96,18 @@ export function GameApp() {
       )}
       {tradeOpened && (
         <div hidden={!toolsOpen || tab !== 'tradePlay'}>
-          <Suspense fallback={<LoadingScreen title="候補プレイ画面を読み込んでいます" />}>
+          <Suspense fallback={<LoadingScreen />}>
             <TradeCandidates onAttention={setTradeAttention} />
           </Suspense>
         </div>
       )}
       {toolsOpen && tab === 'lab' && (
-        <Suspense fallback={<LoadingScreen title="1球の検証画面を読み込んでいます" />}>
+        <Suspense fallback={<LoadingScreen />}>
           <PitchLab />
         </Suspense>
       )}
       {toolsOpen && tab === 'candidates' && (
-        <Suspense fallback={<LoadingScreen title="初期候補画面を読み込んでいます" />}>
+        <Suspense fallback={<LoadingScreen />}>
           <InitialCandidates />
         </Suspense>
       )}

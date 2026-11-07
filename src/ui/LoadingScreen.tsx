@@ -1,23 +1,24 @@
-import { useId, useLayoutEffect, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { WorkProgress } from '../world/work-progress.ts';
+import { LOADING_TIPS } from './loading-tips.ts';
 import './loading.css';
 
-/** 不明な進捗は回転表示、分かる件数だけ実数で表示する。 */
+/** 操作の途中経過を並べず、待機表示と短い野球の一言に統一する。 */
 export function LoadingScreen({
-  title = '画面を読み込んでいます',
-  detail = '準備ができるまでお待ちください。',
   fullPage = true,
   announce = true,
-  progress,
 }: {
-  title?: string;
-  detail?: string;
   fullPage?: boolean;
   announce?: boolean;
-  progress?: WorkProgress | null;
 }) {
-  const counted = progress?.total !== undefined && progress.completed !== undefined;
+  const [tipIndex, setTipIndex] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(
+      () => setTipIndex((index) => (index + 1) % LOADING_TIPS.length),
+      8000,
+    );
+    return () => clearInterval(timer);
+  }, []);
   return (
     <div
       className="loading-screen"
@@ -28,23 +29,11 @@ export function LoadingScreen({
         <span className="loading-brand" aria-hidden="true">
           BS
         </span>
-        <p className="loading-title">{title}</p>
-        {counted ? (
-          <>
-            <progress
-              value={progress.completed}
-              max={progress.total}
-              aria-label={progress.message}
-            />
-            <p className="loading-count">
-              {progress.completed} / {progress.total} ブロック
-            </p>
-          </>
-        ) : (
-          <span className="loading-spinner" aria-hidden="true" />
-        )}
-        <p className="loading-detail" aria-live="polite" aria-atomic="true">
-          {progress?.message ?? detail}
+        <p className="loading-title">Now Loading...</p>
+        <span className="loading-spinner" aria-hidden="true" />
+        <p className="loading-detail">
+          <span className="loading-tip-label">ベンチのひとこと</span>
+          {LOADING_TIPS[tipIndex]}
         </p>
       </div>
     </div>
@@ -52,15 +41,7 @@ export function LoadingScreen({
 }
 
 /** 非表示の祖先や遅延読込に隠されないよう、body直下で直ちに開く。 */
-export function LoadingOverlay({
-  active,
-  title,
-  progress,
-}: {
-  active: boolean;
-  title: string;
-  progress?: WorkProgress | null;
-}) {
+export function LoadingOverlay({ active }: { active: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const labelId = useId();
   useLayoutEffect(() => {
@@ -80,15 +61,9 @@ export function LoadingOverlay({
       onCancel={(event) => event.preventDefault()}
     >
       <span id={labelId} className="loading-sr-only">
-        {title}
+        読み込み中
       </span>
-      <LoadingScreen
-        title={title}
-        detail="完了まで、この画面を開いたままお待ちください。"
-        fullPage={false}
-        announce={false}
-        progress={progress}
-      />
+      {active && <LoadingScreen fullPage={false} announce={false} />}
     </dialog>,
     document.body,
   );

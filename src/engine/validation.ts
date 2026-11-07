@@ -32,7 +32,37 @@ function unique(values: string[]): void {
   values.forEach(id);
   ensure(new Set(values).size === values.length, 'IDが重複しています');
 }
-export function validateFixture(fixture: Fixture): void {
+type FixtureData = Pick<
+  Fixture,
+  'initialDatasetVersion' | 'clubs' | 'players' | 'pitches' | 'pitchProfiles'
+>;
+
+// 深く固定されたデータだけを記憶する。可変の入力や読込後の複製は必ず再検査する。
+const verifiedFixtureData = new WeakMap<Fixture['players'], FixtureData>();
+function deeplyFrozen(value: unknown, seen = new WeakSet<object>()): boolean {
+  if (!value || typeof value !== 'object' || seen.has(value)) return true;
+  if (!Object.isFrozen(value)) return false;
+  seen.add(value);
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== Array.prototype && prototype !== null)
+    return false;
+  // 凍結済みでもgetterの返り値は変わり得るため、データプロパティだけを記憶する。
+  return Object.values(Object.getOwnPropertyDescriptors(value)).every(
+    (descriptor) => 'value' in descriptor && deeplyFrozen(descriptor.value, seen),
+  );
+}
+
+function sameFixtureData(a: FixtureData | undefined, b: FixtureData): boolean {
+  return (
+    !!a &&
+    a.initialDatasetVersion === b.initialDatasetVersion &&
+    a.clubs === b.clubs &&
+    a.pitches === b.pitches &&
+    a.pitchProfiles === b.pitchProfiles
+  );
+}
+
+function validateFixtureData(fixture: Fixture): void {
   id(fixture.initialDatasetVersion);
   ensure(fixture.clubs.length === 2, '試作は架空2球団が必要です');
   unique(fixture.clubs.map((c) => c.clubId));
@@ -79,6 +109,13 @@ export function validateFixture(fixture: Fixture): void {
     integer(pitch.velocity.maxCentiKph, pitch.velocity.typicalCentiKph, 20000, 'MAX球速');
     integer(pitch.velocity.spreadCentiKph, 0, 2000, '球速幅');
   }
+}
+
+export function validateFixture(fixture: Fixture): void {
+  const verified = verifiedFixtureData.get(fixture.players);
+  const reuse = sameFixtureData(verified, fixture);
+  if (!reuse) validateFixtureData(fixture);
+  // 投打捕の組み合わせは毎球変わる。固定データの検査済み判定に含めない。
   const actors = Object.values(fixture.matchup);
   unique(actors);
   ensure(
@@ -100,7 +137,24 @@ export function validateFixture(fixture: Fixture): void {
     ),
     '使用可能な持ち球がありません',
   );
+  if (
+    !reuse &&
+    Object.isFrozen(fixture.players) &&
+    deeplyFrozen(fixture.players) &&
+    deeplyFrozen(fixture.clubs) &&
+    deeplyFrozen(fixture.pitches) &&
+    deeplyFrozen(fixture.pitchProfiles)
+  ) {
+    verifiedFixtureData.set(fixture.players, {
+      initialDatasetVersion: fixture.initialDatasetVersion,
+      players: fixture.players,
+      clubs: fixture.clubs,
+      pitches: fixture.pitches,
+      pitchProfiles: fixture.pitchProfiles,
+    });
+  }
 }
+
 export function validateState(state: PrototypeState, fixture: Fixture): void {
   ensure(state.kind === 'pitch-lab-v1', '全世界セーブと1球試作の状態は互換ではありません');
   id(state.gameId);

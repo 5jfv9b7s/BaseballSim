@@ -15,7 +15,7 @@ async function observeCommands(page: Page, delayAdvance = false) {
       const data = message as { kind?: string; localWorldId?: string };
       if (data.localWorldId)
         Reflect.set(window, 'periodCommands', Reflect.get(window, 'periodCommands') + 1);
-      if (delay && data.kind === 'advance' && data.localWorldId) {
+      if (delay && (data.kind === 'advance' || data.kind === 'advanceBatch') && data.localWorldId) {
         setTimeout(() => original.call(this, message, options as StructuredSerializeOptions), 35);
       } else original.call(this, message, options as StructuredSerializeOptions);
     };

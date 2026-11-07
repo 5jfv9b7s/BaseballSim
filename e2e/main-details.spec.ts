@@ -155,7 +155,12 @@ test('年間表示：未確定のグラフを月変更で補完せず、進行�
   await page.evaluate(() => {
     const original = Worker.prototype.postMessage;
     Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
-      if (message && typeof message === 'object' && 'kind' in message && message.kind === 'advance')
+      if (
+        message &&
+        typeof message === 'object' &&
+        'kind' in message &&
+        (message.kind === 'advance' || message.kind === 'advanceBatch')
+      )
         setTimeout(() => original.call(this, message, options as StructuredSerializeOptions), 35);
       else original.call(this, message, options as StructuredSerializeOptions);
     };
@@ -222,7 +227,7 @@ test('貯金グラフ：同日の一部終了では更新せず、全試合終�
           message &&
           typeof message === 'object' &&
           'kind' in message &&
-          message.kind === 'advance'
+          (message.kind === 'advance' || message.kind === 'advanceBatch')
         ) {
           pending = send;
           Reflect.set(window, 'graphDayHeld', true);

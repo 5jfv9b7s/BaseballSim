@@ -11,7 +11,7 @@ for (const width of [1280, 390]) {
         const original = Worker.prototype.postMessage;
         Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
           const d = message as { kind?: string; localWorldId?: string };
-          if (d.kind === 'advance' && d.localWorldId === 'v02-local')
+          if ((d.kind === 'advance' || d.kind === 'advanceBatch') && d.localWorldId === 'v02-local')
             setTimeout(
               () => original.call(this, message, options as StructuredSerializeOptions),
               35,

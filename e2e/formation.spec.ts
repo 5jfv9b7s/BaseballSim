@@ -239,7 +239,12 @@ test('進行中の編成は閲覧のみで、翌日から新しい編集案を�
   await page.addInitScript(() => {
     const original = Worker.prototype.postMessage;
     Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
-      if (message && typeof message === 'object' && 'kind' in message && message.kind === 'advance')
+      if (
+        message &&
+        typeof message === 'object' &&
+        'kind' in message &&
+        (message.kind === 'advance' || message.kind === 'advanceBatch')
+      )
         setTimeout(() => original.call(this, message, options as StructuredSerializeOptions), 35);
       else original.call(this, message, options as StructuredSerializeOptions);
     };

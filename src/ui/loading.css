@@ -40,17 +40,6 @@
   overflow-wrap: anywhere;
 }
 
-.loading-screen progress {
-  display: block;
-  width: 100%;
-  height: 5px;
-  overflow: hidden;
-  border: 0;
-  border-radius: 6px;
-  background: #d7dfe9;
-  accent-color: #087e78;
-}
-
 .loading-screen .loading-detail {
   margin: 18px 0 0;
   color: #58677b;
@@ -87,10 +76,13 @@
   animation: loading-spin 850ms linear infinite;
 }
 
-.loading-count {
-  color: #58677b;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
+.loading-tip-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #087e78;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 @keyframes loading-spin {
@@ -113,16 +105,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
-    animation: none;
-  }
-
-  .loading-screen progress {
-    appearance: none;
-    border: 1px solid #a6b4c6;
-  }
-
-  .loading-screen progress::-webkit-progress-bar {
-    background: #d7dfe9;
     animation: none;
   }
 }

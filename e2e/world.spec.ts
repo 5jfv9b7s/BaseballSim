@@ -107,7 +107,10 @@ test('v0.2：一時停止・手動保存・再読み込みから同じ結果へ�
     const original = Worker.prototype.postMessage;
     Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
       const data = message as { kind?: string; localWorldId?: string };
-      if (data.kind === 'advance' && data.localWorldId === 'v02-local') {
+      if (
+        (data.kind === 'advance' || data.kind === 'advanceBatch') &&
+        data.localWorldId === 'v02-local'
+      ) {
         setTimeout(() => original.call(this, message, options as StructuredSerializeOptions), 35);
       } else original.call(this, message, options as StructuredSerializeOptions);
     };

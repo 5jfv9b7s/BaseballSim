@@ -32,8 +32,7 @@ import { allWorldSquads } from '../world/squads.ts';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { LoadingOverlay, LoadingScreen } from './LoadingScreen.tsx';
 import type { WorldAction, WorldCommand, WorldView } from '../world/controller.ts';
-import type { WorldWorkerMessage } from '../world-worker.ts';
-import type { WorkProgress } from '../world/work-progress.ts';
+import type { WorldWorkerResponse } from '../world-worker.ts';
 import { paintBeforeWork } from './paint-before-work.ts';
 import { TitleScreen } from './TitleScreen.tsx';
 import './world.css';
@@ -135,7 +134,6 @@ export function WorldApp({
   const [view, setView] = useState<WorldView | null>(null);
   const [inspection, setInspection] = useState<StorageInspection | null>(null);
   const [busy, setBusy] = useState(false);
-  const [workProgress, setWorkProgress] = useState<WorkProgress | null>(null);
   const [running, setRunning] = useState(false);
   const [calendar, setCalendar] = useState<'short' | 'annual'>('short');
   const [targetDate, setTargetDate] = useState('');
@@ -174,7 +172,8 @@ export function WorldApp({
     const instance = worker.current;
     if (!instance) return;
     try {
-      if (request.kind !== 'advance' && !auto.current) await paintBeforeWork();
+      if (request.kind !== 'advance' && request.kind !== 'advanceBatch' && !auto.current)
+        await paintBeforeWork();
       if (worker.current !== instance || !pending.current) return;
       instance.postMessage(request, transfer);
     } catch {
@@ -183,7 +182,6 @@ export function WorldApp({
       auto.current = false;
       setBusy(false);
       setRunning(false);
-      setWorkProgress(null);
       pendingInspection.current?.reject(new Error('要求を送信できませんでした。'));
       pendingInspection.current = null;
       setError('要求を送信できませんでした。保存した状態から確認してください。');
@@ -198,7 +196,6 @@ export function WorldApp({
     pending.current = true;
     lastAction.current = 'inspectTrade';
     setBusy(true);
-    setWorkProgress(null);
     setError('');
     setMessage('');
     return new Promise((resolve, reject) => {
@@ -220,7 +217,6 @@ export function WorldApp({
     lastAction.current = action.kind;
     setInspection(null);
     setBusy(true);
-    setWorkProgress(null);
     setError('');
     setMessage('');
     void postRequest({
@@ -370,7 +366,6 @@ export function WorldApp({
     pending.current = true;
     lastAction.current = 'inspectStorage';
     setBusy(true);
-    setWorkProgress(null);
     setError('');
     setMessage('');
     setInspection(null);
@@ -382,7 +377,6 @@ export function WorldApp({
     pending.current = true;
     lastAction.current = kind;
     setBusy(true);
-    setWorkProgress(null);
     setError('');
     setMessage('');
     setInspection(null);
@@ -432,7 +426,8 @@ export function WorldApp({
     const target = progressTarget.current;
     if (!current || !target || !auto.current || pending.current) return;
     const action = nextProgressAction(current, target);
-    if (action) send(action);
+    if (action?.kind === 'advance') send({ kind: 'advanceBatch', count: action.count, batches: 4 });
+    else if (action) send(action);
     else {
       auto.current = false;
       progressTarget.current = null;
@@ -443,17 +438,11 @@ export function WorldApp({
   useEffect(() => {
     const instance = new Worker(new URL('../world-worker.ts', import.meta.url), { type: 'module' });
     worker.current = instance;
-    instance.onmessage = ({ data }: MessageEvent<WorldWorkerMessage>) => {
+    instance.onmessage = ({ data }: MessageEvent<WorldWorkerResponse>) => {
       if (worker.current !== instance) return;
-      if ('kind' in data) {
-        if (pending.current && data.operation === lastAction.current)
-          setWorkProgress(data.progress);
-        return;
-      }
       const completedAction = lastAction.current;
       pending.current = false;
       setBusy(false);
-      setWorkProgress(null);
       latest.current = data.view;
       setView(data.view);
       setNewPlayOptions(data.newPlayOptions);
@@ -647,7 +636,6 @@ export function WorldApp({
       auto.current = false;
       setBusy(false);
       setRunning(false);
-      setWorkProgress(null);
       setError(
         '日次Workerでエラーが発生しました。再読み込み後、保存した世界を読み込んでください。',
       );
@@ -703,29 +691,10 @@ export function WorldApp({
     'inspectStorage',
     'query',
   ].includes(lastAction.current ?? '');
-  const processingMessages: Partial<Record<NonNullable<typeof lastAction.current>, string>> = {
-    new: '新しいプレイを作成し、初回保存しています。完了までこの画面を開いておいてください。',
-    save: '世界を手動保存しています。完了までこの画面を開いておいてください。',
-    load: '保存を読み込み、内容を確認しています。完了後は停止状態で開きます。',
-    openPlay: '選んだプレイを読み込み、内容を確認しています。',
-    exportSnapshot: '保存内容を確認し、ファイルを書き出しています。',
-    importSnapshot: '保存ファイルを確認し、別プレイへ取り込んでいます。',
-    inspectStorage: '保存容量と履歴を確認しています。',
-    query: '保存済みプレイの一覧を読み込んでいます。',
-    completeDay: '当日の結果を確定し、翌日の状態を自動保存しています。',
-  };
   const loadingOverlay = (
-    <LoadingOverlay
-      active={visible && !error && !running && (busy || !view)}
-      progress={workProgress}
-      title={
-        !view
-          ? '保存データと日程を読み込んでいます'
-          : (processingMessages[lastAction.current!] ?? '変更内容を確認しています')
-      }
-    />
+    <LoadingOverlay active={visible && !error && !running && (busy || !view)} />
   );
-  const notice = busy ? (processingMessages[lastAction.current!] ?? '') : message;
+  const notice = busy ? '' : message;
   const notification = (running || notice) && (
     <p role="status">
       {running && (
@@ -1639,7 +1608,7 @@ export function WorldApp({
     return (
       <>
         {loadingOverlay}
-        <Suspense fallback={<LoadingScreen title="本画面を読み込んでいます" />}>
+        <Suspense fallback={<LoadingScreen />}>
           <MainScreen
             onInspectTrade={inspectTrade}
             view={view}
@@ -1670,7 +1639,7 @@ export function WorldApp({
   return (
     <>
       {loadingOverlay}
-      <Suspense fallback={<LoadingScreen title="開発用の球団運営画面を読み込んでいます" />}>
+      <Suspense fallback={<LoadingScreen />}>
         <main className="game-page world-page">
           <header>
             <div className="eyebrow">BASEBALL SIMULATOR / v1.0へ向けた球団運営</div>

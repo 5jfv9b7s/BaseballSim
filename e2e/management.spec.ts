@@ -13,7 +13,10 @@ for (const width of [1280, 390]) {
       const original = Worker.prototype.postMessage;
       Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
         const data = message as { kind?: string; localWorldId?: string };
-        if (data.kind === 'advance' && typeof data.localWorldId === 'string') {
+        if (
+          (data.kind === 'advance' || data.kind === 'advanceBatch') &&
+          typeof data.localWorldId === 'string'
+        ) {
           setTimeout(() => original.call(this, message, options as StructuredSerializeOptions), 35);
         } else original.call(this, message, options as StructuredSerializeOptions);
       };

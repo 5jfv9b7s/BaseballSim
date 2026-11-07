@@ -6,6 +6,9 @@ import type { RosterChangeMode, RosterPreference } from '../../world/roster-poli
 import { AbilityRating } from '../visuals/AbilityRating.tsx';
 import { MatchScore } from '../visuals/BaseballVisuals.tsx';
 import { TradeBenchSelection } from './TradeBenchSelection.tsx';
+import { TradeRosterEditor } from './TradeRosterEditor.tsx';
+import { createTradeRosterDraft, sameDraft } from './trade-roster-draft.ts';
+import type { TradeWorkerResponse } from '../../world/trade-worker-protocol.ts';
 
 const phaseLabels = {
   beforeGame: '試合開始前',
@@ -38,7 +41,7 @@ export function TradePlayPanel({
   view: TradePlayView;
   disabled: boolean;
   onDraftChange: (value: boolean) => void;
-  onSend: (action: TradeWorkerAction, success: string) => Promise<void>;
+  onSend: (action: TradeWorkerAction, success: string) => Promise<TradeWorkerResponse | undefined>;
 }) {
   const [bench, setBench] = useState(() => ({
     away: [...(view.matchSetup?.sides.away.savedBenchIds ?? [])],
@@ -49,9 +52,13 @@ export function TradePlayPanel({
     Object.fromEntries(view.preferences.map((p) => [p.playerId, p.preference])),
   );
   const [selectedPlayer, setSelectedPlayer] = useState(view.players[0]?.playerId ?? '');
-  const dirty =
+  const [originalRoster] = useState(() => createTradeRosterDraft(active, view));
+  const [rosterDraft, setRosterDraft] = useState(originalRoster);
+  const rosterDirty = !sameDraft(originalRoster, rosterDraft);
+  const policyDirty =
     changeMode !== view.rosterPolicy.changeMode ||
     view.preferences.some((p) => draftPreferences[p.playerId] !== p.preference);
+  const dirty = policyDirty || rosterDirty;
   useEffect(() => {
     onDraftChange(dirty);
     return () => onDraftChange(false);
@@ -103,7 +110,7 @@ export function TradePlayPanel({
         </p>
         {dirty && (
           <p role="status">
-            固定希望に未送信の変更があります。「反映して自動保存」か「下書きを戻す」を選んでから試合・日付を進めてください。
+            登録・編成または固定希望に未送信の変更があります。該当する編集欄で確定するか下書きを戻してから、試合・日付を進めてください。
           </p>
         )}
         {next && (
@@ -258,12 +265,21 @@ export function TradePlayPanel({
           </div>
         </details>
       </section>
+      <TradeRosterEditor
+        active={active}
+        view={view}
+        draft={rosterDraft}
+        onChange={setRosterDraft}
+        disabled={disabled || policyDirty}
+        onSend={onSend}
+        onSelectPlayer={setSelectedPlayer}
+      />
       <section className="trade-play-section" aria-labelledby="candidate-roster-title">
         <h2 id="candidate-roster-title">現在所属の選手と固定希望</h2>
         <label>
           登録入替の方針
           <select
-            disabled={disabled || !view.capabilities.canEditRoster}
+            disabled={disabled || rosterDirty || !view.capabilities.canEditRoster}
             value={changeMode}
             onChange={(event) => setChangeMode(event.target.value as RosterChangeMode)}
           >
@@ -272,7 +288,7 @@ export function TradePlayPanel({
           </select>
         </label>
         <p className="muted">
-          当日の全試合開始前に変更できます。自動でも編成不足や再登録待ちは保留します。直接の登録・打順変更画面は工事中です。
+          当日の全試合開始前に変更できます。自動でも編成不足や再登録待ちは保留します。登録・打順は上の「登録・編成」で編集できます。
         </p>
         <div className="table-scroll">
           <table aria-label="候補の所属選手と固定希望">
@@ -321,7 +337,7 @@ export function TradePlayPanel({
                   <td>
                     <select
                       aria-label={`${player.name}の固定希望`}
-                      disabled={disabled || !view.capabilities.canEditRoster}
+                      disabled={disabled || rosterDirty || !view.capabilities.canEditRoster}
                       value={draftPreferences[player.playerId]}
                       onChange={(event) =>
                         setDraftPreferences((value) => ({
@@ -345,7 +361,7 @@ export function TradePlayPanel({
         <div className="trade-play-actions">
           <button
             className="primary"
-            disabled={disabled || !dirty || !view.capabilities.canEditRoster}
+            disabled={disabled || rosterDirty || !policyDirty || !view.capabilities.canEditRoster}
             onClick={() =>
               command(
                 {
@@ -367,7 +383,7 @@ export function TradePlayPanel({
           </button>
           <button
             className="secondary"
-            disabled={disabled || !dirty}
+            disabled={disabled || !policyDirty}
             onClick={() => {
               setChangeMode(view.rosterPolicy.changeMode);
               setDraftPreferences(

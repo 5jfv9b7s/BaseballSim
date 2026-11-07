@@ -1,3 +1,4 @@
+import type { TradeRegistrationCommand, TradeRosterPreview } from './trade-roster-preview.ts';
 import type { TradeGameCommand, TradeGameReceipt } from './trade-game-commands.ts';
 import type { TradeDayCommand, TradeDayReceipt } from './trade-day-commands.ts';
 import type { TradeRosterCommand, TradeRosterReceipt } from './trade-roster-commands.ts';
@@ -26,6 +27,7 @@ export type TradeWorkerRequest = Header &
     | { kind: 'queryCandidate' }
     | { kind: 'openCandidate'; localWorldId: string }
     | (SessionScope & { kind: 'candidateCommand'; command: TradeWorkerCommand })
+    | (SessionScope & { kind: 'previewCandidateRoster'; command: TradeRegistrationCommand })
     | (SessionScope & { kind: 'saveCandidateManual'; expectedStateRevision: number })
     | (SessionScope & { kind: 'reloadCandidate'; expectedStateRevision: number })
     | (SessionScope & { kind: 'closeCandidate'; expectedStateRevision: number })
@@ -67,4 +69,5 @@ export type TradeWorkerResponse = {
   view: TradePlayView | null;
   result?: TradeWorkerResult;
   candidates?: TradeCandidateIndexEntry[];
+  rosterPreview?: TradeRosterPreview;
 } & ({ ok: true } | { ok: false; error: string });

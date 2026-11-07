@@ -21,6 +21,7 @@ export class TradeWorkerClient {
   private latest: TradeWorkerResponse | null = null;
   private pending: {
     requestId: string;
+    preview: { commandId: string; stateRevision: number } | null;
     resolve: (response: TradeWorkerResponse) => void;
     reject: (error: Error) => void;
   } | null = null;
@@ -68,6 +69,7 @@ export class TradeWorkerClient {
       const copied = structuredClone(action);
       const scoped = [
         'candidateCommand',
+        'previewCandidateRoster',
         'saveCandidateManual',
         'reloadCandidate',
         'closeCandidate',
@@ -88,7 +90,18 @@ export class TradeWorkerClient {
       return Promise.reject(error);
     }
     return new Promise((resolve, reject) => {
-      this.pending = { requestId: request.requestId, resolve, reject };
+      this.pending = {
+        requestId: request.requestId,
+        preview:
+          request.kind === 'previewCandidateRoster'
+            ? {
+                commandId: request.command.commandId,
+                stateRevision: request.command.expectedStateRevision,
+              }
+            : null,
+        resolve,
+        reject,
+      };
       try {
         this.worker.postMessage(request);
         this.publish();
@@ -105,8 +118,38 @@ export class TradeWorkerClient {
     const response = (event as MessageEvent<unknown>).data as TradeWorkerResponse;
     if (this.lastResponseId !== null && response?.requestId === this.lastResponseId) return;
     if (!this.pending) return;
+    const preview = response?.rosterPreview;
+    const expectedPreview = this.pending.preview;
+    const previewValid =
+      preview === undefined
+        ? !response?.ok || expectedPreview === null
+        : preview !== null &&
+          typeof preview === 'object' &&
+          response?.ok &&
+          expectedPreview !== null &&
+          preview.commandId === expectedPreview.commandId &&
+          preview.stateRevision === expectedPreview.stateRevision &&
+          response.active?.stateRevision === expectedPreview.stateRevision &&
+          (preview.status === 'blocked'
+            ? Array.isArray(preview.issues) &&
+              preview.issues.every(
+                (i) => i && typeof i.code === 'string' && typeof i.message === 'string',
+              )
+            : preview.status === 'ready' &&
+              preview.audit &&
+              Array.isArray(preview.audit.changedPlayerIds) &&
+              preview.audit.changedPlayerIds.every((id) => typeof id === 'string') &&
+              Array.isArray(preview.audit.invalidatedOverrides) &&
+              preview.audit.invalidatedOverrides.every(
+                (r) =>
+                  r &&
+                  typeof r.gameId === 'string' &&
+                  Array.isArray(r.fields) &&
+                  r.fields.every((f) => ['lineup', 'starterId', 'benchIds'].includes(f)),
+              ));
     if (
       !response ||
+      !previewValid ||
       response.protocol !== TRADE_WORKER_PROTOCOL ||
       response.requestId !== this.pending.requestId ||
       typeof response.ok !== 'boolean' ||

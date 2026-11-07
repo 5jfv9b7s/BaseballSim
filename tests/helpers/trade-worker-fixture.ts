@@ -18,6 +18,7 @@ export function request(
 ): TradeWorkerRequest {
   const session = [
     'candidateCommand',
+    'previewCandidateRoster',
     'saveCandidateManual',
     'reloadCandidate',
     'closeCandidate',

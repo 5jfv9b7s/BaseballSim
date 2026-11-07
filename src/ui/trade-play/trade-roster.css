@@ -1,0 +1,95 @@
+.trade-roster-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(220px, 1.2fr);
+  gap: 14px;
+  margin: 16px 0;
+  align-items: start;
+}
+.trade-roster-column {
+  min-width: 0;
+  padding: 12px;
+  border-top: 3px solid #688471;
+  background: #ffffff05;
+}
+.trade-roster-column h3 {
+  font-size: 16px;
+}
+.trade-roster-column > button {
+  margin-bottom: 10px;
+}
+.trade-roster .trade-roster-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 5px;
+  text-align: left;
+  margin: 5px 0;
+  border-color: #8aa291;
+}
+.trade-roster-card[draggable='true'] {
+  cursor: grab;
+}
+.trade-roster button[aria-pressed='true'] {
+  outline: 2px solid #e6bd76;
+  outline-offset: 2px;
+}
+.trade-roster-slot {
+  padding: 10px 0;
+  border-bottom: 1px solid #ffffff30;
+}
+.trade-roster-slot:has([draggable='true']):hover {
+  background: #ffffff0a;
+}
+.trade-roster-slot > button:not(.trade-roster-card) {
+  font-size: 12px;
+}
+.trade-roster-vacancy {
+  display: block;
+  padding: 16px 4px;
+  color: #f0cb8c;
+  border: 1px dashed #e6bd76;
+  margin: 6px 0;
+}
+.trade-roster-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.trade-roster-information {
+  max-height: 800px;
+  overflow-y: auto;
+}
+.trade-roster-information dl > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+.trade-roster-information dd {
+  margin: 0;
+}
+.trade-roster-review {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid #e6bd76;
+}
+.trade-roster-review li {
+  margin-bottom: 8px;
+}
+.trade-roster-review > button {
+  margin: 4px;
+}
+@media (max-width: 1040px) {
+  .trade-roster-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .trade-roster-columns {
+    grid-template-columns: 1fr;
+  }
+  .trade-roster-information {
+    max-height: none;
+  }
+}

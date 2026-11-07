@@ -1,3 +1,8 @@
+import {
+  createTradeRosterDraft,
+  swapDraftPositions,
+  buildTradeRosterAction,
+} from '../src/ui/trade-play/trade-roster-draft.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { TradeWorkerClient } from '../src/world/trade-worker-client.ts';
@@ -221,4 +226,70 @@ test('表示通知の例外で送信済み要求を解放せず、他の購読�
   unsubscribe();
   stop();
   client.dispose();
+});
+
+test('編成確認にも元画面のsessionを要求し、検査結果を元指示IDへ対応付ける', async () => {
+  const port = new Port(),
+    client = new TradeWorkerClient(port),
+    f = workerFixture();
+  const opening = client.request({ kind: 'openCandidate', localWorldId: f.initial.localWorldId });
+  port.reply(await f.workspace.handle(port.sent.at(-1)));
+  const first = await opening;
+  const draft = createTradeRosterDraft(first.active!, first.view!),
+    squad = draft.squads[0]!;
+  const action = buildTradeRosterAction(
+    first.active!,
+    first.view!,
+    swapDraftPositions(draft, squad.squadId, 1, 2),
+    'client-preview',
+  );
+  await assert.rejects(
+    client.request({ kind: 'previewCandidateRoster', sessionId: 'stale', command: action.command }),
+    /切替・再読込/,
+  );
+  const pending = client.request({
+    kind: 'previewCandidateRoster',
+    sessionId: first.active!.sessionId,
+    command: action.command,
+  });
+  port.reply(await f.workspace.handle(port.sent.at(-1)));
+  assert.equal((await pending).rosterPreview?.commandId, 'client-preview');
+  assert.equal(f.writes(), 0);
+  client.dispose();
+});
+
+test('編成検査結果の欠落・別ID・別版・不正形式で待ち続けず停止する', async () => {
+  const changes: ((response: TradeWorkerResponse) => unknown)[] = [
+    (r) => ({ ...r, rosterPreview: undefined }),
+    (r) => ({ ...r, rosterPreview: null }),
+    (r) => ({ ...r, rosterPreview: { ...r.rosterPreview, commandId: 'other' } }),
+    (r) => ({ ...r, rosterPreview: { ...r.rosterPreview, stateRevision: -1 } }),
+    (r) => ({ ...r, rosterPreview: { ...r.rosterPreview, audit: null } }),
+  ];
+  for (const change of changes) {
+    const port = new Port(),
+      client = new TradeWorkerClient(port),
+      f = workerFixture();
+    const opening = client.request({ kind: 'openCandidate', localWorldId: f.initial.localWorldId });
+    port.reply(await f.workspace.handle(port.sent.at(-1)));
+    const first = await opening;
+    const draft = createTradeRosterDraft(first.active!, first.view!),
+      squad = draft.squads[0]!;
+    const action = buildTradeRosterAction(
+      first.active!,
+      first.view!,
+      swapDraftPositions(draft, squad.squadId, 1, 2),
+      'bad-preview',
+    );
+    const pending = client.request({
+      kind: 'previewCandidateRoster',
+      sessionId: first.active!.sessionId,
+      command: action.command,
+    });
+    const rejected = assert.rejects(pending, /応答を照合/);
+    port.reply(change(await f.workspace.handle(port.sent.at(-1))));
+    await rejected;
+    assert.equal(client.connectionState, 'stopped');
+    assert.equal(f.writes(), 0);
+  }
 });

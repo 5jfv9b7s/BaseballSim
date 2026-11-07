@@ -47,6 +47,14 @@ export function parseTradeWorkerRequest(value: unknown): TradeWorkerRequest {
       transportId(request.sessionId);
       integer(request.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER, '候補の状態版');
       break;
+    case 'previewCandidateRoster':
+      exactKeys(request, [...common, 'sessionId', 'command'], '編成確認要求');
+      transportId(request.sessionId);
+      ensure(
+        parseTradeRosterCommand(request.command).kind === 'setTradeRegistrations',
+        '登録・編成案だけを確認できます',
+      );
+      break;
     case 'candidateCommand': {
       exactKeys(request, [...common, 'sessionId', 'command'], '候補への指示要求');
       transportId(request.sessionId);

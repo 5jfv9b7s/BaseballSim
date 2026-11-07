@@ -1,3 +1,4 @@
+import { previewTradeRoster } from './trade-roster-preview.ts';
 import { parseTradeWorkerRequest } from './trade-worker-validation.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import { tradePlayView } from './trade-play-view.ts';
@@ -158,6 +159,11 @@ export class TradeWorkerWorkspace {
         result = { status: 'opened' };
       } else {
         const session = this.requireActive(request);
+        if (request.kind === 'previewCandidateRoster') {
+          const rosterPreview = previewTradeRoster(session.read(), request.command);
+          const response = this.response(requestId);
+          return response.ok ? { ...response, rosterPreview } : response;
+        }
         if (request.kind === 'closeCandidate') {
           this.requireSwitchable();
           const activation = this.nextActivation();

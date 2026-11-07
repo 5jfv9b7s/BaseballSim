@@ -50,6 +50,7 @@ export default function TradeCandidatesApp({
       if (response.candidates) setCandidates(response.candidates);
       if (!response.ok) setError(response.error);
       else if (response.result?.status !== 'blocked') setMessage(success);
+      return response;
     } catch (failure) {
       if (client.current === instance)
         setError(failure instanceof Error ? failure.message : '候補Workerへ接続できませんでした。');
@@ -131,7 +132,7 @@ export default function TradeCandidatesApp({
         kind: 'request',
         action,
         success,
-        message: '未送信の固定希望を破棄して、この操作を行いますか？',
+        message: '未送信の登録・編成・固定希望を破棄して、この操作を行いますか？',
       });
     else void send(action, success);
   }
@@ -325,7 +326,7 @@ export default function TradeCandidatesApp({
                     sessionId: active.sessionId,
                     expectedStateRevision: active.stateRevision,
                   },
-                  '試合途中の状態を手動1枠へ保存しました。固定希望の未送信入力は保存しません。',
+                  '試合途中の状態を手動1枠へ保存しました。登録・編成・固定希望の未送信入力は保存しません。',
                 )
               }
             >
@@ -344,7 +345,7 @@ export default function TradeCandidatesApp({
                   },
                   success: '選択中の保存から読み込み直しました。',
                   message:
-                    '未保存の試合進行と固定希望の下書きを破棄し、選択中の保存から読み込み直します。よろしいですか？',
+                    '未保存の試合進行と登録・編成・固定希望の下書きを破棄し、選択中の保存から読み込み直します。よろしいですか？',
                 })
               }
             >

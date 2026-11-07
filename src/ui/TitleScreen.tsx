@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppInfo } from './AppInfo.tsx';
 import { APP_VERSION } from './release-notes.ts';
 import type { StoredPlay } from '../world/storage.ts';
+import './interface-tokens.css';
 import './title-screen.css';
 
 type TitlePage = 'start' | 'continue' | 'new' | 'import' | 'help';

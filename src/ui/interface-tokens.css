@@ -1,0 +1,78 @@
+/* 本画面とタイトルで共有する表示規則。能力ランク・球団色・ゲーム計算とは独立。 */
+.main-shell,
+.title-shell {
+  --ui-canvas: #f3f5f9;
+  --ui-surface: #ffffff;
+  --ui-surface-soft: #edf1f6;
+  --ui-text: #19283e;
+  --ui-muted: #58677b;
+  --ui-border: #d7dfe9;
+  --ui-border-strong: #a6b4c6;
+  --ui-accent: #087e78;
+  --ui-accent-hover: #05635f;
+  --ui-accent-soft: #e4f2f0;
+  --ui-inverse: #15283f;
+  --ui-inverse-muted: #b9c9da;
+  --ui-inverse-line: #ffffff26;
+  --ui-highlight: #8de9d0;
+  --ui-focus: #146bd1;
+  --ui-warning: #85500d;
+  --ui-warning-soft: #fff3df;
+  --ui-danger: #a32c3a;
+  --ui-shadow: 0 6px 24px #19283e0a;
+  --ui-radius: 12px;
+  --ui-font: 'Segoe UI', 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+
+  color-scheme: light;
+  font-family: var(--ui-font);
+  line-height: 1.6;
+  accent-color: var(--ui-accent);
+}
+
+/* わずかな反応で押下を伝える。配置・寸法は動かさない。 */
+:where(.main-screen, .title-screen) button {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+:where(.main-screen, .title-screen) :is(input, select, textarea) {
+  font: inherit;
+}
+
+:where(.main-screen, .title-screen) input:is([type='checkbox'], [type='radio']) {
+  accent-color: var(--ui-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.main-screen, .title-screen) *,
+  :where(.main-screen, .title-screen) *::before,
+  :where(.main-screen, .title-screen) *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(.main-screen, .title-screen) button {
+    border: 1px solid ButtonText;
+  }
+
+  :where(.main-screen, .title-screen) button:is([aria-current='page'], [aria-pressed='true']) {
+    outline: 2px solid Highlight !important;
+    outline-offset: -3px;
+  }
+
+  :where(.main-screen, .title-screen) button:disabled {
+    border: 1px dashed GrayText;
+    color: GrayText !important;
+  }
+
+  .main-screen .menu-icon {
+    forced-color-adjust: none;
+    background: ButtonText;
+  }
+}

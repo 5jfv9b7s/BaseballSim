@@ -1,9 +1,9 @@
 ﻿/* S24の入口。既存の試合・本画面へスタイルを漏らさない。 */
 .title-shell {
   min-height: 100svh;
-  background: #f1f2e9;
-  color: #22382f;
-  padding: 36px 20px;
+  background: var(--ui-canvas);
+  color: var(--ui-text);
+  padding: 40px 20px;
 }
 .title-screen {
   max-width: 760px;
@@ -23,9 +23,13 @@
   gap: 10px;
 }
 .title-brand b {
-  padding: 7px 8px;
-  background: #22382f;
-  color: #e9d49a;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--ui-inverse);
+  color: var(--ui-highlight);
 }
 .title-brand span {
   font-size: 12px;
@@ -33,7 +37,7 @@
 }
 .title-development {
   padding: 4px 8px;
-  border: 1px solid #96a89a;
+  border: 1px solid var(--ui-border-strong);
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -63,66 +67,52 @@
 .title-screen summary:focus-visible,
 .title-screen input:focus-visible,
 .title-screen select:focus-visible {
-  outline: 3px solid #8b4a14;
+  outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
 .title-screen button:disabled {
   opacity: 1;
-  border: 1px dashed #96a89a;
-  color: #647368;
-  background: #e7eae1;
+  border: 1px dashed var(--ui-border-strong);
+  color: var(--ui-muted);
+  background: var(--ui-surface-soft);
   cursor: default;
 }
 .title-hero {
-  position: relative;
-  overflow: hidden;
-  background: #1a3f31;
-  color: #f1f2ea;
-  padding: 32px;
-  border-radius: 12px;
-}
-.title-hero::before {
-  content: '';
-  position: absolute;
-  width: 250px;
-  height: 250px;
-  right: -90px;
-  top: -100px;
-  border: 1px solid #e9d49a38;
-  transform: rotate(45deg);
-  pointer-events: none;
-}
-.title-hero > * {
-  position: relative;
+  background: var(--ui-inverse);
+  color: #f7faff;
+  padding: 40px;
+  border: 1px solid var(--ui-inverse);
+  border-radius: 16px;
 }
 .title-hero .title-eyebrow {
-  color: #e9d49a;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  color: var(--ui-highlight);
+  font-size: 12px;
+  letter-spacing: 0.1em;
   margin: 0 0 16px;
 }
 .title-hero h2 {
-  font-size: clamp(24px, 4vw, 34px);
+  font-size: clamp(26px, 4vw, 36px);
   line-height: 1.45;
   margin: 0;
 }
 .title-intro {
-  margin: 12px 0 24px;
+  margin: 14px 0 28px;
+  color: var(--ui-inverse-muted);
 }
 .title-screen .title-primary {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  min-height: 50px;
+  min-height: 54px;
   text-align: left;
   padding: 12px 18px;
-  background: #e9d49a;
-  color: #1a3f31;
+  background: var(--ui-highlight);
+  color: var(--ui-inverse);
 }
 .title-screen .title-current {
   background: transparent;
-  color: #f1f2ea;
+  color: #f7faff;
   text-decoration: underline;
   margin-top: 12px;
 }
@@ -133,11 +123,13 @@
   margin-top: 16px;
 }
 .title-actions button {
-  background: #fbfaf4;
-  border: 1px solid #b9c2b3;
-  color: #22382f;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  color: var(--ui-text);
   text-align: left;
-  padding: 16px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  box-shadow: var(--ui-shadow);
 }
 .title-actions strong,
 .title-actions span {
@@ -146,7 +138,7 @@
 .title-actions span {
   font-size: 13px;
   font-weight: 400;
-  color: #526359;
+  color: var(--ui-muted);
   line-height: 1.6;
   margin-top: 6px;
 }
@@ -155,8 +147,8 @@
   width: auto;
   margin: 16px 0 0 auto;
   background: transparent;
-  color: #22382f;
-  border: 1px solid #96a89a;
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border-strong);
   padding: 10px 16px;
 }
 .title-screen .title-back {
@@ -164,12 +156,12 @@
   padding: 10px 0;
   margin-bottom: 12px;
   background: transparent;
-  color: #22382f;
+  color: var(--ui-text);
 }
 .title-content {
-  background: #fbfaf4;
+  background: var(--ui-surface);
   padding: 24px;
-  border: 1px solid #b9c2b3;
+  border: 1px solid var(--ui-border);
   border-radius: 10px;
 }
 .title-content .panel {
@@ -178,33 +170,33 @@
   border: 0;
 }
 .title-content label {
-  color: #22382f;
+  color: var(--ui-text);
   font-size: 14px;
 }
 .title-content input,
 .title-content select {
-  color: #22382f;
+  color: var(--ui-text);
   background: #fff;
   min-height: 44px;
-  border-color: #96a89a;
+  border-color: var(--ui-border-strong);
 }
 .title-content .hint,
 .title-content .action-hint,
 .title-content .title-caption {
-  color: #526359;
+  color: var(--ui-muted);
 }
 .title-content button {
   width: auto;
-  background: #1a3f31;
-  color: #f1f2ea;
+  background: var(--ui-accent);
+  color: #fff;
 }
 .title-content .title-primary {
   width: 100%;
 }
 .title-content .title-outline {
-  color: #22382f;
+  color: var(--ui-text);
   background: transparent;
-  border: 1px solid #96a89a;
+  border: 1px solid var(--ui-border-strong);
 }
 .title-content .workflow-fields {
   display: grid;
@@ -220,11 +212,11 @@
   flex-wrap: wrap;
 }
 .title-content .new-play-preview {
-  background: #f1f2e9;
-  color: #22382f;
+  background: var(--ui-canvas);
+  color: var(--ui-text);
 }
 .title-content .new-play-preview dt {
-  color: #526359;
+  color: var(--ui-muted);
 }
 .title-screen .title-error {
   padding: 14px 16px;
@@ -246,12 +238,12 @@
   gap: 8px;
   margin: 20px 0 0;
   padding: 0;
-  color: #526359;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 .title-footer button {
   background: transparent;
-  color: #22382f;
+  color: var(--ui-text);
   width: auto;
   text-decoration: underline;
   font-size: 13px;
@@ -288,7 +280,7 @@
 }
 
 .title-content summary {
-  color: #22382f;
+  color: var(--ui-text);
   min-height: 44px;
   padding: 10px 0;
   cursor: pointer;
@@ -297,10 +289,10 @@
   padding: 0;
 }
 .title-content .app-info summary {
-  color: #22382f;
+  color: var(--ui-text);
 }
 .title-content .app-info-content {
-  border-color: #b9c2b3;
+  border-color: var(--ui-border);
 }
 .title-content p,
 .title-content label,
@@ -311,7 +303,7 @@
 .title-save-preview {
   margin: 18px 0 0;
   padding-top: 14px;
-  border-top: 1px solid #e9d49a45;
+  border-top: 1px solid var(--ui-inverse-line);
   display: grid;
   gap: 10px;
 }
@@ -320,7 +312,7 @@
 }
 .title-save-preview dt {
   font-size: 12px;
-  color: #c9d3c2;
+  color: var(--ui-inverse-muted);
   margin-bottom: 3px;
 }
 .title-save-preview dd {
@@ -332,4 +324,22 @@
 }
 .title-save-preview time {
   font-variant-numeric: tabular-nums;
+}
+
+.title-screen button:not(:disabled):hover {
+  filter: none;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.title-screen button:not(:disabled):active {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.title-screen .title-primary:hover:enabled {
+  background: #b1f3e0;
+  color: var(--ui-inverse);
+}
+
+.title-screen .title-hero button:focus-visible {
+  outline-color: var(--ui-highlight);
 }

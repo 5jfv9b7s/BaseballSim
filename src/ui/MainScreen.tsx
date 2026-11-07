@@ -8,6 +8,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { WorldView } from '../world/controller.ts';
 import { HomeDashboard } from './HomeDashboard.tsx';
 import { AppInfo } from './AppInfo.tsx';
+import { ClubMark } from './visuals/BaseballVisuals.tsx';
+import './interface-tokens.css';
 import './main-screen.css';
 
 export type MainPage =
@@ -141,7 +143,7 @@ export function MainScreen({
     const update = () =>
       mainRef.current?.style.setProperty(
         '--menu-clearance',
-        `${Math.ceil(nav.getBoundingClientRect().height) + 24}px`,
+        `calc(${Math.ceil(nav.getBoundingClientRect().height) + 24}px + env(safe-area-inset-bottom, 0px))`,
       );
     const observer = new ResizeObserver(update);
     observer.observe(nav);
@@ -198,8 +200,8 @@ export function MainScreen({
   return (
     <div className="main-shell" data-page={page}>
       <div className="main-brand">
-        <span>
-          <b>BS</b> BASEBALL SIMULATOR
+        <span className="main-brand-name">
+          <b aria-hidden="true">BS</b> BASEBALL SIMULATOR
         </span>
         <span>
           CLUB MANAGEMENT <span className="main-preview">開発中</span>
@@ -214,11 +216,22 @@ export function MainScreen({
             </time>
           </div>
           <div className="club-heading">
-            <p>MY CLUB / 担当球団</p>
-            <h1>{squad?.team.name ?? '球団を準備しています'}</h1>
-            <div className="club-record">
-              <b>{standing?.wins ?? 0}</b> 勝 <b>{standing?.losses ?? 0}</b> 敗{' '}
-              <b>{standing?.draws ?? 0}</b> 分 <span>一軍公式戦</span>
+            <ClubMark clubId={squad?.team.clubId} small />
+            <div className="club-heading-content">
+              <p>担当球団</p>
+              <h1>{squad?.team.name ?? '球団を準備しています'}</h1>
+              <div className="club-record">
+                <span>
+                  <b>{standing?.wins ?? 0}</b> 勝
+                </span>
+                <span>
+                  <b>{standing?.losses ?? 0}</b> 敗
+                </span>
+                <span>
+                  <b>{standing?.draws ?? 0}</b> 分
+                </span>
+                <span className="club-record-scope">一軍公式戦</span>
+              </div>
             </div>
           </div>
           <div className="season-progress">
@@ -235,6 +248,7 @@ export function MainScreen({
           <div
             className="main-status"
             data-active={busy || running || Boolean(error)}
+            data-error={Boolean(error)}
             aria-label="進行と保存の状態"
           >
             {notice || (busy && <p role="status">処理しています…</p>)}
@@ -249,6 +263,9 @@ export function MainScreen({
           <div className="save-indicator">
             <span
               className="save-badge"
+              aria-live="polite"
+              aria-atomic="true"
+              data-loading={!view}
               data-unsaved={formationPending || trainingPending || view?.unsavedChanges}
             >
               {!view
@@ -409,7 +426,7 @@ export function MainScreen({
               onClick={() => onNavigate(item.page)}
             >
               <MenuIcon name={item.icon} />
-              {item.name}
+              <span className="main-navigation-label">{item.name}</span>
             </button>
           ))}
         </nav>

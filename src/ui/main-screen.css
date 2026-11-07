@@ -1,665 +1,425 @@
-/* 本画面の色と余白。開発用画面の既存スタイルへ影響させない。 */
+/* 本画面の共通表示。配置・操作の正本は各コンポーネントに置く。 */
 .main-shell {
-  --ink: #22382f;
-  --muted: #68766f;
-  --paper: #fbfaf5;
-  --line: #dadfd4;
+  --ink: var(--ui-text);
+  --muted: var(--ui-muted);
+  --paper: var(--ui-surface);
+  --line: var(--ui-border);
+  min-height: 100svh;
+  padding-inline: 28px;
   color: var(--ink);
-  background: #f1f2e9;
-  min-height: 100vh;
-  padding: 0 28px;
+  background: var(--ui-canvas);
+  font-size: 14px;
 }
+
 .main-brand {
-  max-width: 1192px;
-  margin: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 64px;
-  font-size: 10px;
-  letter-spacing: 1.8px;
+  gap: 12px;
+  max-width: 1192px;
+  min-height: 60px;
+  margin: auto;
   border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
 }
+
+.main-brand-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-weight: 750;
+}
+
 .main-brand b {
-  display: inline-block;
-  padding: 6px 7px;
-  margin-right: 9px;
-  background: var(--ink);
-  color: #f5e5b9;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--ui-inverse);
+  color: var(--ui-highlight);
   font-size: 15px;
   letter-spacing: -1px;
 }
+
 .main-preview {
-  padding: 4px 8px;
-  margin-left: 8px;
-  border: 1px solid #b7c3b6;
-  border-radius: 4px;
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 12px;
   letter-spacing: 0;
 }
+
 .main-screen {
   max-width: 1192px;
-  padding: 0;
+  padding: 0 0 calc(var(--menu-clearance, 120px) + 20px);
 }
+
+.main-screen p {
+  font-size: 14px;
+}
+
 .main-screen button {
   width: auto;
+  border-radius: 7px;
+  font-size: 14px;
 }
-.main-screen button:focus-visible {
-  outline: 3px solid #bc6e25;
+
+.main-screen :is(button, summary, input:not([type='checkbox']):not([type='radio']), select) {
+  min-height: 44px;
 }
-.main-screen .hint,
-.main-screen small,
-.main-screen .muted {
+
+.main-screen :is(button, summary, input, select):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+  scroll-margin-block: 130px calc(var(--menu-clearance, 120px) + 240px);
+}
+
+.main-screen button:not(:disabled):hover {
+  filter: none;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.main-screen button:not(:disabled):active {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.main-screen :is(button, input, select, summary) {
+  scroll-margin-bottom: calc(var(--menu-clearance, 120px) + 240px);
+}
+
+.main-screen :is(button, input, select):disabled {
+  opacity: 1;
   color: var(--muted);
+  background: var(--ui-surface-soft);
+  border: 1px dashed var(--ui-border-strong);
+  cursor: not-allowed;
 }
+
+.main-screen :is(.hint, small, .muted, .action-hint) {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .main-screen .panel {
+  margin-bottom: 20px;
   background: var(--paper);
   border: 1px solid var(--line);
-  margin-bottom: 20px;
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
 }
-.main-screen input,
-.main-screen select {
-  background: #fff;
+
+.main-screen :is(input, select) {
   color: var(--ink);
-  border: 1px solid #96a89a;
+  background: var(--paper);
+  border: 1px solid var(--ui-border-strong);
 }
+
+.main-screen :is(label, th) {
+  color: var(--ink);
+}
+
 .main-screen .secondary {
   color: var(--ink);
-  border-color: #96a89a;
+  background: var(--paper);
+  border: 1px solid var(--ui-border-strong);
 }
+
 .main-screen .world-controls button {
-  background: #214f3e;
   color: #fff;
+  background: var(--ui-accent);
 }
+
 .main-screen .world-controls .secondary {
-  background: transparent;
   color: var(--ink);
+  background: var(--paper);
 }
+
 .main-screen .panel summary {
   color: var(--ink);
   cursor: pointer;
 }
+
 .main-screen .panel h3 {
   margin-top: 0;
 }
+
 .main-screen .world-table {
   background: var(--paper);
+  font-variant-numeric: tabular-nums;
 }
-.main-screen .world-table th,
-.main-screen .world-table td {
+
+.main-screen .world-table :is(th, td) {
   border-color: var(--line);
 }
+
+.main-screen .world-table thead th {
+  background: var(--ui-surface-soft);
+  font-size: 13px;
+}
+
+/* 日付・所属・進行を一つの帯として読む。 */
 .club-header {
   display: grid;
-  grid-template-columns: 155px 1fr 225px;
+  grid-template-columns: 155px minmax(0, 1fr) 210px;
   gap: 28px;
   align-items: center;
-  padding: 32px 0;
+  padding-block: 24px;
   border-bottom: 1px solid var(--line);
 }
+
 .club-date {
-  border-right: 1px solid #cbd4c9;
   padding-right: 20px;
+  border-right: 1px solid var(--line);
 }
+
 .club-date > span,
-.club-heading > p {
+.club-heading-content > p {
   display: block;
-  margin: 0 0 7px;
-  font-size: 10px;
+  margin: 0 0 4px;
   color: var(--muted);
-  letter-spacing: 1.6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
+
 .club-date time {
   display: block;
-  font-size: 21px;
-  font-weight: 700;
-}
-.club-heading h1 {
-  font-size: clamp(19px, 2.2vw, 28px);
-  margin: 0 0 9px;
-  letter-spacing: 0.03em;
-}
-.club-record {
-  font-size: 11px;
-  color: var(--muted);
-}
-.club-record b {
   color: var(--ink);
-  font-size: 17px;
-  margin-left: 10px;
+  font-size: 22px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.club-record b:first-child {
-  margin-left: 0;
+
+.club-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
 }
-.club-record > span {
-  margin-left: 15px;
+
+.club-heading .club-mark {
+  width: 44px;
+  height: 50px;
+  border: 0;
+  border-radius: 7px 7px 16px 16px;
+  font-size: 25px;
 }
+
+.club-heading-content {
+  min-width: 0;
+}
+
+.club-heading h1 {
+  margin: 0 0 6px;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+
+.club-record {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.club-record b {
+  margin-right: 2px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
 .season-progress > span {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  font-size: 11px;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
 }
+
 .season-progress b {
-  font-size: 16px;
+  color: var(--ink);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
 }
+
 .season-progress progress {
   display: block;
   appearance: none;
-  border: 0;
   width: 100%;
-  height: 6px;
-  border-radius: 8px;
+  height: 5px;
+  margin: 8px 0 6px;
   overflow: hidden;
-  margin: 10px 0 8px;
-  background: #dce2d6;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ui-border);
 }
+
 .season-progress progress::-webkit-progress-bar {
-  background: #dce2d6;
+  background: var(--ui-border);
 }
+
 .season-progress progress::-webkit-progress-value {
-  background: #386b4c;
+  background: var(--ui-accent);
+  border-radius: 10px;
 }
+
+.season-progress progress::-moz-progress-bar {
+  background: var(--ui-accent);
+  border-radius: 10px;
+}
+
 .season-progress small {
   display: block;
   text-align: right;
-  font-size: 10px;
 }
+
 .main-page-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
-  padding: 24px 0 18px;
-}
-.main-page-title h2 {
-  margin: 0;
-  font-size: 15px;
-}
-.main-page-title > span {
-  color: var(--muted);
-  font-size: 10px;
-}
-.main-screen .text-action {
-  padding: 10px 0;
-  background: none;
-  color: #356347;
-  font-size: 12px;
-}
-.main-navigation {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 9px;
-  margin: 22px 0 0;
-}
-.main-navigation button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: var(--ink);
-  border: 1px solid var(--line);
-  background: #fafaf4;
-  padding: 20px 10px;
-  font-size: 13px;
-}
-.main-navigation button > span {
-  font-size: 22px;
-  line-height: 1;
-  font-weight: normal;
-}
-.main-navigation button[aria-current='page'] {
-  color: #fffdf0;
-  border-color: #254c39;
-  background: #254c39;
-}
-.main-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 25px 0;
-  border: 0;
-}
-.main-footer > span {
-  color: var(--muted);
-  font-size: 9px;
-  letter-spacing: 1px;
-}
-.main-footer > span > span {
-  letter-spacing: 0;
-}
-.main-footer button {
-  font-size: 10px;
-  color: #647c69;
-  padding: 5px 0;
-  background: transparent;
-}
-.main-subnav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 20px;
-}
-.main-subnav button {
-  background: #e3e7da;
-  color: var(--ink);
-  padding: 10px 18px;
-}
-.main-subnav button[aria-current='page'] {
-  background: #365d46;
-  color: #fff;
-}
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin: 20px 0;
-}
-.construction {
-  border: 1px dashed #bfc9b9;
-  background: #f4f3eb;
-  border-radius: 8px;
-  padding: 16px;
-}
-.main-screen .construction button {
-  width: 100%;
-  opacity: 1;
-  color: #6c7365;
-  background: transparent;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 0;
-  text-align: left;
-}
-.construction button > span {
-  white-space: nowrap;
-  font-size: 10px;
-  background: #e9debc;
-  color: #70603a;
-  padding: 4px 7px;
-  border-radius: 4px;
-}
-.construction p {
-  color: var(--muted);
-  font-size: 11px;
-  margin-bottom: 0;
-}
-.player-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0 22px;
-}
-.player-grid > div {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-  padding: 14px 0;
-  font-size: 13px;
-}
-.main-status,
-.resume-banner {
-  padding: 12px 18px;
-  margin-top: 16px;
-  background: #e5ebdc;
-  border-left: 3px solid #6f8a58;
-  display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-}
-.main-status p {
-  margin: 0;
-  flex: 1;
-}
-.main-status button,
-.resume-banner button {
-  background: #294f3b;
-  color: #fff;
-  font-size: 12px;
-}
-.main-status [role='alert'] {
-  color: #a2362b;
-}
-.resume-banner {
-  margin: 0 0 18px;
-  justify-content: space-between;
-  font-size: 12px;
-}
-.main-screen .empty-message {
-  color: var(--muted);
-  padding: 20px 0;
-}
-/* 再利用する成績表・カレンダーの固定セルも、本画面の背景とそろえる。 */
-.main-screen .season-leaderboard {
-  color: var(--ink);
-}
-@media (max-width: 850px) {
-  .club-header {
-    grid-template-columns: 125px 1fr;
-    gap: 20px;
-  }
-  .season-progress {
-    grid-column: 1 / -1;
-  }
-  .main-navigation button {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .feature-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 600px) {
-  .main-shell {
-    padding: 0 18px;
-  }
-  .main-brand {
-    min-height: 54px;
-    font-size: 9px;
-    letter-spacing: 0.8px;
-  }
-  .main-brand > span:last-child {
-    font-size: 0;
-  }
-  .main-preview {
-    font-size: 9px;
-  }
-  .club-header {
-    grid-template-columns: 1fr;
-    padding: 20px 0;
-    gap: 16px;
-  }
-  .club-date {
-    border: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0;
-  }
-  .club-date > span {
-    margin: 0;
-  }
-  .club-date time {
-    font-size: 15px;
-  }
-  .club-heading h1 {
-    font-size: 23px;
-  }
-  .club-heading > p {
-    display: none;
-  }
-  .season-progress {
-    display: grid;
-    grid-template-columns: 1fr 95px;
-    gap: 0 20px;
-  }
-  .season-progress > span {
-    grid-column: 1 / -1;
-  }
-  .season-progress small {
-    align-self: center;
-  }
-  .main-page-title {
-    padding: 20px 0 14px;
-  }
-  .main-page-title > span {
-    font-size: 9px;
-  }
-  .main-navigation {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-  .main-navigation button {
-    flex-direction: row;
-    gap: 8px;
-    padding: 15px 5px;
-    font-size: 12px;
-  }
-  .main-navigation button > span {
-    font-size: 18px;
-  }
-  .main-footer {
-    align-items: flex-start;
-    gap: 14px;
-  }
-  .main-footer > span > span {
-    display: block;
-    margin-top: 5px;
-  }
-  .main-footer button {
-    max-width: 145px;
-    text-align: right;
-    font-size: 9px;
-  }
-  .main-screen .panel {
-    padding: 18px;
-  }
-  .feature-grid,
-  .player-grid {
-    grid-template-columns: 1fr;
-  }
-  .main-subnav button {
-    padding: 10px 12px;
-    font-size: 12px;
-  }
+  padding-block: 20px;
 }
 
-.main-screen .leaderboard-table .leaderboard-player {
-  background: var(--paper);
-}
-.main-screen .leaderboard-table tr[data-own-club='true'] > * {
-  background: #e3ebdc;
-}
-.main-screen .season-leaderboard button[aria-pressed='false'] {
-  background: #e3e7da;
-  color: var(--ink);
-}
-.main-screen .app-info {
-  color: var(--ink);
-  margin: 16px 0 0;
-  padding: 0;
-}
-.main-screen .app-info details {
-  background: #eef1e7;
-  border-color: var(--line);
-}
-
-.main-screen label,
-.main-screen th {
-  color: var(--ink);
-}
-.main-screen .error {
-  color: #a2362b;
-}
-.main-screen .app-info-content {
-  border-color: var(--line);
-}
-
-/* 長い成績表でも、メニューと実行中の停止操作に手が届くようにする。 */
-.main-navigation {
-  position: sticky;
-  bottom: 10px;
-  z-index: 5;
-  padding: 8px;
-  background: #f1f2e9;
-  border-radius: 10px;
-  box-shadow: 0 5px 20px #22382f12;
-}
-.main-status[data-active='true'] {
-  position: sticky;
-  top: 0;
-  z-index: 6;
-}
 .main-page-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
   scroll-margin-top: 100px;
 }
 
-/* アフォーダンス：操作・選択・無効状態を色だけに頼らず示す。 */
-.main-screen :is(button, summary, input:not([type='checkbox']):not([type='radio']), select) {
-  min-height: 44px;
-}
-.main-screen :is(button, summary, input, select):focus-visible {
-  outline: 3px solid #9a4e12;
-  outline-offset: 3px;
-  scroll-margin-block: 130px;
-}
-.main-screen button:not(:disabled):hover {
-  filter: none;
-  box-shadow: inset 0 0 0 2px currentColor;
-}
-.main-screen button:not(:disabled):active {
-  box-shadow: inset 0 0 0 3px currentColor;
-}
-.main-screen button:disabled,
-.main-screen input:disabled,
-.main-screen select:disabled {
-  opacity: 1;
-  color: #667068;
-  background: #e7e9e3;
-  border: 1px dashed #9da69c;
-  cursor: not-allowed;
-}
-.main-screen .construction button:disabled {
-  background: transparent;
-  border: 0;
-}
-.main-screen .hint,
-.main-screen .action-hint {
-  font-size: 13px;
-  line-height: 1.8;
-}
-.main-screen .text-action {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  padding-inline: 6px;
-}
-.main-page-title {
-  flex-wrap: wrap;
-  gap: 12px;
-}
 .save-indicator {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
 }
+
 .save-badge {
-  color: #31523c;
-  background: #e6eddf;
-  border: 1px solid #8fa184;
-  border-radius: 5px;
-  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-accent-hover);
   font-size: 12px;
-}
-.save-badge[data-unsaved='true'],
-.main-screen .save-state[data-unsaved='true'] {
-  color: #734414;
-  background: #fff0d3;
-  border-color: #bc8f4f;
-}
-.main-screen .save-state {
-  padding: 10px 12px;
-  border-left: 3px solid #608355;
-  background: #e6eddf;
-}
-.main-screen .workflow-group {
-  padding: 20px;
-  border: 1px solid #c8d0c2;
-  border-radius: 8px;
-  background: #fffefa;
-}
-.main-screen .workflow-primary {
-  border-left: 4px solid #315e45;
-  background: #f0f4e9;
-}
-.main-screen .workflow-group h3 {
-  font-size: 16px;
-}
-.main-screen .workflow-fields label,
-.main-screen .backup-workflows label {
-  font-size: 13px;
-  font-weight: 650;
-}
-.main-screen .save-slot {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
-.save-slot h4 {
-  font-size: 13px;
-}
-.save-slot time {
-  display: block;
-  font-size: 16px;
-  font-weight: 650;
-}
-.main-screen .world-controls .stop-action {
-  background: #7a361f;
-  color: #fff;
-}
-.main-screen .workflow-disclosure > summary {
-  border: 1px solid #a7b49f;
-  border-radius: 6px;
-  background: #eef1e7;
-  font-weight: 650;
-}
-.main-screen .workflow-disclosure > summary:hover {
-  background: #e1e9d8;
-}
-.main-screen .backup-panel {
-  padding: 0;
-  border: 0;
-}
-.main-screen .backup-workflows {
-  padding: 4px 12px;
-  gap: 24px;
-}
-.main-screen .backup-workflows section + section {
-  border-left: 1px solid var(--line);
-  padding-left: 24px;
-}
-.main-screen .main-navigation button[aria-current='page'],
-.main-screen .main-subnav button[aria-current='page'] {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 6px;
-}
-.main-navigation button {
-  min-height: 56px;
-}
-@media (max-width: 600px) {
-  .main-screen .workflow-group {
-    padding: 16px 12px;
-  }
-  .main-screen .backup-workflows section + section {
-    border-left: 0;
-    border-top: 1px solid var(--line);
-    padding: 20px 0 0;
-  }
-  .save-slot button,
-  .workflow-fields {
-    width: 100%;
-  }
-  .main-screen .main-navigation button {
-    padding: 12px 6px;
-    min-height: 44px;
-  }
+  font-weight: 600;
 }
 
-/* 編成のタブと補助操作も、選択中であることを下線と面で示す。 */
-.main-screen .main-subnav button[aria-pressed='true'],
+.save-badge::before {
+  content: '✓';
+  font-size: 14px;
+}
+
+.save-badge[data-loading='true']::before {
+  content: '…';
+}
+
+.save-badge[data-unsaved='true'] {
+  color: var(--ui-warning);
+}
+
+.save-badge[data-unsaved='true']::before {
+  content: '！';
+}
+
+/* 主操作は塗り面、補助操作は輪郭、移動は文字リンク。 */
+.main-screen .text-action {
+  padding: 10px 6px;
+  color: var(--ui-accent-hover);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.main-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 5px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--ui-surface-soft);
+}
+
+.main-subnav button {
+  padding: 10px 18px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.main-screen .main-subnav button:is([aria-current='page'], [aria-pressed='true']),
 .main-screen .formation-drag-guide button[aria-pressed='true'],
 .main-screen .formation-editor .world-controls button[aria-pressed='true'] {
-  color: #fff;
-  background: #365d46;
+  color: var(--ui-accent-hover);
+  background: var(--paper);
+  box-shadow: 0 1px 4px #19283e14;
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 5px;
 }
-.main-screen .formation-editor .player-link[aria-pressed='true'] {
+
+/* 常に手の届くメニュー。現在地は面と下線の両方で伝える。 */
+.main-navigation {
+  position: fixed;
+  left: max(16px, calc((100vw - 1192px) / 2));
+  right: max(16px, calc((100vw - 1192px) / 2));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 0 8px 36px #19283e1a;
+}
+
+.main-navigation button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.main-navigation-label {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.main-screen .main-navigation button[aria-current='page'] {
+  color: var(--ui-accent-hover);
+  background: var(--ui-accent-soft);
   text-decoration: underline;
   text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
+  text-underline-offset: 6px;
 }
 
 .menu-icon {
@@ -670,41 +430,428 @@
   background: currentColor;
   mask: var(--menu-icon) center / contain no-repeat;
 }
-.main-navigation button {
+
+.main-footer {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 24px;
+  border: 0;
 }
 
-/* 固定操作バーの基準となるメニューを、画面下端に固定する。 */
-.main-screen {
-  padding-bottom: calc(var(--menu-clearance, 120px) + 20px);
+.main-footer > span {
+  color: var(--muted);
+  font-size: 12px;
 }
-.main-navigation {
-  position: fixed;
-  left: max(12px, calc((100vw - 1192px) / 2));
-  right: max(12px, calc((100vw - 1192px) / 2));
-  bottom: 10px;
+
+.main-footer button {
+  padding: 8px 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  text-align: right;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-block: 20px;
+}
+
+.construction {
+  padding: 16px;
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: 8px;
+  background: var(--ui-surface-soft);
+}
+
+.main-screen .construction button:disabled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+}
+
+.construction button > span {
+  padding: 3px 7px;
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.construction p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 22px;
+}
+
+.player-grid > div {
+  display: flex;
+  justify-content: space-between;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.main-status,
+.resume-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 18px;
+  margin-top: 16px;
+  border-left: 3px solid var(--ui-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--ui-accent-soft);
+}
+
+.main-status[data-active='true'] {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+
+.main-status[data-error='true'] {
+  border-color: var(--ui-danger);
+  background: #fff0f1;
+}
+
+.main-status p {
+  flex: 1;
   margin: 0;
 }
 
-/* 最後の操作も、固定バーより上までスクロールして表示できる余白を確保する。 */
+.main-status button,
+.resume-banner button {
+  color: #fff;
+  background: var(--ui-accent);
+}
+
+.main-screen :is(.error, [role='alert']) {
+  color: var(--ui-danger);
+}
+
+.resume-banner {
+  justify-content: space-between;
+  margin: 0 0 18px;
+}
+
+.main-screen .empty-message {
+  padding-block: 20px;
+  color: var(--muted);
+}
+
+.main-screen .save-state {
+  padding: 10px 12px;
+  border-left: 3px solid var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.main-screen .save-state[data-unsaved='true'] {
+  color: var(--ui-warning);
+  border-color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+}
+
+.main-screen .workflow-group {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.main-screen .workflow-primary {
+  border-left: 4px solid var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.main-screen .workflow-group h3 {
+  font-size: 17px;
+}
+
+.main-screen :is(.workflow-fields, .backup-workflows) label {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.main-screen .save-slot {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.save-slot h4 {
+  font-size: 14px;
+}
+
+.save-slot time {
+  display: block;
+  font-size: 17px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.main-screen .world-controls .stop-action {
+  color: #fff;
+  background: var(--ui-danger);
+}
+
+.main-screen .workflow-disclosure > summary {
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 7px;
+  background: var(--ui-surface-soft);
+  font-weight: 650;
+}
+
+.main-screen .workflow-disclosure > summary:hover {
+  background: var(--ui-accent-soft);
+}
+
+.main-screen .backup-panel {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.main-screen .backup-workflows {
+  padding: 4px 12px;
+  gap: 24px;
+}
+
+.main-screen .backup-workflows section + section {
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+}
+
+.main-screen .season-leaderboard,
+.main-screen .app-info {
+  color: var(--ink);
+}
+
+.main-screen .leaderboard-table .leaderboard-player {
+  background: var(--paper);
+}
+
+.main-screen .leaderboard-table tr[data-own-club='true'] > * {
+  background: var(--ui-accent-soft);
+}
+
+.main-screen .season-leaderboard button[aria-pressed='false'] {
+  color: var(--ink);
+  background: var(--ui-surface-soft);
+}
+
+.main-screen .app-info {
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.main-screen .app-info details {
+  background: var(--ui-surface-soft);
+  border-color: var(--line);
+}
+
+.main-screen .app-info-content {
+  border-color: var(--line);
+}
+
+.main-screen .formation-editor .player-link[aria-pressed='true'] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
 .main-screen:has(.formation-selection-bar) {
   padding-bottom: calc(var(--menu-clearance, 120px) + 280px);
 }
-.main-screen :is(button, input, select, summary) {
-  scroll-margin-bottom: calc(var(--menu-clearance, 120px) + 240px);
-}
-/* 狭い画面の固定メニューはアイコンと文字を横並びにし、本文の表示面積を確保する。 */
-@media (max-width: 600px) {
+
+@media (max-width: 850px) {
+  .club-header {
+    grid-template-columns: 135px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .season-progress {
+    display: grid;
+    grid-template-columns: auto minmax(40px, 1fr) auto;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .season-progress progress {
+    margin: 0;
+  }
+
   .main-navigation button {
-    min-width: 0;
-    min-height: 44px;
-    flex-direction: row;
-    gap: 4px;
-    padding: 10px 4px;
+    flex-direction: column;
+    gap: 3px;
+    padding-inline: 6px;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .main-shell {
+    padding-inline: 16px;
+  }
+
+  .main-brand {
+    min-height: 54px;
+    letter-spacing: 0.02em;
+  }
+
+  .main-brand > span:last-child {
+    font-size: 0;
+  }
+
+  .main-preview {
+    margin-left: 0;
+  }
+
+  .club-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding-block: 18px;
+  }
+
+  .club-date {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+  }
+
+  .club-date time {
+    font-size: 19px;
+  }
+
+  .club-heading {
+    gap: 12px;
+  }
+
+  .club-heading-content > p {
+    display: none;
+  }
+
+  .club-record {
+    gap: 4px 12px;
+  }
+
+  .club-record-scope {
+    display: none;
+  }
+
+  .season-progress {
+    gap: 10px;
+  }
+
+  .season-progress b {
+    font-size: 15px;
+  }
+
+  .main-page-title {
+    padding-block: 16px;
+  }
+
+  .main-page-title h2 {
+    font-size: 18px;
+  }
+
+  .save-indicator {
+    gap: 8px;
+  }
+
+  .save-indicator > button {
+    padding-inline: 10px;
     font-size: 13px;
+  }
+
+  .main-navigation {
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    padding: 5px;
+    border-radius: 12px;
+  }
+
+  .main-navigation button {
+    flex-direction: row;
+    min-height: 44px;
+    gap: 6px;
+    padding: 8px 4px;
+  }
+
+  .main-navigation-label {
+    font-size: 13px;
+  }
+
+  .main-navigation .menu-icon {
+    flex-basis: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .main-footer {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .main-footer > span > span {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .main-footer button {
+    max-width: 150px;
+  }
+
+  .main-screen .panel {
+    padding: 18px;
+  }
+
+  .feature-grid,
+  .player-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .main-subnav button {
+    padding-inline: 12px;
+  }
+
+  .main-screen .workflow-group {
+    padding: 16px 12px;
+  }
+
+  .main-screen .backup-workflows section + section {
+    padding: 20px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .save-slot button,
+  .workflow-fields {
+    width: 100%;
   }
 }

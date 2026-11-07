@@ -1,7 +1,7 @@
 import type { WorldRecord } from './types.ts';
 import type { FormationDraft } from './formation-draft.ts';
 import { applyManagement, canEditManagement } from './management.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { rosterPolicyView } from './roster-policy.ts';
 import { ensure } from '../engine/validation.ts';
 

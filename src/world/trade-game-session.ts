@@ -1,5 +1,5 @@
 import { ensure, integer } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import {
   commitAcceptedTrade,
   type TradeCommitContext,

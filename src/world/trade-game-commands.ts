@@ -1,6 +1,6 @@
 import { ensure, integer } from '../engine/validation.ts';
 import { financeId, uniqueFinanceIds } from '../finance/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { stepRecord } from '../game/engine.ts';
 import { finalizeGame } from '../game/results.ts';
 import { exactKeys } from './snapshot-codec.ts';

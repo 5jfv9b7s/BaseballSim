@@ -1,5 +1,5 @@
 import { ensure } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { decodeBackup, encodeBackup } from './backup-package.ts';
 import { verifySharedBlocks, putSharedBlocks } from './shared-blocks.ts';
 import { validateSnapshot } from './snapshot-codec.ts';

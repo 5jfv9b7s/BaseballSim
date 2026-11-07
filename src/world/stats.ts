@@ -1,7 +1,7 @@
 import { allWorldSquads, isFarmSquad } from './squads.ts';
 import { ensure, integer } from '../engine/validation.ts';
 import type { GameRecord, TeamSide } from '../game/types.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { fnv1a32 } from './identity.ts';
 import type {
   GameContribution,

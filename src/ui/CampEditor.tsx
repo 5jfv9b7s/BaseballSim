@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { trainingChanges, trainingTargetOptions } from '../world/training.ts';
 import type { WorldView } from '../world/controller.ts';
 import type { CampDraft } from '../world/camp-types.ts';

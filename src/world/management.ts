@@ -14,7 +14,7 @@ import {
   resolveRegisteredRoster,
   validateTodayRosters,
 } from './registration.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import type { GameFixture, Team } from '../game/types.ts';
 import type {
   ClubManagement,

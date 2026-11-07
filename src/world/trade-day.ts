@@ -1,5 +1,5 @@
 import { ensure } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { nextDate } from './engine.ts';
 import { fnv1a32 } from './identity.ts';
 import { gameContribution } from './stats.ts';

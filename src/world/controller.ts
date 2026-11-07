@@ -1,3 +1,4 @@
+import type { ReportWorkProgress } from './work-progress.ts';
 import { CompletedProjectionCache } from './completed-projection-cache.ts';
 import { inspectWorldTrade } from './trade-inspection.ts';
 import type { TradeInspectionRequest } from '../recruitment/trade-inspection-types.ts';
@@ -27,7 +28,7 @@ import { rosterPolicyView } from './roster-policy.ts';
 import { registrationPreview, registrationView } from './registration.ts';
 import { applyManagement, canEditManagement } from './management.ts';
 import { ensure, id, integer } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { advanceWorld, completeDay, createPitchLearningWorld, worldPhase } from './engine.ts';
 import { leagueStandings } from './league-standings.ts';
 import { standings, statsForScope } from './stats.ts';
@@ -209,10 +210,11 @@ export class WorldController {
     localWorldId: string,
     initialRevision: number,
     slot: WorldSlotKind,
+    report?: ReportWorkProgress,
   ): Promise<WorldController> {
     integer(initialRevision, 0, Number.MAX_SAFE_INTEGER - 2, '開始状態版');
     ensure(['auto', 'previousAuto', 'manual'].includes(slot), '保存枠が不正です');
-    const loaded = await storage.load(slot);
+    const loaded = await storage.load(slot, report);
     const controller = WorldController.fromCommitted(
       storage,
       localWorldId,
@@ -445,7 +447,7 @@ export class WorldController {
     return view;
   }
 
-  async dispatch(command: WorldCommand): Promise<WorldView> {
+  async dispatch(command: WorldCommand, report?: ReportWorkProgress): Promise<WorldView> {
     id(command.commandId);
     ensure(command.localWorldId === this.localWorldId, '対象のローカル世界が異なります');
     integer(command.expectedStateRevision, 0, Number.MAX_SAFE_INTEGER - 1, '状態版');
@@ -569,7 +571,7 @@ export class WorldController {
       }
     }
     if (command.kind === 'load') {
-      const loaded = await this.storage.load(command.slot);
+      const loaded = await this.storage.load(command.slot, report);
       this.world = loaded.world;
       this.slots = loaded.slots;
       this.unsavedChanges = false;

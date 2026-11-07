@@ -5,7 +5,7 @@ import {
   uniqueFinanceIds,
   validateMoment,
 } from '../finance/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { allWorldSquads } from './squads.ts';
 import { exactKeys } from './snapshot-codec.ts';
 import { parseTradeRosterCommand } from './trade-roster-commands.ts';

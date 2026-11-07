@@ -1,5 +1,5 @@
 import { ensure } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { commitAcceptedTrade } from '../recruitment/trade-commit.ts';
 import { createTradeApplicationPort } from './trade-application-port.ts';
 import { receiptCommand, type TradeSavedState } from './trade-save-validation.ts';

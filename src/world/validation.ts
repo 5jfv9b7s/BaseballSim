@@ -3,7 +3,7 @@ import { freezeGrowthData } from './growth.ts';
 import { resumeCheckpoint, makeCheckpoint, type CheckpointCache } from './validation-checkpoint.ts';
 import { applyManagement } from './management.ts';
 import { ensure, integer } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import {
   advanceWorld,
   completeDay,

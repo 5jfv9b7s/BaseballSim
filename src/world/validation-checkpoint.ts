@@ -1,4 +1,4 @@
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import type { WorldRecord } from './types.ts';
 
 export interface WorldCheckpoint {

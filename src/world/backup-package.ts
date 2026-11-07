@@ -1,5 +1,5 @@
 import { ensure, integer } from '../engine/validation.ts';
-import { canonicalJson, sha256 } from '../storage/codec.ts';
+import { canonicalJson, sha256 } from '../storage/canonical.ts';
 import { decodeWorldSnapshot, exactKeys, validateSnapshot } from './snapshot-codec.ts';
 import { MAX_BYTES, type Snapshot, type Block } from './save-format.ts';
 import { MAX_PACKAGE_BYTES, readBackupZip, writeBackupZip } from './backup-zip.ts';

@@ -1,5 +1,5 @@
 import { ensure } from '../engine/validation.ts';
-import { canonicalJson, sha256 } from '../storage/codec.ts';
+import { canonicalJson, sha256 } from '../storage/canonical.ts';
 import { decompress } from './compression.ts';
 import type { WorldDatabase } from './dexie-storage.ts';
 import type { Block } from './save-format.ts';

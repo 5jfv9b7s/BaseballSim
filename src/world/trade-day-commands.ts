@@ -1,6 +1,6 @@
 import { ensure, integer } from '../engine/validation.ts';
 import { dateDays, financeId } from '../finance/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { exactKeys } from './snapshot-codec.ts';
 import { completeTradeWorldDay, completeTradeWorldDayWithRoster } from './trade-day.ts';
 import type { TradeRosterReconciliation } from './trade-roster-policy.ts';

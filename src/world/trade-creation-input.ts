@@ -1,5 +1,5 @@
 import { ensure, integer } from '../engine/validation.ts';
-import { canonicalJson, sha256 } from '../storage/codec.ts';
+import { canonicalJson, sha256 } from '../storage/canonical.ts';
 import {
   compareMoments,
   validateMoment,

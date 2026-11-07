@@ -4,7 +4,7 @@ import { RookieAwakeningResults } from './RookieAwakeningResults.tsx';
 import { growthAbilityKey } from '../world/growth-basis.ts';
 import { PlayerGrowth } from './PlayerGrowth.tsx';
 import { useState } from 'react';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { playerAge, playerProfile } from '../world/player-profiles.ts';
 import { PROFILE_POSITIONS } from '../world/player-profile-types.ts';
 import {

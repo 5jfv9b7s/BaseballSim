@@ -1,5 +1,5 @@
 import { ensure, integer, validateRng } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import {
   compareMoments,
   dateDays,

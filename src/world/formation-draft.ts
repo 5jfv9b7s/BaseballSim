@@ -3,7 +3,7 @@ import type { IdealLineup, PitcherUsagePlan } from './types.ts';
 import type { ReliefRoleRule } from '../game/relief-types.ts';
 import type { RosterPolicyInput } from './roster-policy-types.ts';
 import type { RestPolicyInput } from './rest-types.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 
 /** 編成内で共有する編集案。保存内には既存の確定指示だけを記録する。 */
 export interface FormationDraft {

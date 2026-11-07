@@ -1,6 +1,6 @@
 import { ensure, integer } from '../engine/validation.ts';
 import { uniqueFinanceIds } from '../finance/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { exactKeys } from './snapshot-codec.ts';
 import { parseTradeGameCommand } from './trade-game-commands.ts';
 import type { TradeSavedState } from './trade-save-validation.ts';

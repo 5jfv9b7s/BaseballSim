@@ -32,7 +32,9 @@ import { allWorldSquads } from '../world/squads.ts';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { LoadingOverlay, LoadingScreen } from './LoadingScreen.tsx';
 import type { WorldAction, WorldCommand, WorldView } from '../world/controller.ts';
-import type { WorldWorkerResponse } from '../world-worker.ts';
+import type { WorldWorkerMessage } from '../world-worker.ts';
+import type { WorkProgress } from '../world/work-progress.ts';
+import { paintBeforeWork } from './paint-before-work.ts';
 import { TitleScreen } from './TitleScreen.tsx';
 import './world.css';
 
@@ -133,6 +135,7 @@ export function WorldApp({
   const [view, setView] = useState<WorldView | null>(null);
   const [inspection, setInspection] = useState<StorageInspection | null>(null);
   const [busy, setBusy] = useState(false);
+  const [workProgress, setWorkProgress] = useState<WorkProgress | null>(null);
   const [running, setRunning] = useState(false);
   const [calendar, setCalendar] = useState<'short' | 'annual'>('short');
   const [targetDate, setTargetDate] = useState('');
@@ -167,6 +170,26 @@ export function WorldApp({
     reject: (error: Error) => void;
   } | null>(null);
 
+  async function postRequest(request: WorkspaceRequest, transfer: Transferable[] = []) {
+    const instance = worker.current;
+    if (!instance) return;
+    try {
+      if (request.kind !== 'advance' && !auto.current) await paintBeforeWork();
+      if (worker.current !== instance || !pending.current) return;
+      instance.postMessage(request, transfer);
+    } catch {
+      if (worker.current !== instance) return;
+      pending.current = false;
+      auto.current = false;
+      setBusy(false);
+      setRunning(false);
+      setWorkProgress(null);
+      pendingInspection.current?.reject(new Error('要求を送信できませんでした。'));
+      pendingInspection.current = null;
+      setError('要求を送信できませんでした。保存した状態から確認してください。');
+    }
+  }
+
   function inspectTrade(proposal: TradeInspectionProposal): Promise<TradeInspectionReport> {
     const current = latest.current;
     if (!worker.current || !current || pending.current || auto.current)
@@ -175,26 +198,19 @@ export function WorldApp({
     pending.current = true;
     lastAction.current = 'inspectTrade';
     setBusy(true);
+    setWorkProgress(null);
     setError('');
     setMessage('');
     return new Promise((resolve, reject) => {
       pendingInspection.current = { requestId, resolve, reject };
-      try {
-        worker.current!.postMessage({
-          kind: 'inspectTrade',
-          requestId,
-          localWorldId: current.localWorldId,
-          worldId: current.worldId,
-          expectedStateRevision: current.revision,
-          proposal,
-        } satisfies WorkspaceRequest);
-      } catch {
-        pendingInspection.current = null;
-        pending.current = false;
-        lastAction.current = null;
-        setBusy(false);
-        reject(new Error('確認要求を送信できませんでした。'));
-      }
+      void postRequest({
+        kind: 'inspectTrade',
+        requestId,
+        localWorldId: current.localWorldId,
+        worldId: current.worldId,
+        expectedStateRevision: current.revision,
+        proposal,
+      });
     });
   }
 
@@ -204,9 +220,10 @@ export function WorldApp({
     lastAction.current = action.kind;
     setInspection(null);
     setBusy(true);
+    setWorkProgress(null);
     setError('');
     setMessage('');
-    worker.current.postMessage({
+    void postRequest({
       ...action,
       commandId: crypto.randomUUID(),
       localWorldId: latest.current.localWorldId,
@@ -353,10 +370,11 @@ export function WorldApp({
     pending.current = true;
     lastAction.current = 'inspectStorage';
     setBusy(true);
+    setWorkProgress(null);
     setError('');
     setMessage('');
     setInspection(null);
-    worker.current.postMessage({ kind: 'inspectStorage' });
+    void postRequest({ kind: 'inspectStorage' });
   }
 
   function beginFileAction(kind: 'exportSnapshot' | 'importSnapshot' | 'openPlay' | 'query') {
@@ -364,6 +382,7 @@ export function WorldApp({
     pending.current = true;
     lastAction.current = kind;
     setBusy(true);
+    setWorkProgress(null);
     setError('');
     setMessage('');
     setInspection(null);
@@ -375,7 +394,7 @@ export function WorldApp({
 
   function exportFile(slot: WorldSlotKind) {
     const context = beginFileAction('exportSnapshot');
-    if (context) worker.current!.postMessage({ kind: 'exportSnapshot', slot, ...context });
+    if (context) void postRequest({ kind: 'exportSnapshot', slot, ...context });
   }
 
   async function importFile(file: File) {
@@ -385,7 +404,7 @@ export function WorldApp({
       if (file.size > MAX_PACKAGE_BYTES)
         throw new Error('保存ファイルが容量上限（66MiB）を超えています');
       const bytes = new Uint8Array(await file.arrayBuffer());
-      worker.current!.postMessage(
+      void postRequest(
         { kind: 'importSnapshot', bytes, requestId: crypto.randomUUID(), ...context },
         [bytes.buffer],
       );
@@ -400,12 +419,12 @@ export function WorldApp({
     const context = beginFileAction('openPlay');
     if (context) {
       openingFromTitle.current = !development && showTitle;
-      worker.current!.postMessage({ kind: 'openPlay', targetLocalWorldId, slot, ...context });
+      void postRequest({ kind: 'openPlay', targetLocalWorldId, slot, ...context });
     }
   }
 
   function refreshPlays() {
-    if (beginFileAction('query')) worker.current!.postMessage({ kind: 'query' });
+    if (beginFileAction('query')) void postRequest({ kind: 'query' });
   }
 
   function continueDay() {
@@ -424,10 +443,17 @@ export function WorldApp({
   useEffect(() => {
     const instance = new Worker(new URL('../world-worker.ts', import.meta.url), { type: 'module' });
     worker.current = instance;
-    instance.onmessage = ({ data }: MessageEvent<WorldWorkerResponse>) => {
+    instance.onmessage = ({ data }: MessageEvent<WorldWorkerMessage>) => {
+      if (worker.current !== instance) return;
+      if ('kind' in data) {
+        if (pending.current && data.operation === lastAction.current)
+          setWorkProgress(data.progress);
+        return;
+      }
       const completedAction = lastAction.current;
       pending.current = false;
       setBusy(false);
+      setWorkProgress(null);
       latest.current = data.view;
       setView(data.view);
       setNewPlayOptions(data.newPlayOptions);
@@ -621,11 +647,15 @@ export function WorldApp({
       auto.current = false;
       setBusy(false);
       setRunning(false);
+      setWorkProgress(null);
       setError(
         '日次Workerでエラーが発生しました。再読み込み後、保存した世界を読み込んでください。',
       );
     };
-    instance.postMessage({ kind: 'query' });
+    pending.current = true;
+    lastAction.current = 'query';
+    setBusy(true);
+    void postRequest({ kind: 'query' });
     return () => {
       auto.current = false;
       pendingInspection.current?.reject(new Error('画面を閉じたため確認を終了しました。'));
@@ -687,6 +717,7 @@ export function WorldApp({
   const loadingOverlay = (
     <LoadingOverlay
       active={visible && !error && !running && (busy || !view)}
+      progress={workProgress}
       title={
         !view
           ? '保存データと日程を読み込んでいます'

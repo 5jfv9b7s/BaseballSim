@@ -1,5 +1,5 @@
 import { validateApplicationSalaries } from './trade-application-finance.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import {
   compareMoments,
   requireFinance,

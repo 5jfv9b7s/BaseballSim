@@ -1,3 +1,4 @@
+import type { ReportWorkProgress } from './work-progress.ts';
 import type { WorldRecord } from './types.ts';
 
 export type WorldSlotKind = 'auto' | 'previousAuto' | 'manual';
@@ -40,7 +41,10 @@ export interface WorldStorageAdapter {
     kind: 'auto' | 'manual' | 'action',
     expectedStorageRevision: number,
   ): Promise<WorldSlots>;
-  load(kind: WorldSlotKind): Promise<{ world: WorldRecord; slots: WorldSlots }>;
+  load(
+    kind: WorldSlotKind,
+    report?: ReportWorkProgress,
+  ): Promise<{ world: WorldRecord; slots: WorldSlots }>;
 }
 
 export const emptyWorldSlots = (): WorldSlots => ({

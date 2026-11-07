@@ -1,3 +1,4 @@
+import type { ReportWorkProgress } from './work-progress.ts';
 import { createPitchLearningHistoryCodec } from './pitch-learning-history-codec.ts';
 import { createCampHistoryCodec } from './camp-history-codec.ts';
 import { createAwakeningHistoryCodec } from './awakening-history-codec.ts';
@@ -350,8 +351,12 @@ export class DexieWorldStorage implements WorldStorageAdapter {
     );
   }
 
-  async load(kind: WorldSlotKind): Promise<{ world: WorldRecord; slots: WorldSlots }> {
+  async load(
+    kind: WorldSlotKind,
+    report?: ReportWorkProgress,
+  ): Promise<{ world: WorldRecord; slots: WorldSlots }> {
     ensure(['auto', 'previousAuto', 'manual'].includes(kind), '保存枠が不正です');
+    report?.({ stage: 'read', message: '保存枠とデータブロックを読み込んでいます' });
     const db = this.database;
     const captured = await db.transaction(
       'r',
@@ -402,7 +407,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       },
     );
     const { snapshot, blocks, slots } = captured;
-    const world = await decodeWorldSnapshot(snapshot, blocks, this.validator);
+    const world = await decodeWorldSnapshot(snapshot, blocks, this.validator, report);
     const latest = await this.listSlots();
     ensure(
       latest.storageRevision === slots.storageRevision,

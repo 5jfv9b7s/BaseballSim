@@ -1,3 +1,4 @@
+import type { ReportWorkProgress } from './work-progress.ts';
 import type {
   TradeInspectionRequest,
   TradeInspectionReport,
@@ -6,7 +7,7 @@ import { createPitchLearningDefinitions } from '../data/world/pitch-learning.ts'
 import { createNewPlayOptions } from '../data/world/new-play-options.ts';
 import type { NewPlayOptions } from './league-structure-types.ts';
 import { ensure, integer } from '../engine/validation.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { createPitchLearningWorld } from './engine.ts';
 import { DexieWorldStorage, WorldDatabase } from './dexie-storage.ts';
 import {
@@ -129,7 +130,7 @@ export class WorldWorkspace {
     await this.controller.initializeStorage();
   }
 
-  async handle(request: WorkspaceRequest): Promise<WorkspaceResponse> {
+  async handle(request: WorkspaceRequest, report?: ReportWorkProgress): Promise<WorkspaceResponse> {
     try {
       const before = this.controller.context();
       let dispatched: WorldView | undefined;
@@ -175,6 +176,7 @@ export class WorldWorkspace {
           request.targetLocalWorldId,
           before.revision + 1,
           request.slot,
+          report,
         );
         this.storage = nextStorage;
         this.controller = next;
@@ -187,10 +189,11 @@ export class WorldWorkspace {
             before.slots.storageRevision === 0,
           '以前の保存があります。保存を読み込むか、新規プレイを作成してください',
         );
-        const view = await this.controller.dispatch(request);
+        const view = await this.controller.dispatch(request, report);
         dispatched = view;
         if (view.slots.storageRevision !== before.slots.storageRevision) await this.refreshPlays();
       }
+      report?.({ stage: 'project', message: '画面に表示する情報を準備しています' });
       return {
         ok: true,
         view: dispatched ?? this.controller.query(),

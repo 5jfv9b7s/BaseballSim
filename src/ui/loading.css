@@ -59,16 +59,44 @@
 }
 
 .loading-dialog {
-  width: min(460px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow: auto;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
   padding: 0;
-  border: 1px solid #d7dfe9;
-  border-radius: 14px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
   color: #19283e;
   background: #f3f5f9;
-  box-shadow: 0 16px 64px #19283e26;
   color-scheme: light;
+}
+
+.loading-dialog .loading-screen {
+  min-height: 100dvh;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid #c8d4df;
+  border-top-color: #087e78;
+  border-radius: 50%;
+  animation: loading-spin 850ms linear infinite;
+}
+
+.loading-count {
+  color: #58677b;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-dialog::backdrop {
@@ -84,6 +112,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+
   .loading-screen progress {
     appearance: none;
     border: 1px solid #a6b4c6;

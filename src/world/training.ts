@@ -1,7 +1,7 @@
 import { ensure, id, integer } from '../engine/validation.ts';
 import { COMMON_ABILITIES, FIELD_POSITIONS, type CommonAbilityCode } from '../players/abilities.ts';
 import { playerBaseAbilities, playerDevelopment } from './player-development.ts';
-import { canonicalJson } from '../storage/codec.ts';
+import { canonicalJson } from '../storage/canonical.ts';
 import { PITCH_TYPES } from '../data/pitch-types/index.ts';
 import type { WorldDefinitions, WorldRecord } from './types.ts';
 import type {

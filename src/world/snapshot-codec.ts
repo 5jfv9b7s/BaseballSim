@@ -1,3 +1,4 @@
+import type { ReportWorkProgress } from './work-progress.ts';
 import { createPitchLearningHistoryCodec } from './pitch-learning-history-codec.ts';
 import { createCampHistoryCodec } from './camp-history-codec.ts';
 import { createAwakeningHistoryCodec } from './awakening-history-codec.ts';
@@ -160,6 +161,7 @@ export async function decodeWorldSnapshot(
   snapshot: Snapshot,
   blocks: (Block | undefined)[],
   validator: WorldValidator = new WorldValidator(),
+  report?: ReportWorkProgress,
 ): Promise<WorldRecord> {
   validateSnapshot(snapshot);
   ensure(blocks.length === snapshot.blockRefs.length, '保存ブロック数が不正です');
@@ -204,6 +206,8 @@ export async function decodeWorldSnapshot(
   const values = new Map<string, unknown>();
   let bytes = 0;
   let storedBytes = 0;
+  const prepared: { block: Block; key: string; rawBytes: number; contentHash: string }[] = [];
+  const preparedKeys = new Set<string>();
   for (let index = 0; index < blocks.length; index++) {
     const block = blocks[index];
     const ref = snapshot.blockRefs[index]!;
@@ -211,7 +215,8 @@ export async function decodeWorldSnapshot(
       block && ['none', 'gzip'].includes(block.codec) && block.schemaVersion === format,
       '保存ブロックがありません、または未対応です',
     );
-    ensure(!values.has(ref.logicalKey), '保存ブロックの役割が重複しています');
+    ensure(!preparedKeys.has(ref.logicalKey), '保存ブロックの役割が重複しています');
+    preparedKeys.add(ref.logicalKey);
     const { payloadBytes, codec: _codec, ...metadata } = block;
     ensure(canonicalJson(metadata) === canonicalJson(ref), '保存ブロックの参照が一致しません');
     bytes += ref.rawBytes;
@@ -246,16 +251,48 @@ export async function decodeWorldSnapshot(
         storedBytes <= MAX_BYTES,
       '保存容量が不正です',
     );
-    const raw =
-      block.codec === 'gzip' ? await decompress(payloadBytes, ref.rawBytes) : payloadBytes;
-    ensure(ref.rawBytes === raw.length, '保存容量が不正です');
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(raw);
-    ensure(
-      (await sha256(block.kind + ':' + format + ':' + text)) === ref.contentHash &&
-        ref.blockId === 'block-' + ref.contentHash,
-      '保存ブロックのハッシュが一致しません',
+    prepared.push({
+      block,
+      key: ref.logicalKey,
+      rawBytes: ref.rawBytes,
+      contentHash: ref.contentHash,
+    });
+  }
+  report?.({
+    stage: 'decode',
+    message: '保存データを展開・照合しています',
+    completed: 0,
+    total: prepared.length,
+  });
+  // 圧縮展開とSHAを2件まで並行する。全件同時に展開せず、元の順で結果を組み立てる。
+  for (let offset = 0; offset < prepared.length; offset += 2) {
+    const batch = prepared.slice(offset, offset + 2);
+    const results = await Promise.allSettled(
+      batch.map(async ({ block, key, rawBytes, contentHash }) => {
+        const raw =
+          block.codec === 'gzip'
+            ? await decompress(block.payloadBytes, rawBytes)
+            : block.payloadBytes;
+        ensure(rawBytes === raw.length, '保存容量が不正です');
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(raw);
+        ensure(
+          (await sha256(block.kind + ':' + format + ':' + text)) === contentHash &&
+            block.blockId === 'block-' + contentHash,
+          '保存ブロックのハッシュが一致しません',
+        );
+        return { key, value: JSON.parse(text) as unknown };
+      }),
     );
-    values.set(ref.logicalKey, JSON.parse(text));
+    // 失敗時もこの2件は終了を待つ。部分的な世界や未処理の非同期処理を返さない。
+    for (const result of results) if (result.status === 'rejected') throw result.reason;
+    for (const result of results)
+      if (result.status === 'fulfilled') values.set(result.value.key, result.value.value);
+    report?.({
+      stage: 'decode',
+      message: '保存データを展開・照合しています',
+      completed: Math.min(offset + 2, prepared.length),
+      total: prepared.length,
+    });
   }
   const definitions = values.get('definitions') as {
     world: WorldRecord['definitions'];
@@ -355,6 +392,7 @@ export async function decodeWorldSnapshot(
       >;
     } else decoded.growth.state.days = growthDays;
   } else ensure(Object.keys(growthDays).length === 0, '旧保存へ成長履歴を追加できません');
+  report?.({ stage: 'validate', message: '試合と日次記録の整合性を確認しています' });
   validator.validate(world);
   ensure(
     world.version === snapshot.versions.simulationVersion,

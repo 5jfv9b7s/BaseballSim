@@ -2,6 +2,8 @@ import type { ReportWorkProgress } from './work-progress.ts';
 import type { WorldRecord } from './types.ts';
 
 export type WorldSlotKind = 'auto' | 'previousAuto' | 'manual';
+/** progressは期間進行の終了・一時停止時。試合途中も既存の自動枠へ保存する。 */
+export type WorldSaveKind = 'auto' | 'manual' | 'action' | 'progress';
 export interface WorldSlot {
   snapshotId: string;
   gameDate: string;
@@ -38,7 +40,7 @@ export interface WorldStorageAdapter {
   save(
     world: WorldRecord,
     stateRevision: number,
-    kind: 'auto' | 'manual' | 'action',
+    kind: WorldSaveKind,
     expectedStorageRevision: number,
   ): Promise<WorldSlots>;
   load(

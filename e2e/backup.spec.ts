@@ -10,6 +10,25 @@ for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 960 });
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
+      await page.addInitScript(() => {
+        const original = Worker.prototype.postMessage;
+        let failed = false;
+        Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
+          const data = message as {
+            kind?: string;
+            localWorldId?: string;
+            expectedStateRevision?: number;
+          };
+          if (!failed && data.kind === 'saveProgress' && data.localWorldId?.startsWith('play-')) {
+            failed = true;
+            original.call(
+              this,
+              { ...data, expectedStateRevision: data.expectedStateRevision! - 1 },
+              options as StructuredSerializeOptions,
+            );
+          } else original.call(this, message, options as StructuredSerializeOptions);
+        };
+      });
       await page.goto('/?tools=1');
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
       const date = page.getByTestId('world-date');
@@ -37,6 +56,9 @@ for (const width of [1280, 390]) {
       await expect(page.getByRole('status')).toContainText('初回保存が完了');
       await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
       await page.getByRole('button', { name: '日次進行を一時停止', exact: true }).click();
+      await expect(
+        page.getByRole('button', { name: '進行結果の保存を再試行', exact: true }),
+      ).toBeEnabled();
       await expect(panel).toContainText('作業状態には未保存の変更');
       await panel.getByLabel('取り込む保存ファイル', { exact: true }).setInputFiles({
         name: 'broken.bssave',

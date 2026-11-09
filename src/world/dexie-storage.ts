@@ -27,6 +27,7 @@ import type { GameRecord } from '../game/types.ts';
 import {
   emptyWorldSlots,
   type WorldSlotKind,
+  type WorldSaveKind,
   type WorldSlots,
   type WorldStorageAdapter,
 } from './storage.ts';
@@ -109,7 +110,7 @@ export class DexieWorldStorage implements WorldStorageAdapter {
   async save(
     world: WorldRecord,
     stateRevision: number,
-    kind: 'auto' | 'manual' | 'action',
+    kind: WorldSaveKind,
     expectedStorageRevision: number,
   ): Promise<WorldSlots> {
     return this.commit(world, stateRevision, kind, expectedStorageRevision);
@@ -128,11 +129,11 @@ export class DexieWorldStorage implements WorldStorageAdapter {
   private async commit(
     world: WorldRecord,
     stateRevision: number,
-    kind: 'auto' | 'manual' | 'action',
+    kind: WorldSaveKind,
     expectedStorageRevision: number,
     creationFingerprint?: string,
   ): Promise<WorldSlots> {
-    ensure(['auto', 'manual', 'action'].includes(kind), '保存枠が不正です');
+    ensure(['auto', 'manual', 'action', 'progress'].includes(kind), '保存枠が不正です');
     const slotKind = kind === 'manual' ? 'manual' : 'auto';
     const format = formatFor(world.version);
     integer(stateRevision, 0, Number.MAX_SAFE_INTEGER, '状態版');
@@ -278,7 +279,8 @@ export class DexieWorldStorage implements WorldStorageAdapter {
       createdAt: new Date().toISOString(),
       gameDate: world.currentDate,
       stateRevision,
-      saveKind: kind === 'auto' ? 'dailyAuto' : kind === 'action' ? 'actionAuto' : 'manual',
+      // 保存内容・形式は共通。期間進行の確定も既存の操作自動保存として記録する。
+      saveKind: kind === 'auto' ? 'dailyAuto' : kind === 'manual' ? 'manual' : 'actionAuto',
       versions: { saveFormatVersion: format, simulationVersion: world.version },
       blockRefs: blocks.map(({ payloadBytes: _bytes, codec: _codec, ...ref }) => ref),
     };

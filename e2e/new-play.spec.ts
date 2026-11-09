@@ -101,12 +101,34 @@ for (const width of [1280, 390]) {
 
 test('新規プレイ：未保存の途中経過は作成画面の手動保存を経て保持する', async ({ page }) => {
   test.setTimeout(90000);
+  await page.addInitScript(() => {
+    const original = Worker.prototype.postMessage;
+    let failed = false;
+    Worker.prototype.postMessage = function (message: unknown, options?: unknown) {
+      const data = message as {
+        kind?: string;
+        localWorldId?: string;
+        expectedStateRevision?: number;
+      };
+      if (!failed && data.kind === 'saveProgress') {
+        failed = true;
+        original.call(
+          this,
+          { ...data, expectedStateRevision: data.expectedStateRevision! - 1 },
+          options as StructuredSerializeOptions,
+        );
+      } else original.call(this, message, options as StructuredSerializeOptions);
+    };
+  });
   await openDevelopmentHome(page);
   const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
   await nav.getByRole('button', { name: '日程', exact: true }).click();
   await page.getByRole('button', { name: '今日の進行', exact: true }).click();
   await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
   await page.getByRole('button', { name: '日次進行を一時停止', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '進行結果の保存を再試行', exact: true }),
+  ).toBeEnabled();
   await setup(page);
   const create = page.getByRole('button', { name: '新しい日程を準備', exact: true });
   await expect(create).toBeDisabled();

@@ -47,9 +47,9 @@ export function progressLabel(target: ProgressTarget): string {
 }
 
 /**
- * afterDayは指定日の全試合・日次確定・保存後、beforeGamesは指定日の開始前に止める。
+ * afterDayは指定日の全試合・日次確定後、beforeGamesは指定日の開始前に止める。
  * 日付や試合を直接更新せず、従来のWorker指示を一つずつ返す。
- * completeDayの応答は翌日への移行と自動保存の成功後に届く。
+ * カレンダーの保存タイミングはcalendar-progress.tsでまとめて扱う。
  */
 export function nextProgressAction(
   current: { currentDate: string; phase: WorldPhase },

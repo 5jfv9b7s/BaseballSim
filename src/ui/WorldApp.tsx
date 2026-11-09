@@ -11,6 +11,7 @@ import { leagueStandings } from '../world/league-standings.ts';
 import { gameStadium } from '../world/league-structure.ts';
 import type { NewPlayOptions } from '../world/league-structure-types.ts';
 import { ProgressEstimate } from './ProgressEstimate.tsx';
+import { nextCalendarAction } from '../world/calendar-progress.ts';
 import {
   createFormationDraft,
   formationChanged,
@@ -19,7 +20,6 @@ import {
 import type { MainPage } from './MainScreen.tsx';
 import {
   createProgressTarget,
-  nextProgressAction,
   progressLabel,
   reachedProgressTarget,
   type ProgressTarget,
@@ -139,6 +139,15 @@ export function WorldApp({
   const [calendar, setCalendar] = useState<'short' | 'annual'>('short');
   const [targetDate, setTargetDate] = useState('');
   const progressTarget = useRef<ProgressTarget | null>(null);
+  const progressStop = useRef<'complete' | 'paused' | 'error' | null>(null);
+  const progressFailure = useRef('');
+  const failedProgressSave = useRef(false);
+  const [progressSaveFailed, setProgressSaveFailed] = useState(false);
+
+  function markProgressSaveFailed(value: boolean) {
+    failedProgressSave.current = value;
+    setProgressSaveFailed(value);
+  }
   const [seed, setSeed] = useState('20260924');
   const [controlledSquadId, setControlledSquadId] = useState('');
   const [editorEpoch, setEditorEpoch] = useState(0);
@@ -185,7 +194,8 @@ export function WorldApp({
       setRunning(false);
       pendingInspection.current?.reject(new Error('要求を送信できませんでした。'));
       pendingInspection.current = null;
-      setError('要求を送信できませんでした。保存した状態から確認してください。');
+      if (request.kind === 'saveProgress') markProgressSaveFailed(true);
+      setError('要求を送信できませんでした。作業状態と保存の状態を確認してください。');
     }
   }
 
@@ -426,15 +436,64 @@ export function WorldApp({
     const current = latest.current;
     const target = progressTarget.current;
     if (!current || !target || !auto.current || pending.current) return;
-    const action = nextProgressAction(current, target);
-    if (action?.kind === 'advance') send({ kind: 'advanceBatch', count: action.count, batches: 4 });
-    else if (action) send(action);
-    else {
-      auto.current = false;
-      progressTarget.current = null;
-      setRunning(false);
-    }
+    if (!progressStop.current && reachedProgressTarget(current.currentDate, target))
+      progressStop.current = 'complete';
+    const action = nextCalendarAction(current, target, progressStop.current !== null);
+    if (action) send(action);
+    else finishProgress(false);
   }
+
+  function finishProgress(saved: boolean) {
+    const target = progressTarget.current;
+    const reason = progressStop.current ?? 'complete';
+    auto.current = false;
+    setRunning(false);
+    markProgressSaveFailed(false);
+    if (reason === 'complete') {
+      progressTarget.current = null;
+      setMessage(
+        (target
+          ? target.date +
+            (target.boundary === 'beforeGames'
+              ? 'の試合前で停止しました。'
+              : 'の終了まで進めて停止しました。')
+          : '日程進行を終了しました。') +
+          (saved ? '進行結果を自動保存しました。' : '未保存の変更はありません。'),
+      );
+    } else {
+      setMessage(
+        (reason === 'paused' ? '一時停止しました。' : '処理を停止しました。') +
+          (saved ? '途中の状態を自動保存しました。' : '未保存の変更はありません。'),
+      );
+    }
+    if (reason === 'error') {
+      progressTarget.current = null;
+      setError(progressFailure.current);
+    }
+    progressStop.current = null;
+  }
+
+  function pauseProgress() {
+    if (!auto.current || progressStop.current) return;
+    // 実行中の要求を終えてから保存。次の球・日付を開始しない。
+    progressStop.current = 'paused';
+    continueDay();
+  }
+
+  useEffect(() => {
+    const warnUnsaved = (event: BeforeUnloadEvent) => {
+      if (
+        auto.current ||
+        pending.current ||
+        (latest.current?.unsavedChanges && latest.current.revision > 0)
+      ) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warnUnsaved);
+    return () => window.removeEventListener('beforeunload', warnUnsaved);
+  }, []);
 
   useEffect(() => {
     const instance = new Worker(new URL('../world-worker.ts', import.meta.url), { type: 'module' });
@@ -469,10 +528,21 @@ export function WorldApp({
         openingFromTitle.current = false;
         trainingDestination.current = null;
         formationDestination.current = null;
-        progressTarget.current = null;
-        auto.current = false;
-        setRunning(false);
         setError(data.error);
+        if (completedAction === 'saveProgress') {
+          // 世界は進行済み。日次更新を戻したり再適用したりせず、保存だけを再試行する。
+          auto.current = false;
+          setRunning(false);
+          markProgressSaveFailed(true);
+        } else if (auto.current) {
+          progressStop.current = 'error';
+          progressFailure.current = data.error;
+          continueDay();
+        } else {
+          progressTarget.current = null;
+          auto.current = false;
+          setRunning(false);
+        }
         return;
       }
       setPlayListError(Boolean(data.playListError));
@@ -505,26 +575,15 @@ export function WorldApp({
         setMessage('保存容量を確認しました。データは削除していません。');
       }
       if (completedAction === 'completeDay') {
-        const target = progressTarget.current;
-        const arrived = target && reachedProgressTarget(data.view.currentDate, target);
-        if (arrived) {
-          auto.current = false;
-          progressTarget.current = null;
-          setRunning(false);
-        }
         setSelectedDate((selected) => (selected >= data.view.currentDate ? selected : ''));
         setSelectedGame('');
-        setMessage(
-          data.view.lastCompletedDate +
-            'の全結果を反映し、翌日の状態を自動保存しました。' +
-            (arrived
-              ? target.date +
-                (target.boundary === 'beforeGames'
-                  ? 'の試合前で停止しました。'
-                  : 'の終了まで進めて停止しました。')
-              : ''),
-        );
+        // 期間進行中の応答は未保存。完了メッセージは最後の保存成功時だけ出す。
+        if (!auto.current)
+          setMessage(
+            data.view.lastCompletedDate + 'の全結果を反映し、翌日の状態を自動保存しました。',
+          );
       }
+      if (completedAction === 'saveProgress') finishProgress(true);
       if (
         completedAction === 'setClubPlan' ||
         completedAction === 'setGameStarter' ||
@@ -567,6 +626,9 @@ export function WorldApp({
       }
       if (completedAction === 'save') setMessage('世界全体を手動保存しました。');
       if (completedAction === 'load' || completedAction === 'openPlay') {
+        markProgressSaveFailed(false);
+        progressStop.current = null;
+        progressFailure.current = '';
         setHasOpenedPlay(true);
         setShowTitle(false);
         if (openingFromTitle.current) setPage('home');
@@ -593,6 +655,9 @@ export function WorldApp({
         setMessage('保存した世界を読み込みました。進行は停止しています。');
       }
       if (completedAction === 'new') {
+        markProgressSaveFailed(false);
+        progressStop.current = null;
+        progressFailure.current = '';
         setHasOpenedPlay(true);
         setShowTitle(false);
         progressTarget.current = null;
@@ -616,13 +681,14 @@ export function WorldApp({
         setPage('home');
         setMessage('新しい日程を準備しました。別プレイとして初回保存が完了しました。');
       }
-      if (data.view.phase === 'aborted') {
-        progressTarget.current = null;
-        auto.current = false;
-        setRunning(false);
-        setError(
-          '試合が異常停止しました。未完了の結果を順位へ加算せず、日付進行を停止しています。',
-        );
+      if (data.view.phase === 'aborted' && completedAction !== 'saveProgress') {
+        const failure =
+          '試合が異常停止しました。未完了の結果を順位へ加算せず、日付進行を停止しています。';
+        setError(failure);
+        if (auto.current) {
+          progressStop.current = 'error';
+          progressFailure.current = failure;
+        }
       }
       if (auto.current) continueDay();
     };
@@ -633,12 +699,13 @@ export function WorldApp({
       trainingDestination.current = null;
       formationDestination.current = null;
       progressTarget.current = null;
+      markProgressSaveFailed(false);
       pending.current = false;
       auto.current = false;
       setBusy(false);
       setRunning(false);
       setError(
-        '日次Workerでエラーが発生しました。再読み込み後、保存した世界を読み込んでください。',
+        '日次Workerでエラーが発生しました。進行中の未保存分は復元できません。再読み込み後、最後に保存した世界を読み込んでください。',
       );
     };
     pending.current = true;
@@ -656,7 +723,7 @@ export function WorldApp({
 
   function startProgress(date: string, boundary: ProgressTarget['boundary']) {
     const current = latest.current;
-    if (!current || pending.current || auto.current) return;
+    if (!current || pending.current || auto.current || failedProgressSave.current) return;
     try {
       progressTarget.current = createProgressTarget(
         current.currentDate,
@@ -668,6 +735,8 @@ export function WorldApp({
       setError(error instanceof Error ? error.message : '進行先の日付を確認してください。');
       return;
     }
+    progressStop.current = null;
+    progressFailure.current = '';
     auto.current = true;
     setRunning(true);
     continueDay();
@@ -685,6 +754,7 @@ export function WorldApp({
   const storageAction = [
     'new',
     'save',
+    'saveProgress',
     'load',
     'openPlay',
     'exportSnapshot',
@@ -696,16 +766,27 @@ export function WorldApp({
     <LoadingOverlay active={visible && !error && !running && (busy || !view)} />
   );
   const notice = busy ? '' : message;
-  const notification = (running || notice) && (
-    <p role="status">
-      {running && (
-        <span>
-          {progressTarget.current && progressLabel(progressTarget.current)}進行中
-          <br />
-        </span>
+  const notification = (running || notice || progressSaveFailed) && (
+    <>
+      <p role="status">
+        {running && (
+          <span>
+            {progressTarget.current && progressLabel(progressTarget.current)}進行中
+            <br />
+          </span>
+        )}
+        {notice}
+      </p>
+      {progressSaveFailed && (
+        <button
+          className="secondary"
+          disabled={busy || running}
+          onClick={() => send({ kind: 'saveProgress' })}
+        >
+          進行結果の保存を再試行
+        </button>
       )}
-      {notice}
-    </p>
+    </>
   );
 
   const resumeNotice =
@@ -713,7 +794,10 @@ export function WorldApp({
       ? '以前の保存があります。「世界の保存」から読み込むか、新規プレイを作成してください。'
       : '';
   const disabled = !view || busy || running;
-  const canRun = !resumeNotice && (view?.phase === 'playing' || view?.phase === 'readyToComplete');
+  const canRun =
+    !resumeNotice &&
+    !progressSaveFailed &&
+    (view?.phase === 'playing' || view?.phase === 'readyToComplete');
   const pausedTarget = !running && canRun ? progressTarget.current : null;
   const resultDate = selectedDate || view?.lastCompletedDate || view?.currentDate || '';
   const displayScope = view?.farm ? scope : 'firstRegular';
@@ -898,18 +982,20 @@ export function WorldApp({
               <h3 id="advance-day-heading">今日を進める</h3>
               <p className="action-hint" id="advance-day-hint">
                 {running
-                  ? '自動進行中です。一時停止すると、実行中の処理が終わり次第止まります。'
+                  ? '自動進行中です。一時停止すると、実行中の処理が終わり次第、途中の状態を保存して止まります。'
                   : busy
                     ? '処理が終わるまでお待ちください。'
                     : !view
                       ? '試合情報を読み込み中です。'
                       : resumeNotice
                         ? resumeNotice
-                        : view.phase === 'aborted'
-                          ? '試合が異常停止しています。エラーを確認し、保存した時点からの再開をご検討ください。'
-                          : !canRun
-                            ? '今季の日程は終了しています。成績メニューで記録を確認できます。'
-                            : '今日の一軍・二軍の全試合を終え、日次確定と自動保存まで行います。'}
+                        : progressSaveFailed
+                          ? '進行結果は未保存です。「進行結果の保存を再試行」から保存してください。'
+                          : view.phase === 'aborted'
+                            ? '試合が異常停止しています。エラーを確認し、保存した時点からの再開をご検討ください。'
+                            : !canRun
+                              ? '今季の日程は終了しています。成績メニューで記録を確認できます。'
+                              : '今日の一軍・二軍の全試合を終え、日次確定と自動保存まで行います。'}
               </p>
               <div className="world-controls">
                 <button
@@ -925,11 +1011,7 @@ export function WorldApp({
                   className={running ? 'stop-action' : 'secondary'}
                   aria-describedby="advance-day-hint"
                   disabled={!running}
-                  onClick={() => {
-                    auto.current = false;
-                    setRunning(false);
-                    setMessage('一時停止しました。実行中の処理が終わり次第、停止します。');
-                  }}
+                  onClick={pauseProgress}
                 >
                   日次進行を一時停止
                 </button>
@@ -1038,7 +1120,7 @@ export function WorldApp({
               <div className="world-controls">
                 <button
                   className="secondary"
-                  disabled={disabled || view?.phase !== 'readyToComplete'}
+                  disabled={disabled || progressSaveFailed || view?.phase !== 'readyToComplete'}
                   aria-describedby="retry-day-hint"
                   onClick={() => send({ kind: 'completeDay', date: view!.currentDate })}
                 >
@@ -1049,7 +1131,7 @@ export function WorldApp({
             {pausedTarget && <p>一時停止中：{progressLabel(pausedTarget)}進行する予定です。</p>}
             <p className="hint">
               どの進行方法でも指定日を含みます。対象日の全試合と日次確定が終わると、翌日の試合前で止まります。
-              毎日自動保存し、保存失敗・試合の異常停止で止まります。
+              途中の日ごとの保存は省き、進行終了・一時停止時にまとめて自動保存します。保存失敗時は保存だけを再試行できます。
             </p>
             {development && !storageAction && notification}
             {development && error && (
@@ -1628,11 +1710,7 @@ export function WorldApp({
             hasSavedPlays={plays.length > 0}
             formationPending={formationPending}
             trainingPending={trainingPending}
-            onPause={() => {
-              auto.current = false;
-              setRunning(false);
-              setMessage('一時停止しました。実行中の処理が終わり次第、停止します。');
-            }}
+            onPause={pauseProgress}
             onToday={() => navigate('today')}
             onOpenTools={() => navigate('tools')}
           />

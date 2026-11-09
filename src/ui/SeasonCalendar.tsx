@@ -299,7 +299,7 @@ export function SeasonCalendar({
               </p>
               {selectedInRange ? (
                 <>
-                  <p id={hintId}>この日を含む全球団の試合・日次保存まで進めます。</p>
+                  <p id={hintId}>この日を含む全球団の試合を進め、終了時にまとめて保存します。</p>
                   <ProgressEstimate view={view} date={selection} />
                   <button
                     data-primary

@@ -47,7 +47,8 @@ export type WorldAction =
   | { kind: 'new'; seed: number; controlledSquadId?: string; calendar?: 'short' | 'annual' }
   | { kind: 'advance'; count: number }
   | { kind: 'advanceBatch'; count: number; batches: number }
-  | { kind: 'completeDay'; date: string }
+  | { kind: 'completeDay'; date: string; save?: 'defer' }
+  | { kind: 'saveProgress' }
   | { kind: 'save' }
   | { kind: 'load'; slot: WorldSlotKind };
 
@@ -141,7 +142,7 @@ export type WorldContext = Pick<
   'localWorldId' | 'revision' | 'slots' | 'unsavedChanges'
 >;
 
-/** Workerが直列実行する正本。日次保存成功前には日付を公開しない。 */
+/** Workerが直列実行する正本。期間進行中は未保存を明示し、停止時にまとめて保存する。 */
 export class WorldController {
   private world: WorldRecord;
   private revision = 0;
@@ -457,6 +458,7 @@ export class WorldController {
         'advance',
         'advanceBatch',
         'completeDay',
+        'saveProgress',
         'save',
         'load',
         'setTrainingPlans',
@@ -477,8 +479,10 @@ export class WorldController {
     if (command.kind === 'advance' || command.kind === 'advanceBatch')
       integer(command.count, 1, 25, '進行イベント数');
     if (command.kind === 'advanceBatch') integer(command.batches, 1, 4, '進行まとめ数');
-    if (command.kind === 'completeDay')
+    if (command.kind === 'completeDay') {
       ensure(typeof command.date === 'string', '完了日が不正です');
+      ensure(command.save === undefined || command.save === 'defer', '日次の保存方法が不正です');
+    }
     if (command.kind === 'load')
       ensure(['auto', 'previousAuto', 'manual'].includes(command.slot), '保存枠が不正です');
     const fingerprint = canonicalJson(command);
@@ -552,20 +556,43 @@ export class WorldController {
     }
     if (command.kind === 'completeDay') {
       const next = completeDay(this.world, command.date);
+      if (command.save === 'defer') {
+        // 日次更新・二重適用防止は共通。期間進行中だけDBへの確定を後回しにする。
+        this.world = next;
+        this.unsavedChanges = true;
+      } else {
+        try {
+          const slots = await this.storage.save(
+            next,
+            this.revision + 1,
+            'auto',
+            this.slots.storageRevision,
+          );
+          this.world = next;
+          this.slots = slots;
+          this.unsavedChanges = false;
+          this.storageError = null;
+        } catch (error) {
+          this.storageError =
+            '自動保存に失敗しました。当日の結果を保持しています。「日次確定を再試行」で保存を再試行できます。';
+          throw error;
+        }
+      }
+    }
+    if (command.kind === 'saveProgress') {
       try {
-        const slots = await this.storage.save(
-          next,
+        // 一時停止は試合途中にも到達する。手動枠を使わず現在の安全な指示境界を保存する。
+        this.slots = await this.storage.save(
+          this.world,
           this.revision + 1,
-          'auto',
+          'progress',
           this.slots.storageRevision,
         );
-        this.world = next;
-        this.slots = slots;
         this.unsavedChanges = false;
         this.storageError = null;
       } catch (error) {
         this.storageError =
-          '自動保存に失敗しました。当日の結果を保持しています。「日次確定を再試行」で保存を再試行できます。';
+          '進行結果の自動保存に失敗しました。作業状態と以前の保存は保持しています。「進行結果の保存を再試行」で保存だけをやり直せます。';
         throw error;
       }
     }

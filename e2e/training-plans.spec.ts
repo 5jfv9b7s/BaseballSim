@@ -256,9 +256,7 @@ test('練習と編成：退出保存から編成編集へ入り、編成保存�
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
   await nav.getByRole('button', { name: 'チーム', exact: true }).click();
-  await expect(
-    page.getByRole('table', { name: '選手プロフィール一覧', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('list', { name: '選手プロフィール一覧', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '育成・練習', exact: true }).click();
   await expect(page.getByRole('combobox', { name: '練習強度', exact: true })).toBeEnabled();
   await expect(page.getByRole('combobox', { name: '練習強度', exact: true })).toHaveValue('rest');

@@ -1,3 +1,4 @@
+import { selectSaveChoice } from './saved-play.ts';
 import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page, type Locator } from '@playwright/test';
 import type { WorldView } from '../src/world/controller.ts';
@@ -186,10 +187,14 @@ for (const width of [1280, 390, 320]) {
       });
       await reloadDevelopmentHome(page);
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
-      await page
-        .getByRole('combobox', { name: '保存済みプレイ', exact: true })
-        .selectOption(view.localWorldId);
-      await page.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('manual');
+      await selectSaveChoice(
+        page.getByRole('group', { name: '保存済みプレイ', exact: true }),
+        view.localWorldId,
+      );
+      await selectSaveChoice(
+        page.getByRole('group', { name: '開く保存枠', exact: true }),
+        'manual',
+      );
       await page.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
       await expect(page.getByTestId('world-date')).toHaveText(view.currentDate, { timeout: 30000 });
       expect((await read(page)).hitStreaks).toEqual(view.hitStreaks);
@@ -201,10 +206,11 @@ for (const width of [1280, 390, 320]) {
     // 本画面でも同じ実保存を開き、メニューから追加した記録へ到達する。
     await openDevelopmentHome(page);
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
-    await page
-      .getByRole('combobox', { name: '保存済みプレイ', exact: true })
-      .selectOption(view.localWorldId);
-    await page.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('auto');
+    await selectSaveChoice(
+      page.getByRole('group', { name: '保存済みプレイ', exact: true }),
+      view.localWorldId,
+    );
+    await selectSaveChoice(page.getByRole('group', { name: '開く保存枠', exact: true }), 'auto');
     await page.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
     await expect(page.getByTestId('main-date')).toHaveAttribute('datetime', view.currentDate, {
       timeout: 30000,

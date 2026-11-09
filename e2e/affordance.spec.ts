@@ -1,3 +1,4 @@
+import { selectSaveChoice } from './saved-play.ts';
 import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { setProgressDate } from './period-controls.ts';
 import { expect, test } from '@playwright/test';
@@ -50,9 +51,10 @@ for (const width of [1280, 390, 320]) {
     await expect(open).toBeDisabled();
     await expect(open).toHaveAccessibleDescription(/プレイと保存枠を選ぶと/);
     const afterSave = await page.evaluate(() => Reflect.get(window, 'worldCommands'));
-    await resume
-      .getByRole('combobox', { name: '保存済みプレイ', exact: true })
-      .selectOption('v02-local');
+    await selectSaveChoice(
+      resume.getByRole('group', { name: '保存済みプレイ', exact: true }),
+      'v02-local',
+    );
     await expect(open).toBeEnabled();
     expect(await page.evaluate(() => Reflect.get(window, 'worldCommands'))).toBe(afterSave);
     await page.screenshot({ path: `.tmp/affordance-qa/save-${width}.png`, fullPage: true });
@@ -93,9 +95,10 @@ for (const width of [1280, 390, 320]) {
     await page.getByRole('button', { name: 'セーブから再開 →', exact: true }).click();
     await expect(save).toBeDisabled();
     await expect(save).toHaveAccessibleDescription(/以前の保存があります/);
-    await resume
-      .getByRole('combobox', { name: '保存済みプレイ', exact: true })
-      .selectOption('v02-local');
+    await selectSaveChoice(
+      resume.getByRole('group', { name: '保存済みプレイ', exact: true }),
+      'v02-local',
+    );
     await open.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました', {

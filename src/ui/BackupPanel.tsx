@@ -1,13 +1,15 @@
 import { SavePointDetails } from './SavePointDetails.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { SaveSlotPicker } from './SaveSlots.tsx';
+import './save-cards.css';
 import type { WorldView } from '../world/controller.ts';
 import type { StoredPlay, WorldSlotKind } from '../world/storage.ts';
 
-const names: Record<WorldSlotKind, string> = {
-  auto: '自動保存',
-  previousAuto: '直前の自動保存',
-  manual: '手動保存',
-};
+/** 自動生成ラベルのISO作成時刻だけを見出しから省き、元の名前はツールチップと読上げに残す。 */
+function playHeading(label: string): string {
+  return label.replace(/ 作成 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, '');
+}
+
 interface Props {
   view: WorldView;
   plays: StoredPlay[];
@@ -29,6 +31,7 @@ export function SavedPlayPicker({
   showCurrent = true,
 }: Omit<Props, 'exportFile' | 'importFile'>) {
   const [chosen, setChosen] = useState('');
+  const playGroup = useId();
   const [openSlot, setOpenSlot] = useState<WorldSlotKind>('manual');
   useEffect(() => {
     if (importedId) {
@@ -56,43 +59,71 @@ export function SavedPlayPicker({
   return (
     <section className="workflow-group" aria-labelledby="resume-heading">
       <h3 id="resume-heading">保存したプレイを再開</h3>
-      {showCurrent && <p className="hint">現在のプレイ：{current?.label ?? '初期プレイ'}</p>}
-      <div className="workflow-fields">
-        <label>
-          1. 保存済みプレイ
-          <select
-            aria-label="保存済みプレイ"
-            value={chosen}
-            disabled={disabled || plays.length === 0}
-            onChange={(e) => {
-              setChosen(e.target.value);
-              setOpenSlot('manual');
-            }}
-          >
-            <option value="">開くプレイを選択</option>
-            {plays.map((p) => (
-              <option key={p.localWorldId} value={p.localWorldId}>
-                {p.label}（{p.gameDate ?? '日付なし'}）
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          2. 開く保存枠
-          <select
-            aria-label="開く保存枠"
-            value={actualSlot ?? ''}
-            disabled={disabled || !target}
-            onChange={(e) => setOpenSlot(e.target.value as WorldSlotKind)}
-          >
-            {!target && <option value="">先にプレイを選択</option>}
-            {target?.slots.map((kind) => (
-              <option key={kind} value={kind}>
-                {names[kind]}：{target?.slotDetails[kind]?.gameDate ?? '日付未取得'}
-              </option>
-            ))}
-          </select>
-        </label>
+      {showCurrent && (
+        <p className="hint">現在のプレイ：{current ? playHeading(current.label) : '初期プレイ'}</p>
+      )}
+      <div className="save-browser">
+        <fieldset className="save-choice-group" aria-label="保存済みプレイ" disabled={disabled}>
+          <legend>1. 保存済みプレイ</legend>
+          {plays.length > 0 ? (
+            <div className="play-choice-grid">
+              {plays.map((play) => (
+                <label
+                  className="save-choice play-choice"
+                  key={play.localWorldId}
+                  data-selected={chosen === play.localWorldId}
+                >
+                  <input
+                    type="radio"
+                    name={playGroup}
+                    value={play.localWorldId}
+                    aria-label={play.label}
+                    checked={chosen === play.localWorldId}
+                    onChange={() => {
+                      setChosen(play.localWorldId);
+                      setOpenSlot('manual');
+                    }}
+                  />
+                  <span className="play-choice-title" title={play.label}>
+                    {playHeading(play.label)}
+                  </span>
+                  <span className="play-choice-date">
+                    {play.gameDate ? (
+                      <time dateTime={play.gameDate}>{play.gameDate}</time>
+                    ) : (
+                      '日付未取得'
+                    )}
+                  </span>
+                  <span className="play-choice-meta">
+                    保存枠 {play.slots.length}件
+                    {play.localWorldId === view.localWorldId && showCurrent ? ' ／ プレイ中' : ''}
+                  </span>
+                  <span className="save-choice-mark">
+                    {chosen === play.localWorldId ? '選択中' : 'このプレイを選ぶ'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="save-choice-empty">保存したプレイはまだありません。</p>
+          )}
+        </fieldset>
+        <div className="save-browser-slots">
+          {target ? (
+            <SaveSlotPicker
+              label="開く保存枠"
+              points={Object.fromEntries(
+                target.slots.map((slot) => [slot, target.slotDetails[slot] ?? null]),
+              )}
+              available={target.slots}
+              value={actualSlot}
+              disabled={disabled}
+              onChange={setOpenSlot}
+            />
+          ) : (
+            <p className="save-choice-prompt">プレイを選ぶと、3つの保存枠を表示します。</p>
+          )}
+        </div>
       </div>
       {selectedPoint && <SavePointDetails point={selectedPoint} />}
       <p className="action-hint" id="resume-hint">
@@ -132,21 +163,13 @@ export function BackupPanel({
           <p className="hint">
             書き出すのは保存済みの時点です。未保存の変更を含める場合は、先に「世界を手動保存」を押してください。
           </p>
-          <label>
-            書き出す保存枠
-            <select
-              aria-label="書き出す保存枠"
-              value={slot}
-              disabled={disabled}
-              onChange={(e) => setSlot(e.target.value as WorldSlotKind)}
-            >
-              {(['manual', 'auto', 'previousAuto'] as const).map((kind) => (
-                <option key={kind} value={kind}>
-                  {names[kind]}：{view.slots[kind]?.gameDate ?? '保存なし'}
-                </option>
-              ))}
-            </select>
-          </label>
+          <SaveSlotPicker
+            label="書き出す保存枠"
+            points={view.slots}
+            value={slot}
+            disabled={disabled}
+            onChange={setSlot}
+          />
           <p className="action-hint" id="export-hint">
             {disabled
               ? '処理が終わるか、進行を一時停止してから書き出せます。'

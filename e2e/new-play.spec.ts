@@ -1,3 +1,4 @@
+import { selectSaveChoice } from './saved-play.ts';
 import { openDevelopmentHome, reloadDevelopmentHome } from './main-entry.ts';
 import { test, expect, type Page } from '@playwright/test';
 
@@ -44,8 +45,8 @@ for (const width of [1280, 390]) {
       await expect(
         panel.getByRole('button', { name: '手動保存を読み込む', exact: true }),
       ).toBeDisabled();
-      const plays = panel.getByRole('combobox', { name: '保存済みプレイ', exact: true });
-      const first = await plays.locator('option').nth(1).getAttribute('value');
+      const plays = panel.getByRole('group', { name: '保存済みプレイ', exact: true });
+      const first = await plays.getByRole('radio').first().getAttribute('value');
       expect(first).toMatch(/^play-/);
       await panel.getByRole('button', { name: '世界を手動保存', exact: true }).click();
       await expect(page.getByRole('status')).toContainText('世界全体を手動保存', {
@@ -57,11 +58,11 @@ for (const width of [1280, 390]) {
       await create.click();
       await expect(page.getByRole('status')).toContainText('初回保存が完了', { timeout: 30000 });
       panel = await saves(page);
-      await expect(plays.locator('option')).toHaveCount(3);
+      await expect(plays.getByRole('radio')).toHaveCount(2);
       const ids = await plays
-        .locator('option')
+        .getByRole('radio')
         .evaluateAll((options) =>
-          options.map((option) => (option as HTMLOptionElement).value).filter(Boolean),
+          options.map((option) => (option as HTMLInputElement).value).filter(Boolean),
         );
       const second = ids.find((id) => id !== first)!;
       expect(second).toMatch(/^play-/);
@@ -71,13 +72,16 @@ for (const width of [1280, 390]) {
 
       await reloadDevelopmentHome(page);
       panel = await saves(page);
-      await expect(plays.locator('option')).toHaveCount(3);
+      await expect(plays.getByRole('radio')).toHaveCount(2);
       for (const [id, slot, expectedSeed] of [
         [first!, 'manual', '111'],
         [second, 'auto', '222'],
       ]) {
-        await plays.selectOption(id!);
-        await panel.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption(slot!);
+        await selectSaveChoice(plays, id!);
+        await selectSaveChoice(
+          panel.getByRole('group', { name: '開く保存枠', exact: true }),
+          slot!,
+        );
         await panel.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
         await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました', {
           timeout: 30000,
@@ -118,10 +122,11 @@ test('新規プレイ：未保存の途中経過は作成画面の手動保存�
   await create.click();
   await expect(page.getByRole('status')).toContainText('初回保存が完了', { timeout: 30000 });
   const panel = await saves(page);
-  await panel
-    .getByRole('combobox', { name: '保存済みプレイ', exact: true })
-    .selectOption('v02-local');
-  await panel.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('manual');
+  await selectSaveChoice(
+    panel.getByRole('group', { name: '保存済みプレイ', exact: true }),
+    'v02-local',
+  );
+  await selectSaveChoice(panel.getByRole('group', { name: '開く保存枠', exact: true }), 'manual');
   await panel.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('保存した世界を読み込みました', {
     timeout: 30000,

@@ -1,0 +1,282 @@
+/* タイトル／システム共通。選択と実行を分ける保存カード。 */
+.save-choice-group {
+  min-width: 0;
+  margin: 20px 0;
+  padding: 0;
+  border: 0;
+}
+.save-choice-group legend {
+  margin-bottom: 10px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.play-choice-grid,
+.save-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 12px;
+}
+:where(.title-screen, .world-page) label.save-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--ui-border-strong, #a6b4c6);
+  border-radius: 10px;
+  background: var(--ui-surface, #fff);
+  color: var(--ui-text, #19283e);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.save-choice input[type='radio'] {
+  position: absolute;
+  top: 17px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--ui-accent, #087e78);
+}
+:where(.title-screen, .world-page) .save-choice[data-selected='true'] {
+  border: 2px solid var(--ui-accent, #087e78);
+  padding: 15px;
+  background: var(--ui-accent-soft, #e4f2f0);
+}
+.save-choice:focus-within {
+  outline: 3px solid var(--ui-focus, #146bd1);
+  outline-offset: 3px;
+}
+.save-choice:not([data-empty='true']):hover {
+  box-shadow: 0 3px 14px #19283e12;
+}
+:where(.title-screen, .world-page) .save-choice[data-empty='true'] {
+  border-style: dashed;
+  background: var(--ui-canvas, #f3f5f9);
+  cursor: default;
+}
+.save-choice-group:disabled .save-choice {
+  cursor: wait;
+}
+.play-choice-title {
+  padding-right: 28px;
+  font-weight: 750;
+  font-size: 16px;
+}
+.play-choice-date {
+  margin-top: 14px;
+  font-size: 21px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.play-choice-meta,
+.slot-card-time,
+.slot-card-description,
+.slot-card-caption {
+  font-size: 12px;
+  color: var(--ui-muted, #58677b);
+}
+.save-choice-mark {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ui-accent-hover, #05635f);
+}
+.save-choice[data-empty='true'] .save-choice-mark {
+  color: var(--ui-muted, #58677b);
+}
+.save-choice-empty,
+.save-choice-prompt {
+  padding: 18px;
+  border: 1px dashed var(--ui-border-strong, #a6b4c6);
+  color: var(--ui-muted, #58677b);
+  background: var(--ui-canvas, #f3f5f9);
+}
+.slot-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.slot-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-right: 24px;
+}
+.slot-card-number {
+  display: inline-grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  background: var(--ui-inverse, #15283f);
+  color: var(--ui-highlight, #8de9d0);
+  border-radius: 4px;
+  font:
+    700 12px / 1 ui-monospace,
+    monospace;
+}
+.slot-card-heading strong {
+  font-size: 14px;
+}
+.slot-card-status {
+  font-size: 11px;
+  color: var(--ui-muted, #58677b);
+}
+.slot-card-date,
+.slot-card-empty {
+  margin-top: 14px;
+  font-size: 21px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.slot-card-empty {
+  min-height: 52px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-muted, #58677b);
+}
+.slot-card-time {
+  margin-top: 8px;
+}
+.slot-card-time time {
+  display: block;
+  font-size: inherit;
+  font-weight: 500;
+}
+.slot-card-description {
+  margin-top: 8px;
+}
+.main-screen .restore-slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 3px solid var(--ui-accent, #087e78);
+  background: var(--ui-surface, #fff);
+}
+.main-screen .restore-slot-card[data-empty='true'] {
+  border-style: dashed;
+  border-top-width: 1px;
+  background: var(--ui-canvas, #f3f5f9);
+}
+.restore-slot-card .slot-card-heading {
+  padding-right: 0;
+}
+.main-screen .restore-slot-card .slot-card-date time {
+  font-size: 21px;
+}
+.main-screen .restore-slot-card .slot-card-time time {
+  font-size: 12px;
+  font-weight: 500;
+}
+.restore-slot-card .slot-read-hint {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--ui-muted, #58677b);
+}
+.restore-slot-card > button {
+  width: 100%;
+  margin-top: auto;
+}
+@media (max-width: 500px) {
+  .save-choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (forced-colors: active) {
+  .save-choice[data-selected='true'] {
+    outline: 2px solid Highlight;
+  }
+}
+
+.current-save-date {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 14px 0;
+}
+.current-save-date > span {
+  font-size: 12px;
+  color: var(--ui-muted, #58677b);
+}
+.current-save-date strong {
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text, #19283e);
+}
+
+.save-browser {
+  display: grid;
+  gap: 20px;
+  margin: 20px 0;
+}
+.save-browser .save-choice-group {
+  margin: 0;
+}
+.save-browser .play-choice-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.save-browser-slots {
+  min-width: 0;
+}
+.save-browser .save-choice-prompt {
+  margin: 0;
+  min-height: 160px;
+  align-content: center;
+  text-align: center;
+}
+.title-screen[data-page='continue'] {
+  max-width: 1120px;
+}
+@media (min-width: 900px) {
+  .save-browser {
+    grid-template-columns: minmax(210px, 0.8fr) minmax(0, 2.4fr);
+    align-items: start;
+  }
+  .save-browser .play-choice-grid {
+    max-height: 560px;
+    overflow-y: auto;
+    padding: 5px;
+    margin: -5px;
+  }
+}
+
+@media (min-width: 700px) {
+  .main-screen .save-current-slot {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.4fr);
+    column-gap: 24px;
+    row-gap: 8px;
+  }
+  .save-current-slot > h3 {
+    grid-column: 1 / -1;
+  }
+  .save-current-slot .current-save-date {
+    grid-column: 1;
+    grid-row: 2 / 5;
+    margin: 0;
+    align-self: center;
+  }
+  .save-current-slot > .save-state {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+  }
+  .save-current-slot > .world-controls {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 0;
+  }
+  .save-current-slot > .action-hint {
+    grid-column: 2;
+    grid-row: 4;
+    margin: 0;
+  }
+}

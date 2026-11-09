@@ -1,3 +1,4 @@
+import { selectSaveChoice } from './saved-play.ts';
 import { expect, test, type Page } from '@playwright/test';
 
 /** 本番の世界を進めず、独立したブラウザーの起動・読込だけを観測する。 */
@@ -59,10 +60,10 @@ test('ローディング：起動と実保存の読込前に表示し、完了�
     .click();
   await page.getByRole('button', { name: 'タイトル画面へ', exact: true }).click();
   await page.getByRole('button', { name: '続きから', exact: true }).first().click();
-  const savedPlay = page.getByRole('combobox', { name: '保存済みプレイ', exact: true });
-  await expect(savedPlay.locator('option')).toHaveCount(2);
-  const id = await savedPlay.locator('option').nth(1).getAttribute('value');
-  await savedPlay.selectOption(id!);
+  const savedPlay = page.getByRole('group', { name: '保存済みプレイ', exact: true });
+  await expect(savedPlay.getByRole('radio')).toHaveCount(1);
+  const id = await savedPlay.getByRole('radio').first().getAttribute('value');
+  await selectSaveChoice(savedPlay, id!);
   await page.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'クラブハウス', exact: true })).toBeVisible({
     timeout: 30000,

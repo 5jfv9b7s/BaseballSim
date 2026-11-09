@@ -64,7 +64,7 @@ export function TitleScreen({
 
   return (
     <div className="title-shell">
-      <main className="title-screen" aria-busy={disabled}>
+      <main className="title-screen" data-page={page} aria-busy={disabled}>
         <header className="title-brand">
           <div>
             <b aria-hidden="true">BS</b>

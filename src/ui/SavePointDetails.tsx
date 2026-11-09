@@ -11,7 +11,7 @@ const dateTime = new Intl.DateTimeFormat('ja-JP', {
 });
 
 /** 実時刻は表示専用。ゲーム計算や再開先の選択には使用しない。 */
-function SavedTime({ value }: { value: string | null }) {
+export function SavedTime({ value }: { value: string | null }) {
   if (!value || !Number.isFinite(Date.parse(value))) return <>日時未取得</>;
   return <time dateTime={value}>{dateTime.format(new Date(value))}</time>;
 }

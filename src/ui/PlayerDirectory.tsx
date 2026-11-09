@@ -1,8 +1,39 @@
 import { playerProfile, playerAge } from '../world/player-profiles.ts';
 import { PROFILE_POSITIONS } from '../world/player-profile-types.ts';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { growthAbilityKey } from '../world/growth-basis.ts';
+import { commonTrainingRef } from '../world/training.ts';
+import { AbilityRating } from './visuals/AbilityRating.tsx';
+import { clubStyle, ClubMark } from './visuals/BaseballVisuals.tsx';
+import './player-directory.css';
 import type { WorldView } from '../world/controller.ts';
 import './player-details.css';
+
+const contactKey = growthAbilityKey(commonTrainingRef('batting.contactVsRight'));
+const powerKey = growthAbilityKey(commonTrainingRef('batting.powerVsRight'));
+const conditionArrows: Record<string, string> = {
+  絶不調: '↓↓',
+  不調: '↓',
+  普通: '→',
+  好調: '↑',
+  絶好調: '↑↑',
+};
+
+function StateMeter({ label, value }: { label: string; value?: number | null }) {
+  return (
+    <span className="player-card-meter" data-kind={label === '疲労' ? 'fatigue' : 'energy'}>
+      <span>
+        {label}
+        <strong>{value == null ? '記録なし' : (value / 1000).toFixed(1)}</strong>
+      </span>
+      {value != null && (
+        <meter min={0} max={100} value={value / 1000} aria-label={label}>
+          {(value / 1000).toFixed(1)} / 100
+        </meter>
+      )}
+    </span>
+  );
+}
 
 export function PlayerDirectory({
   view,
@@ -23,46 +54,85 @@ export function PlayerDirectory({
     view.definitions.squads[0]!;
   const normalize = (value: string) =>
     value.normalize('NFKC').replace(/\s/g, '').toLocaleLowerCase('ja');
-  const statusOf = (id: string) => view.playerStatuses?.find((row) => row.playerId === id);
-  const isPitcher = (id: string) => squad.pitches.some((pitch) => pitch.playerId === id);
-  const profileOf = (id: string) => playerProfile(view.definitions, id);
-  const ageOf = (id: string) => {
-    const p = profileOf(id);
-    return p ? playerAge(p.birthDate, view.currentDate) : null;
-  };
-  const nameOf = (p: (typeof squad.players)[number]) =>
-    profileOf(p.playerId)?.displayName ?? p.familyName + ' ' + p.givenName;
-  const players = squad.players
-    .filter((player) => {
-      const state = statusOf(player.playerId);
+  // 名前や状態をカードごと・ソート比較ごとに全名簿から探さない。
+  const statusById = useMemo(
+    () => new Map((view.playerStatuses ?? []).map((row) => [row.playerId, row])),
+    [view.playerStatuses],
+  );
+  const entries = useMemo(() => {
+    const pitchesByPlayer = new Map<string, typeof squad.pitches>();
+    for (const pitch of squad.pitches) {
+      const pitches = pitchesByPlayer.get(pitch.playerId) ?? [];
+      pitches.push(pitch);
+      pitchesByPlayer.set(pitch.playerId, pitches);
+    }
+    return squad.players.map((player) => {
+      const profile = playerProfile(view.definitions, player.playerId);
+      const name = profile?.displayName ?? player.familyName + ' ' + player.givenName;
+      const pitches = pitchesByPlayer.get(player.playerId) ?? [];
+      const learned = pitches.filter(
+        (pitch) =>
+          (view.growth?.pitchLearning?.acquisition[pitch.pitchId]?.progressMilli ??
+            pitch.acquisitionProgressMilli) === 100000,
+      );
+      const current = view.growth?.current[player.playerId];
+      return {
+        player,
+        profile,
+        name,
+        searchName: normalize(name),
+        age: profile ? playerAge(profile.birthDate, view.currentDate) : null,
+        isPitcher: pitches.length > 0,
+        maxVelocity: learned.length
+          ? Math.max(...learned.map((pitch) => pitch.velocity.maxCentiKph))
+          : null,
+        learnedCount: learned.length,
+        contact: current?.[contactKey] ?? player.batting.contactVsRight.valueMilli,
+        power: current?.[powerKey] ?? player.powerVsRight.valueMilli,
+      };
+    });
+  }, [squad, view.definitions, view.growth, view.currentDate]);
+  const query = normalize(search);
+  const players = entries
+    .filter((entry) => {
+      const status = statusById.get(entry.player.playerId);
       return (
-        normalize(nameOf(player)).includes(normalize(search)) &&
-        (category === 'all' || state?.registration === category) &&
-        (role === 'all' || isPitcher(player.playerId) === (role === 'pitcher')) &&
+        entry.searchName.includes(query) &&
+        (category === 'all' || status?.registration === category) &&
+        (role === 'all' || entry.isPitcher === (role === 'pitcher')) &&
         (position === 'all' ||
-          (position === 'unknown'
-            ? !profileOf(player.playerId)
-            : profileOf(player.playerId)?.primaryPosition === position))
+          (position === 'unknown' ? !entry.profile : entry.profile?.primaryPosition === position))
       );
     })
     .sort((a, b) => {
-      const tie = a.playerId.localeCompare(b.playerId);
-      if (order === 'name') return nameOf(a).localeCompare(nameOf(b), 'ja') || tie;
+      const tie = a.player.playerId.localeCompare(b.player.playerId);
+      if (order === 'name') return a.name.localeCompare(b.name, 'ja') || tie;
       if (order === 'ageAsc' || order === 'ageDesc') {
-        const x = ageOf(a.playerId),
-          y = ageOf(b.playerId);
-        // 未記録を0歳にせず、どちらの順でも末尾へ置く。
-        if (x === null) return y === null ? tie : 1;
-        if (y === null) return -1;
-        return (order === 'ageAsc' ? x - y : y - x) || tie;
+        if (a.age === null) return b.age === null ? tie : 1;
+        if (b.age === null) return -1;
+        return (order === 'ageAsc' ? a.age - b.age : b.age - a.age) || tie;
       }
       return tie;
     });
 
   return (
-    <section className="panel" aria-label="選手一覧">
-      <h3>選手一覧</h3>
-      <div className="world-controls">
+    <section className="panel player-directory" aria-label="選手一覧">
+      <header className="player-directory-heading">
+        <ClubMark clubId={squad.team.clubId} small />
+        <div>
+          <h3>選手一覧</h3>
+          <p>
+            <span>{squad.team.name}</span>
+            <span>
+              <time dateTime={view.currentDate}>{view.currentDate}</time>現在
+            </span>
+          </p>
+        </div>
+        <span className="player-directory-count">
+          <strong>{players.length}</strong> / {squad.players.length}名
+        </span>
+      </header>
+      <div className="player-directory-filters">
         <label>
           選手の球団
           <select value={squad.squadId} onChange={(event) => setClub(event.target.value)}>
@@ -116,52 +186,123 @@ export function PlayerDirectory({
           </select>
         </label>
       </div>
-      <p>
-        {view.currentDate}現在 ／ {squad.team.name} ／ {players.length}名表示（所属
-        {squad.players.length}名）
+      <p className="player-directory-summary" aria-live="polite">
+        {players.length}名表示（所属{squad.players.length}名）
       </p>
-      <p className="hint">
-        名前を選ぶと詳細を開きます。年齢はゲーム内日付の満年齢、代表位置は守備適性とは別です。投手は持ち球で分類します。守備適性は選手詳細から確認でき、背番号は工事中です。
-      </p>
-      <div className="world-table">
-        <table aria-label="選手プロフィール一覧">
-          <thead>
-            <tr>
-              <th>名前</th>
-              <th>年齢</th>
-              <th>代表位置</th>
-              <th>投打</th>
-              <th>登録</th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((player) => (
-              <tr key={player.playerId}>
-                <td>
-                  <button className="player-link" onClick={() => onSelect(player.playerId)}>
-                    {nameOf(player)}
-                  </button>
-                </td>
-                <td>
-                  {ageOf(player.playerId) === null ? '記録なし' : `${ageOf(player.playerId)}歳`}
-                </td>
-                <td>{profileOf(player.playerId)?.primaryPosition ?? '記録なし'}</td>
-                <td>
-                  {player.throwingHand === 'R' ? '右' : '左'}投
-                  {player.battingHand === 'R' ? '右' : player.battingHand === 'L' ? '左' : '両'}打
-                </td>
-                <td>
-                  {statusOf(player.playerId)?.registration === 'first'
-                    ? '一軍'
-                    : statusOf(player.playerId)?.registration === 'farm'
-                      ? '二軍'
-                      : '記録なし'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ul className="player-card-grid" aria-label="選手プロフィール一覧">
+        {players.map((entry) => {
+          const { player, profile, name, age, isPitcher } = entry;
+          const status = statusById.get(player.playerId);
+          const registration =
+            status?.registration === 'first'
+              ? '一軍'
+              : status?.registration === 'farm'
+                ? '二軍'
+                : '登録記録なし';
+          return (
+            <li key={player.playerId}>
+              <article
+                className="player-card"
+                style={clubStyle(squad.team.clubId)}
+                data-player-id={player.playerId}
+                data-age={age ?? ''}
+              >
+                <div className="player-card-top">
+                  <span>{isPitcher ? '投手' : '野手'}</span>
+                  <span className="player-card-registration" data-category={status?.registration}>
+                    {registration}
+                  </span>
+                </div>
+                <div className="player-card-identity">
+                  <span
+                    className="player-card-position"
+                    aria-label={
+                      profile ? `代表守備位置 ${profile.primaryPosition}` : '代表守備位置 記録なし'
+                    }
+                    title={profile ? '代表守備位置' : '代表守備位置の記録なし'}
+                  >
+                    {profile?.primaryPosition ?? '—'}
+                  </span>
+                  <div>
+                    <button
+                      className="player-link player-card-open"
+                      onClick={() => onSelect(player.playerId)}
+                    >
+                      {name}
+                    </button>
+                    <p className="player-card-profile">
+                      {age === null ? '年齢記録なし' : `${age}歳`}
+                      <span aria-hidden="true"> ／ </span>
+                      {player.throwingHand === 'R' ? '右' : '左'}投
+                      {player.battingHand === 'R' ? '右' : player.battingHand === 'L' ? '左' : '両'}
+                      打
+                    </p>
+                  </div>
+                </div>
+                <div className="player-card-abilities">
+                  {isPitcher ? (
+                    <>
+                      <div>
+                        <span>MAX球速（設定）</span>
+                        <strong>
+                          {entry.maxVelocity === null ? (
+                            '記録なし'
+                          ) : (
+                            <>
+                              {(entry.maxVelocity / 100).toFixed(1)}
+                              <small> km/h</small>
+                            </>
+                          )}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>習得球種</span>
+                        <strong>
+                          {entry.learnedCount}
+                          <small> 種</small>
+                        </strong>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <span>対右ミート</span>
+                        <AbilityRating valueMilli={entry.contact} label={`${name}の対右ミート`} />
+                      </div>
+                      <div>
+                        <span>対右パワー</span>
+                        <AbilityRating valueMilli={entry.power} label={`${name}の対右パワー`} />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="player-card-state">
+                  <span className="player-card-condition">
+                    <span>調子</span>
+                    <strong>
+                      <span aria-hidden="true">
+                        {conditionArrows[status?.condition ?? ''] ?? '—'}{' '}
+                      </span>
+                      {status?.condition ?? '記録なし'}
+                    </strong>
+                  </span>
+                  <StateMeter label="体力" value={status?.energyMilli} />
+                  <StateMeter label="疲労" value={status?.fatigueMilli} />
+                </div>
+                <span className="player-card-action" aria-hidden="true">
+                  選手詳細を見る →
+                </span>
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+      <details className="player-directory-guide">
+        <summary>表示項目について</summary>
+        <p className="hint">
+          能力は現在の基本値です。年齢はゲーム内日付の満年齢、代表位置は守備適性とは別です。投手は持ち球で分類し、MAX球速は習得済み球種の設定値です。守備適性と全能力は選手詳細で確認できます。背番号は工事中です。
+        </p>
+      </details>
       {players.length === 0 && <p>条件に合う選手がいません。</p>}
     </section>
   );

@@ -12,19 +12,19 @@ for (const width of [1280, 390]) {
     const nav = page.getByRole('navigation', { name: 'メインメニュー', exact: true });
     await nav.getByRole('button', { name: 'チーム', exact: true }).click();
     const directory = page.getByRole('region', { name: '選手一覧', exact: true });
-    const table = directory.getByRole('table', { name: '選手プロフィール一覧' });
-    const rows = table.locator('tbody tr');
+    const cards = directory.getByRole('list', { name: '選手プロフィール一覧' });
+    const rows = cards.getByRole('listitem');
     await expect(rows).toHaveCount(30);
-    await expect(table).not.toContainText('記録なし');
+    await expect(cards).not.toContainText('記録なし');
     const order = directory.getByRole('combobox', { name: '選手の並び順', exact: true });
     await order.selectOption('ageAsc');
     const ages = await rows.evaluateAll((items) =>
-      items.map((row) => Number(row.children[1]!.textContent!.replace('歳', ''))),
+      items.map((row) => Number(row.querySelector('[data-age]')!.getAttribute('data-age'))),
     );
     expect(ages).toEqual([...ages].sort((a, b) => a - b));
     await order.selectOption('ageDesc');
     const descending = await rows.evaluateAll((items) =>
-      items.map((row) => Number(row.children[1]!.textContent!.replace('歳', ''))),
+      items.map((row) => Number(row.querySelector('[data-age]')!.getAttribute('data-age'))),
     );
     expect(descending).toEqual([...ages].sort((a, b) => b - a));
     await directory.getByRole('combobox', { name: '代表守備位置', exact: true }).selectOption('P');

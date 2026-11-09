@@ -1,3 +1,4 @@
+import { selectSaveChoice } from './saved-play.ts';
 import { setProgressDate } from './period-controls.ts';
 import { openOnlyCreatedPlay } from './saved-play.ts';
 import { test, expect, type Page } from '@playwright/test';
@@ -118,7 +119,10 @@ test('年間実機：途中再開・188日の日次保存・216試合・年度�
     record('年度末の再読込');
 
     await page.getByText('ファイルのバックアップ・別プレイの復元', { exact: true }).click();
-    await page.getByRole('combobox', { name: '書き出す保存枠', exact: true }).selectOption('auto');
+    await selectSaveChoice(
+      page.getByRole('group', { name: '書き出す保存枠', exact: true }),
+      'auto',
+    );
     const downloading = page.waitForEvent('download', { timeout: 180000 });
     await page.getByRole('button', { name: '保存ファイルを書き出す', exact: true }).click();
     const file = await downloading;

@@ -1,4 +1,5 @@
-﻿import { expect, test, type Page } from '@playwright/test';
+import { selectSaveChoice } from './saved-play.ts';
+import { expect, test, type Page } from '@playwright/test';
 
 async function startPlay(page: Page) {
   await page.getByRole('button', { name: 'はじめから', exact: true }).click();
@@ -116,10 +117,12 @@ for (const width of [1280, 390, 320]) {
     );
     await page.screenshot({ path: `.tmp/title-qa/saved-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: '続きから', exact: true }).click();
-    await expect(page.getByRole('combobox', { name: '保存済みプレイ', exact: true })).toBeVisible();
+    await expect(page.getByRole('group', { name: '保存済みプレイ', exact: true })).toBeVisible();
     await page
-      .getByRole('combobox', { name: '保存済みプレイ', exact: true })
-      .selectOption({ index: 1 });
+      .getByRole('group', { name: '保存済みプレイ', exact: true })
+      .getByRole('radio')
+      .first()
+      .check();
     const point = page.getByRole('region', { name: '選んだ保存時点', exact: true });
     await expect(point).toBeVisible();
     const saved = await page.evaluate(async () => {
@@ -191,17 +194,17 @@ test('タイトル：再起動・破損枠の復元失敗・別の保存時点�
   });
   await page.reload();
   await page.getByRole('button', { name: '続きから', exact: true }).click();
-  const plays = page.getByRole('combobox', { name: '保存済みプレイ', exact: true });
-  await plays.selectOption(id);
-  const slots = page.getByRole('combobox', { name: '開く保存枠', exact: true });
-  await slots.selectOption('auto');
+  const plays = page.getByRole('group', { name: '保存済みプレイ', exact: true });
+  await selectSaveChoice(plays, id);
+  const slots = page.getByRole('group', { name: '開く保存枠', exact: true });
+  await selectSaveChoice(slots, 'auto');
   const before = await storedState(page);
   await page.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole('heading', { name: '続きから', exact: true })).toBeVisible();
   expect(await storedState(page)).toEqual(before);
   await page.screenshot({ path: '.tmp/title-qa/restore-failed.png', fullPage: true });
-  await slots.selectOption('manual');
+  await selectSaveChoice(slots, 'manual');
   await page.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'クラブハウス', exact: true })).toBeVisible({
     timeout: 30000,
@@ -216,7 +219,7 @@ test('タイトル：取り込み失敗で元保存を保持し、成功時は�
   await startPlay(page);
   await system(page);
   await page.getByText('ファイルのバックアップ・別プレイの復元', { exact: true }).click();
-  await page.getByRole('combobox', { name: '書き出す保存枠', exact: true }).selectOption('auto');
+  await selectSaveChoice(page.getByRole('group', { name: '書き出す保存枠', exact: true }), 'auto');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: '保存ファイルを書き出す', exact: true }).click();
   const download = await downloadPromise;
@@ -239,9 +242,9 @@ test('タイトル：取り込み失敗で元保存を保持し、成功時は�
   await expect(page.getByRole('heading', { name: '続きから', exact: true })).toBeVisible({
     timeout: 30000,
   });
-  const plays = page.getByRole('combobox', { name: '保存済みプレイ', exact: true });
-  await expect(plays.locator('option')).toHaveCount(3);
-  expect(await plays.inputValue()).toMatch(/^import-/);
+  const plays = page.getByRole('group', { name: '保存済みプレイ', exact: true });
+  await expect(plays.getByRole('radio')).toHaveCount(2);
+  expect(await plays.locator('input:checked').inputValue()).toMatch(/^import-/);
   const after = await storedState(page);
   // 既存のプレイ行は維持し、新しい独立プレイを一つ追加する。
   expect(after[0] as unknown[]).toEqual(expect.arrayContaining(before[0] as unknown[]));
@@ -317,9 +320,9 @@ test('タイトル：Workerエラー通知後も現在のプレイを保持し�
   const before = await storedState(page);
   await page.getByRole('button', { name: 'タイトル画面へ', exact: true }).click();
   await page.getByRole('button', { name: '続きから', exact: true }).click();
-  const plays = page.getByRole('combobox', { name: '保存済みプレイ', exact: true });
-  await plays.selectOption({ index: 1 });
-  await page.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('auto');
+  const plays = page.getByRole('group', { name: '保存済みプレイ', exact: true });
+  await plays.getByRole('radio').first().check();
+  await selectSaveChoice(page.getByRole('group', { name: '開く保存枠', exact: true }), 'auto');
   await page.evaluate(() => Reflect.set(window, 'failTitleOpen', true));
   await page.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('日次Workerでエラーが発生しました');

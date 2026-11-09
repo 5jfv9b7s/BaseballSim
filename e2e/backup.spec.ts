@@ -1,3 +1,4 @@
+import { selectSaveChoice } from './saved-play.ts';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
@@ -54,8 +55,8 @@ for (const width of [1280, 390]) {
       });
       await expect(date).toHaveText('2026-09-24');
       await expect(panel).toContainText('作業状態には未保存の変更');
-      const plays = panel.getByRole('combobox', { name: '保存済みプレイ', exact: true });
-      const imported = await plays.inputValue();
+      const plays = panel.getByRole('group', { name: '保存済みプレイ', exact: true });
+      const imported = await plays.locator('input:checked').inputValue();
       expect(imported.startsWith('import-')).toBe(true);
       await expect(
         panel.getByRole('button', { name: '選んだプレイを開く', exact: true }),
@@ -71,16 +72,19 @@ for (const width of [1280, 390]) {
       ).toBeDisabled();
       await page.getByRole('button', { name: '1日を自動進行', exact: true }).click();
       await expect(date).toHaveText('2026-09-26', { timeout: 60000 });
-      await plays.selectOption('v02-local');
-      await panel.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('manual');
+      await selectSaveChoice(plays, 'v02-local');
+      await selectSaveChoice(
+        panel.getByRole('group', { name: '開く保存枠', exact: true }),
+        'manual',
+      );
       await panel.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
       await expect(date).toHaveText('2026-09-25', { timeout: 30000 });
 
       await page.reload();
       await page.getByRole('button', { name: '日程・球団運営', exact: true }).click();
       await panel.getByText('ファイルのバックアップ・別プレイの復元', { exact: true }).click();
-      await plays.selectOption(imported);
-      await panel.getByRole('combobox', { name: '開く保存枠', exact: true }).selectOption('auto');
+      await selectSaveChoice(plays, imported);
+      await selectSaveChoice(panel.getByRole('group', { name: '開く保存枠', exact: true }), 'auto');
       await panel.getByRole('button', { name: '選んだプレイを開く', exact: true }).click();
       await expect(date).toHaveText('2026-09-26', { timeout: 30000 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

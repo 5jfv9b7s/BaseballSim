@@ -1,3 +1,4 @@
+import { SaveSlotSummary } from './SaveSlots.tsx';
 import type {
   TradeInspectionProposal,
   TradeInspectionReport,
@@ -1385,10 +1386,15 @@ export function WorldApp({
             )}
             {development && storageAction && notification}
             <section
-              className="workflow-group workflow-primary"
+              className="workflow-group workflow-primary save-current-slot"
               aria-labelledby="save-current-heading"
             >
               <h3 id="save-current-heading">現在の作業を保存</h3>
+              <div className="current-save-date">
+                <span>手動保存枠 01</span>
+                <strong>{view?.currentDate ?? '読み込み中'}</strong>
+                <span>現在のゲーム内日付</span>
+              </div>
               <p className="save-state" data-unsaved={view?.unsavedChanges}>
                 {!view
                   ? '保存状態を読み込み中です。'
@@ -1439,16 +1445,14 @@ export function WorldApp({
                     ['previousAuto', '直前の自動保存を読み込む', 'ひとつ前の自動保存時点'],
                   ] as const
                 ).map(([slot, label, description]) => (
-                  <div className="save-slot" key={slot}>
-                    <h4>{description}</h4>
-                    <p id={`slot-${slot}-hint`}>
-                      {view?.slots[slot] ? (
-                        <>
-                          ゲーム内日付：<time>{view.slots[slot].gameDate}</time>
-                        </>
-                      ) : (
-                        '保存がないため、まだ読み込めません。'
-                      )}
+                  <div
+                    className="save-slot restore-slot-card"
+                    data-empty={!view?.slots[slot]}
+                    key={slot}
+                  >
+                    <SaveSlotSummary slot={slot} point={view?.slots[slot]} />
+                    <p className="slot-read-hint" id={`slot-${slot}-hint`}>
+                      {view?.slots[slot] ? description : '保存がないため、まだ読み込めません。'}
                     </p>
                     <button
                       className="secondary"
